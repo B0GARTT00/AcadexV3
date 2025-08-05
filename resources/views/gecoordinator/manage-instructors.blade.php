@@ -39,6 +39,11 @@
                 Inactive Instructors
             </a>
         </li>
+        <li class="nav-item" role="presentation">
+            <a class="nav-link" id="ge-requests-tab" data-bs-toggle="tab" href="#ge-requests" role="tab" aria-controls="ge-requests" aria-selected="false">
+                GE Subject Requests
+            </a>
+        </li>
     </ul>
 
     <div class="tab-content mt-3" id="instructorTabsContent">
@@ -74,24 +79,14 @@
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <div class="btn-group" role="group">
-                                            <button type="button"
-                                                class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#requestGEAssignmentModal"
-                                                data-instructor-id="{{ $instructor->id }}"
-                                                data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
-                                                <i class="bi bi-journal-plus"></i> Request GE
-                                            </button>
-                                            <button type="button"
-                                                class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#confirmDeactivateModal"
-                                                data-instructor-id="{{ $instructor->id }}"
-                                                data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
-                                                <i class="bi bi-person-x-fill"></i> Deactivate
-                                            </button>
-                                        </div>
+                                        <button type="button"
+                                            class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#confirmDeactivateModal"
+                                            data-instructor-id="{{ $instructor->id }}"
+                                            data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                            <i class="bi bi-person-x-fill"></i> Deactivate
+                                        </button>
                                     </td>
                                 </tr>
                             @endif
@@ -152,6 +147,68 @@
             </div>        
             @endif
         </div>
+    </div>
+
+    {{-- GE Subject Requests Tab --}}
+    <div class="tab-pane fade" id="ge-requests" role="tabpanel" aria-labelledby="ge-requests-tab">
+        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
+            <i class="bi bi-journal-plus text-warning me-2 fs-5"></i>
+            GE Subject Requests
+        </h2>
+
+        @php
+            $geRequests = \App\Models\GESubjectRequest::with(['instructor', 'requestedBy'])
+                ->where('status', 'pending')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        @endphp
+
+        @if($geRequests->isEmpty())
+            <div class="alert alert-info shadow-sm rounded">No pending GE subject requests.</div>
+        @else
+            <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
+                <table class="table table-bordered align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Instructor Name</th>
+                            <th>Department</th>
+                            <th>Requested By</th>
+                            <th>Request Date</th>
+                            <th class="text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($geRequests as $request)
+                            <tr>
+                                <td>{{ $request->instructor->last_name }}, {{ $request->instructor->first_name }} {{ $request->instructor->middle_name }}</td>
+                                <td>{{ $request->instructor->department->department_code ?? 'N/A' }}</td>
+                                <td>{{ $request->requestedBy->last_name }}, {{ $request->requestedBy->first_name }}</td>
+                                <td>{{ $request->created_at->format('M d, Y h:i A') }}</td>
+                                <td class="text-center">
+                                    <button type="button"
+                                        class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#approveGERequestModal"
+                                        data-request-id="{{ $request->id }}"
+                                        data-instructor-name="{{ $request->instructor->last_name }}, {{ $request->instructor->first_name }}">
+                                        <i class="bi bi-check-circle-fill"></i> Approve
+                                    </button>
+
+                                    <button type="button"
+                                        class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 ms-2"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#rejectGERequestModal"
+                                        data-request-id="{{ $request->id }}"
+                                        data-instructor-name="{{ $request->instructor->last_name }}, {{ $request->instructor->first_name }}">
+                                        <i class="bi bi-x-circle-fill"></i> Reject
+                                    </button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     </div>
 
     {{-- Pending Account Approvals --}}
@@ -297,26 +354,52 @@
     </div>
 </div>
 
-{{-- Request GE Assignment Modal --}}
-<div class="modal fade" id="requestGEAssignmentModal" tabindex="-1" aria-labelledby="requestGEAssignmentModalLabel" aria-hidden="true">
+{{-- Approve GE Subject Request Modal --}}
+<div class="modal fade" id="approveGERequestModal" tabindex="-1" aria-labelledby="approveGERequestModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-        <form method="POST" id="requestGEForm">
+        <form method="POST" id="approveGERequestForm">
             @csrf
             <div class="modal-content rounded-4 shadow">
-                <div class="modal-header bg-warning text-dark">
-                    <h5 class="modal-title" id="requestGEAssignmentModalLabel">Request GE Subject Assignment</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="approveGERequestModalLabel">Approve GE Subject Request</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <p>Are you sure you want to request GE subject assignment for <strong id="requestGEName"></strong>?</p>
-                    <p class="text-muted small">
+                    Are you sure you want to approve the GE subject request for <strong id="approveGERequestName"></strong>?
+                    <p class="text-muted small mt-2">
                         <i class="bi bi-info-circle me-1"></i>
-                        This request will be sent to the GE Coordinator for approval. The instructor will remain visible in your list.
+                        This will allow the instructor to be assigned to GE subjects.
                     </p>
                 </div>
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">Request Assignment</button>
+                    <button type="submit" class="btn btn-success">Approve Request</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{{-- Reject GE Subject Request Modal --}}
+<div class="modal fade" id="rejectGERequestModal" tabindex="-1" aria-labelledby="rejectGERequestModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <form method="POST" id="rejectGERequestForm">
+            @csrf
+            <div class="modal-content rounded-4 shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="rejectGERequestModalLabel">Reject GE Subject Request</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to reject the GE subject request for <strong id="rejectGERequestName"></strong>?
+                    <p class="text-muted small mt-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        This will deny the instructor from being assigned to GE subjects.
+                    </p>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-danger">Reject Request</button>
                 </div>
             </div>
         </form>
@@ -330,13 +413,14 @@
     const rejectModal = document.getElementById('confirmRejectModal');
     const deactivateModal = document.getElementById('confirmDeactivateModal');
     const activateModal = document.getElementById('confirmActivateModal'); // New activate modal
-    const requestGEModal = document.getElementById('requestGEAssignmentModal'); // New GE request modal
+    const approveGERequestModal = document.getElementById('approveGERequestModal');
+    const rejectGERequestModal = document.getElementById('rejectGERequestModal');
 
     // Handling the approve modal
     if (approveModal) {
         approveModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('approveForm').action = `/chairperson/approvals/${button.getAttribute('data-id')}/approve`;
+            document.getElementById('approveForm').action = `/gecoordinator/approvals/${button.getAttribute('data-id')}/approve`;
             document.getElementById('approveName').textContent = button.getAttribute('data-name');
         });
     }
@@ -345,7 +429,7 @@
     if (rejectModal) {
         rejectModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('rejectForm').action = `/chairperson/approvals/${button.getAttribute('data-id')}/reject`;
+            document.getElementById('rejectForm').action = `/gecoordinator/approvals/${button.getAttribute('data-id')}/reject`;
             document.getElementById('rejectName').textContent = button.getAttribute('data-name');
         });
     }
@@ -354,7 +438,7 @@
     if (deactivateModal) {
         deactivateModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('deactivateForm').action = `/chairperson/instructors/${button.getAttribute('data-instructor-id')}/deactivate`;
+            document.getElementById('deactivateForm').action = `/gecoordinator/instructors/${button.getAttribute('data-instructor-id')}/deactivate`;
             document.getElementById('instructorName').textContent = button.getAttribute('data-instructor-name');
         });
     }
@@ -363,17 +447,26 @@
     if (activateModal) {
         activateModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('activateForm').action = `/chairperson/instructors/${button.getAttribute('data-id')}/activate`;
+            document.getElementById('activateForm').action = `/gecoordinator/instructors/${button.getAttribute('data-id')}/activate`;
             document.getElementById('activateName').textContent = button.getAttribute('data-name');
         });
     }
 
-    // Handling the GE request modal
-    if (requestGEModal) {
-        requestGEModal.addEventListener('show.bs.modal', event => {
+    // Handling the approve GE request modal
+    if (approveGERequestModal) {
+        approveGERequestModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('requestGEForm').action = `/chairperson/instructors/${button.getAttribute('data-instructor-id')}/request-ge-assignment`;
-            document.getElementById('requestGEName').textContent = button.getAttribute('data-instructor-name');
+            document.getElementById('approveGERequestForm').action = `/gecoordinator/ge-requests/${button.getAttribute('data-request-id')}/approve`;
+            document.getElementById('approveGERequestName').textContent = button.getAttribute('data-instructor-name');
+        });
+    }
+
+    // Handling the reject GE request modal
+    if (rejectGERequestModal) {
+        rejectGERequestModal.addEventListener('show.bs.modal', event => {
+            const button = event.relatedTarget;
+            document.getElementById('rejectGERequestForm').action = `/gecoordinator/ge-requests/${button.getAttribute('data-request-id')}/reject`;
+            document.getElementById('rejectGERequestName').textContent = button.getAttribute('data-instructor-name');
         });
     }
 </script>

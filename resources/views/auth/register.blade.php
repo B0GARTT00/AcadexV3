@@ -47,7 +47,9 @@
             <select id="department_id" name="department_id" class="w-full mt-1 border-gray-300 rounded-md shadow-sm bg-gray-400 text-white" required>
                 <option value="">-- Choose Department --</option>
                 @foreach($departments as $dept)
-                    <option value="{{ $dept->id }}">{{ $dept->department_description }}</option>
+                    <option value="{{ $dept->id }}" data-is-ge="{{ $dept->department_code === 'GE' ? 'true' : 'false' }}">
+                        {{ $dept->department_description }}
+                    </option>
                 @endforeach
             </select>
             <x-input-error :messages="$errors->get('department_id')" class="mt-2 text-red-400" />
@@ -60,6 +62,12 @@
                 <option value="">-- Choose Course --</option>
             </select>
             <x-input-error :messages="$errors->get('course_id')" class="mt-2 text-red-400" />
+        </div>
+
+        {{-- GE Notice --}}
+        <div id="ge-notice" class="hidden bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative">
+            <strong class="font-bold">General Education Instructor:</strong>
+            <span class="block sm:inline">You will be able to teach GE subjects across all courses and will be managed by the GE Coordinator.</span>
         </div>
 
         {{-- Password --}}
@@ -128,27 +136,42 @@
 
         deptSelect.addEventListener('change', function () {
             const deptId = this.value;
+            const selectedOption = this.options[this.selectedIndex];
+            const isGeDepartment = selectedOption.getAttribute('data-is-ge') === 'true';
+            const geNotice = document.getElementById('ge-notice');
+            
             if (!deptId) {
                 courseWrapper.classList.add('hidden');
                 courseSelect.innerHTML = '<option value="">-- Choose Course --</option>';
+                geNotice.classList.add('hidden');
                 return;
             }
 
-            courseSelect.innerHTML = '<option value="">Loading...</option>';
-            fetch(`/api/department/${deptId}/courses`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.length === 1) {
-                        courseSelect.innerHTML = `<option value="${data[0].id}" selected>${data[0].name}</option>`;
-                        courseWrapper.classList.add('hidden');
-                    } else {
-                        courseSelect.innerHTML = '<option value="">-- Choose Course --</option>';
-                        data.forEach(course => {
-                            courseSelect.innerHTML += `<option value="${course.id}">${course.name}</option>`;
-                        });
-                        courseWrapper.classList.remove('hidden');
-                    }
-                });
+            // Show/hide GE notice
+            geNotice.classList.toggle('hidden', !isGeDepartment);
+
+            if (isGeDepartment) {
+                // For GE department, set a default course and hide course selection
+                courseSelect.innerHTML = '<option value="1" selected>General Education</option>';
+                courseWrapper.classList.add('hidden');
+            } else {
+                // For other departments, fetch courses normally
+                courseSelect.innerHTML = '<option value="">Loading...</option>';
+                fetch(`/api/department/${deptId}/courses`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length === 1) {
+                            courseSelect.innerHTML = `<option value="${data[0].id}" selected>${data[0].name}</option>`;
+                            courseWrapper.classList.add('hidden');
+                        } else {
+                            courseSelect.innerHTML = '<option value="">-- Choose Course --</option>';
+                            data.forEach(course => {
+                                courseSelect.innerHTML += `<option value="${course.id}">${course.name}</option>`;
+                            });
+                            courseWrapper.classList.remove('hidden');
+                        }
+                    });
+            }
         });
     });
 

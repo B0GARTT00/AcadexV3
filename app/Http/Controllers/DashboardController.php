@@ -17,31 +17,32 @@ use App\Models\
     UnverifiedUser,
     UserLog,
     Course,
+    Department,
 };
 
 class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $role = Auth::user()->role;
+        $user = Auth::user();
         
-        if ($role === 0) {
+        if ($user->role === 0) {
             return $this->instructorDashboard();
         }
 
-        if ($role === 1) {
+        if ($user->isChairperson()) {
             return $this->chairpersonDashboard();
         }
 
-        if ($role === 4) {
-            return $this->chairpersonDashboard();
+        if ($user->isGECoordinator()) {
+            return $this->geCoordinatorDashboard();
         }
 
-        if ($role === 3) {
+        if ($user->isAdmin()) {
             return $this->adminDashboard($request);
         }
 
-        if ($role === 2) {
+        if ($user->role === 2) { // Dean
             return $this->deanDashboard();
         }
 
@@ -293,6 +294,46 @@ class DashboardController extends Controller
             'totalInstructors' => User::where('role', 'instructor')->count(),
             'studentsPerCourse' => $studentsPerCourse
         ]);
+    }
+
+    private function geCoordinatorDashboard()
+    {
+        if (!session()->has('active_academic_period_id')) {
+            return redirect()->route('select.academicPeriod');
+        }
+
+        // Get GE department
+        $geDepartment = Department::where('department_code', 'GE')->first();
+        
+        if (!$geDepartment) {
+            return back()->with('error', 'GE department not found. Please contact administrator.');
+        }
+
+        $data = [
+            "countInstructors" => User::where("role", 0)
+                ->where("department_id", $geDepartment->id)
+                ->count(),
+            "countStudents" => Student::whereHas('subjects', function($query) use ($geDepartment) {
+                    return $query->where('department_id', $geDepartment->id);
+                })
+                ->where("is_deleted", false)
+                ->distinct()
+                ->count("students.id"),
+            "countCourses" => Subject::where("department_id", $geDepartment->id)
+                ->where("is_deleted", false)
+                ->distinct('subject_code')
+                ->count(),
+            "countActiveInstructors" => User::where("is_active", 1)
+                ->where("role", 0)
+                ->where("department_id", $geDepartment->id)
+                ->count(),
+            "countInactiveInstructors" => User::where("is_active", 0)
+                ->where("role", 0)
+                ->where("department_id", $geDepartment->id)
+                ->count(),
+        ];
+
+        return view('dashboard.gecoordinator', $data);
     }
 
     private function getTermId($term)

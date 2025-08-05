@@ -7,10 +7,10 @@
         Confirm Curriculum Subjects
     </h1>
 
-    @if(Auth::user()->role === 1)
+    @if(Auth::user()->role === 4)
         <div class="alert alert-info mb-4" role="alert">
             <i class="bi bi-info-circle me-2"></i>
-            <strong>Note:</strong> As a Chairperson, you cannot import GE (General Education), PD (Professional Development), PE (Physical Education), RS (Religious Studies), and NSTP (National Service Training Program) subjects. These subjects are managed by the GE Coordinator.
+            <strong>Note:</strong> As a GE Coordinator, you can only import GE (General Education), PD (Professional Development), PE (Physical Education), RS (Religious Studies), and NSTP (National Service Training Program) subjects. Other subjects are managed by Department Chairpersons.
         </div>
     @endif
 

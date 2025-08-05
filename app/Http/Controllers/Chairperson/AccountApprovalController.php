@@ -21,10 +21,15 @@ class AccountApprovalController extends Controller
     {
         Gate::authorize('chairperson');
 
+        // Get GE department to exclude it
+        $geDepartment = \App\Models\Department::where('department_code', 'GE')->first();
+
         // Eager-load related department and course for display, filtered by chairperson's department and course
+        // Exclude GE department instructors
         $pendingAccounts = UnverifiedUser::with(['department', 'course'])
             ->where('department_id', Auth::user()->department_id)
             ->where('course_id', Auth::user()->course_id)
+            ->where('department_id', '!=', $geDepartment->id)
             ->get();
 
         return view('chairperson.manage-instructors', compact('pendingAccounts'));
@@ -40,9 +45,13 @@ class AccountApprovalController extends Controller
     {
         Gate::authorize('chairperson');
 
+        // Get GE department to exclude it
+        $geDepartment = \App\Models\Department::where('department_code', 'GE')->first();
+
         $pending = UnverifiedUser::where('id', $id)
             ->where('department_id', Auth::user()->department_id)
             ->where('course_id', Auth::user()->course_id)
+            ->where('department_id', '!=', $geDepartment->id)
             ->firstOrFail();
 
         // Transfer to the main users table
@@ -74,9 +83,13 @@ class AccountApprovalController extends Controller
     {
         Gate::authorize('chairperson');
 
+        // Get GE department to exclude it
+        $geDepartment = \App\Models\Department::where('department_code', 'GE')->first();
+
         $pending = UnverifiedUser::where('id', $id)
             ->where('department_id', Auth::user()->department_id)
             ->where('course_id', Auth::user()->course_id)
+            ->where('department_id', '!=', $geDepartment->id)
             ->firstOrFail();
             
         $pending->delete();

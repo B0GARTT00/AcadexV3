@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Course;
 use App\Models\Curriculum;
 use App\Models\CurriculumSubject;
+use App\Models\Department;
 use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -197,6 +198,12 @@ class CurriculumController extends Controller
                     stripos($cs->subject_description, 'Philippine History') !== false ||
                     stripos($cs->subject_description, 'Mathematics in the Modern World') !== false;
             
+            // For Chairperson: exclude GE, PD, PE, RS, NSTP subjects
+            $isRestricted = false;
+            if (Auth::user()->role === 1) {
+                $isRestricted = $isGE;
+            }
+            
             return [
                 'id' => $cs->id,
                 'subject_code' => $cs->subject_code,
@@ -204,6 +211,7 @@ class CurriculumController extends Controller
                 'year_level' => $cs->year_level,
                 'semester' => $cs->semester,
                 'is_universal' => $isGE,
+                'is_restricted' => $isRestricted,
             ];
         });
 
@@ -212,7 +220,9 @@ class CurriculumController extends Controller
 
     public function confirmSubjects(Request $request)
     {
-        Gate::authorize('admin-chair');
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 2 || Auth::user()->role === 4)) {
+            abort(403, 'Unauthorized action.');
+        }
 
         $request->validate([
             'curriculum_id' => 'required|exists:curriculums,id',
@@ -222,7 +232,7 @@ class CurriculumController extends Controller
         $curriculum = Curriculum::findOrFail($request->curriculum_id);
 
         // If user is chairperson, verify they can confirm subjects for this curriculum
-        if (Gate::allows('chairperson') && $curriculum->course_id !== Auth::user()->course_id) {
+        if (Auth::user()->role === 1 && $curriculum->course_id !== Auth::user()->course_id) {
             abort(403, 'Unauthorized to confirm subjects for this curriculum.');
         }
 
@@ -231,15 +241,30 @@ class CurriculumController extends Controller
             ->get();
 
         foreach ($subjects as $curriculumSubject) {
+            // For GE subjects, set the department to GE
+            $isGE = stripos($curriculumSubject->subject_code, 'GE') === 0 || 
+                   stripos($curriculumSubject->subject_code, 'NSTP') === 0 ||
+                   stripos($curriculumSubject->subject_code, 'PD') === 0 ||
+                   stripos($curriculumSubject->subject_code, 'PE') === 0 ||
+                   stripos($curriculumSubject->subject_code, 'RS') === 0 ||
+                   stripos($curriculumSubject->subject_description, 'General Education') !== false ||
+                   stripos($curriculumSubject->subject_description, 'Understanding the Self') !== false ||
+                   stripos($curriculumSubject->subject_description, 'Philippine History') !== false ||
+                   stripos($curriculumSubject->subject_description, 'Mathematics in the Modern World') !== false;
+            
+            $departmentId = $isGE ? 
+                Department::where('department_code', 'GE')->first()->id : 
+                Auth::user()->department_id;
+
             Subject::firstOrCreate([
                 'subject_code' => $curriculumSubject->subject_code
             ], [
                 'subject_description' => $curriculumSubject->subject_description,
                 'year_level' => $curriculumSubject->year_level,
-                'department_id' => Auth::user()->department_id,
+                'department_id' => $departmentId,
                 'course_id' => $curriculumSubject->curriculum->course_id,
                 'academic_period_id' => session('active_academic_period_id'),
-                'is_universal' => false,
+                'is_universal' => $isGE,
                 'is_deleted' => false,
                 'created_by' => Auth::id(),
                 'updated_by' => Auth::id(),

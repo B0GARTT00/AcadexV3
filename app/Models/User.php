@@ -112,6 +112,14 @@ class User extends Authenticatable
     }
 
     /**
+     * Check if the user is a Chairperson
+     */
+    public function isChairperson(): bool
+    {
+        return $this->role === 1;
+    }
+
+    /**
      * Check if the user is a GE Coordinator
      */
     public function isGECoordinator(): bool

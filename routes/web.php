@@ -71,6 +71,7 @@ Route::prefix('chairperson')
         Route::post('/instructors/store', [ChairpersonController::class, 'storeInstructor'])->name('storeInstructor');
         Route::post('/instructors/{id}/deactivate', [ChairpersonController::class, 'deactivateInstructor'])->name('deactivateInstructor');
         Route::post('/instructors/{id}/activate', [ChairpersonController::class, 'activateInstructor'])->name('activateInstructor');
+        Route::post('/instructors/{id}/request-ge-assignment', [ChairpersonController::class, 'requestGEAssignment'])->name('requestGEAssignment');
         
         Route::get('/assign-subjects', [ChairpersonController::class, 'assignSubjects'])->name('assignSubjects');
         Route::post('/assign-subjects/store', [ChairpersonController::class, 'storeAssignedSubject'])->name('storeAssignedSubject');
@@ -91,10 +92,26 @@ Route::prefix('gecoordinator')
     ->middleware(['auth', 'academic.period.set'])
     ->name('gecoordinator.')
     ->group(function () {
-        Route::get('/instructors', [\App\Http\Controllers\ChairpersonController::class, 'manageInstructors'])->name('instructors');
-        Route::get('/assign-subjects', [\App\Http\Controllers\ChairpersonController::class, 'assignSubjects'])->name('assignSubjects');
-        Route::get('/students-by-year', [\App\Http\Controllers\ChairpersonController::class, 'viewStudentsPerYear'])->name('studentsByYear');
-        Route::get('/grades', [\App\Http\Controllers\ChairpersonController::class, 'viewGrades'])->name('viewGrades');
+        Route::get('/instructors', [\App\Http\Controllers\GECoordinatorController::class, 'manageInstructors'])->name('instructors');
+        Route::post('/instructors', [\App\Http\Controllers\GECoordinatorController::class, 'storeInstructor'])->name('storeInstructor');
+        Route::post('/instructors/{id}/deactivate', [\App\Http\Controllers\GECoordinatorController::class, 'deactivateInstructor'])->name('deactivateInstructor');
+        Route::post('/instructors/{id}/activate', [\App\Http\Controllers\GECoordinatorController::class, 'activateInstructor'])->name('activateInstructor');
+        
+        Route::get('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'assignSubjects'])->name('assignSubjects');
+        Route::post('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'storeAssignedSubject'])->name('storeAssignedSubject');
+        Route::post('/assign-subjects/toggle', [\App\Http\Controllers\GECoordinatorController::class, 'toggleAssignedSubject'])->name('toggleAssignedSubject');
+        
+        Route::get('/students-by-year', [\App\Http\Controllers\GECoordinatorController::class, 'viewStudentsPerYear'])->name('studentsByYear');
+        Route::get('/grades', [\App\Http\Controllers\GECoordinatorController::class, 'viewGrades'])->name('viewGrades');
+        
+        // Account Approval Routes
+        Route::get('/approvals', [\App\Http\Controllers\GECoordinator\AccountApprovalController::class, 'index'])->name('accounts.index');
+        Route::post('/approvals/{id}/approve', [\App\Http\Controllers\GECoordinator\AccountApprovalController::class, 'approve'])->name('accounts.approve');
+        Route::post('/approvals/{id}/reject', [\App\Http\Controllers\GECoordinator\AccountApprovalController::class, 'reject'])->name('accounts.reject');
+        
+        // GE Assignment Request Routes
+        Route::post('/ge-requests/{id}/approve', [\App\Http\Controllers\GECoordinatorController::class, 'approveGERequest'])->name('geRequests.approve');
+        Route::post('/ge-requests/{id}/reject', [\App\Http\Controllers\GECoordinatorController::class, 'rejectGERequest'])->name('geRequests.reject');
     });
 
 // Curriculum Routes

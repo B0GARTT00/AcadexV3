@@ -19,7 +19,8 @@ class RegisteredUserController extends Controller
     public function create(): View
     {
         $departments = Department::all();
-        return view('auth.register', compact('departments'));
+        $geDepartment = Department::where('department_code', 'GE')->first();
+        return view('auth.register', compact('departments', 'geDepartment'));
     }
 
     /**
