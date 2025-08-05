@@ -27,25 +27,30 @@ class ChairpersonController extends Controller
 
     public function manageInstructors()
     {
-        Gate::authorize('chairperson');
-
-        $instructors = User::where('role', 0)
-            ->where('department_id', Auth::user()->department_id)
-            ->where('course_id', Auth::user()->course_id)
-            ->orderBy('last_name')
-            ->get();
-
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            abort(403);
+        }
+        $query = User::where('role', 0);
+        if (Auth::user()->role === 1) {
+            $query->where('department_id', Auth::user()->department_id)
+                  ->where('course_id', Auth::user()->course_id);
+        }
+        // GE Coordinator: show all instructors for GE subjects
+        $instructors = $query->orderBy('last_name')->get();
         $pendingAccounts = UnverifiedUser::with('department', 'course')
-            ->where('department_id', Auth::user()->department_id)
-            ->where('course_id', Auth::user()->course_id)
+            ->when(Auth::user()->role === 1, function($q) {
+                $q->where('department_id', Auth::user()->department_id)
+                  ->where('course_id', Auth::user()->course_id);
+            })
             ->get();
-
         return view('chairperson.manage-instructors', compact('instructors', 'pendingAccounts'));
     }
 
     public function storeInstructor(Request $request)
     {
-        Gate::authorize('chairperson');
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            abort(403);
+        }
 
         $request->validate([
             'first_name'    => 'required|string|max:255',
@@ -78,29 +83,29 @@ class ChairpersonController extends Controller
 
     public function deactivateInstructor($id)
     {
-        Gate::authorize('chairperson');
-
-        $instructor = User::where('id', $id)
-            ->where('role', 0)
-            ->where('department_id', Auth::user()->department_id)
-            ->firstOrFail();
-
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            abort(403);
+        }
+        $query = User::where('id', $id)->where('role', 0);
+        if (Auth::user()->role === 1) {
+            $query->where('department_id', Auth::user()->department_id);
+        }
+        $instructor = $query->firstOrFail();
         $instructor->update(['is_active' => false]);
-
         return redirect()->back()->with('success', 'Instructor deactivated successfully.');
     }
 
     public function activateInstructor($id)
     {
-        Gate::authorize('chairperson');
-
-        $instructor = User::where('id', $id)
-            ->where('role', 0)
-            ->where('department_id', Auth::user()->department_id)
-            ->firstOrFail();
-
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            abort(403);
+        }
+        $query = User::where('id', $id)->where('role', 0);
+        if (Auth::user()->role === 1) {
+            $query->where('department_id', Auth::user()->department_id);
+        }
+        $instructor = $query->firstOrFail();
         $instructor->update(['is_active' => true]);
-
         return redirect()->back()->with('success', 'Instructor activated successfully.');
     }
 
@@ -110,112 +115,129 @@ class ChairpersonController extends Controller
 
     public function assignSubjects()
     {
-        Gate::authorize('chairperson');
-    
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            abort(403);
+        }
         $academicPeriodId = session('active_academic_period_id');
-    
-        // Fetch subjects filtered by department, course, academic period, and not deleted
-        $subjects = Subject::where('department_id', Auth::user()->department_id)
-            ->where('course_id', Auth::user()->course_id)
-            ->where('is_deleted', false)
-            ->where('academic_period_id', $academicPeriodId)
-            ->orderBy('subject_code')
-            ->get();
-    
-        // Group subjects by year_level
+        if (Auth::user()->role === 1) {
+            $subjects = Subject::where('department_id', Auth::user()->department_id)
+                ->where('course_id', Auth::user()->course_id)
+                ->where('is_deleted', false)
+                ->where('academic_period_id', $academicPeriodId)
+                ->orderBy('subject_code')
+                ->get();
+            $instructors = User::where('role', 0)
+                ->where('department_id', Auth::user()->department_id)
+                ->where('course_id', Auth::user()->course_id)
+                ->where('is_active', true)
+                ->orderBy('last_name')
+                ->get();
+        } else {
+            // GE Coordinator: only GE subjects, all instructors
+            $subjects = Subject::where('is_universal', true)
+                ->where('is_deleted', false)
+                ->where('academic_period_id', $academicPeriodId)
+                ->orderBy('subject_code')
+                ->get();
+            $instructors = User::where('role', 0)
+                ->where('is_active', true)
+                ->orderBy('last_name')
+                ->get();
+        }
         $yearLevels = $subjects->groupBy('year_level');
-    
-        // Fetch active instructors in the department and course
-        $instructors = User::where('role', 0)
-            ->where('department_id', Auth::user()->department_id)
-            ->where('course_id', Auth::user()->course_id)
-            ->where('is_active', true)
-            ->orderBy('last_name')
-            ->get();
-    
-        // Return view with grouped subjects by year level and instructors
         return view('chairperson.assign-subjects', compact('yearLevels', 'instructors'));
     }
     
 
     public function storeAssignedSubject(Request $request)
     {
-        Gate::authorize('chairperson');
-
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            abort(403);
+        }
         $academicPeriodId = session('active_academic_period_id');
-
         $request->validate([
             'subject_id' => 'required|exists:subjects,id',
             'instructor_id' => 'required|exists:users,id',
         ]);
-
-        $subject = Subject::where('id', $request->subject_id)
-            ->where('department_id', Auth::user()->department_id)
-            ->where('course_id', Auth::user()->course_id)
-            ->where('academic_period_id', $academicPeriodId)
-            ->firstOrFail();
-
-        $instructor = User::where('id', $request->instructor_id)
-            ->where('role', 0)
-            ->where('department_id', Auth::user()->department_id)
-            ->where('course_id', Auth::user()->course_id)
-            ->where('is_active', true)
-            ->firstOrFail();
-
-        $subject->update([
-            'instructor_id' => $instructor->id,
-            'updated_by' => Auth::id(),
-        ]);
-
-        return redirect()->route('chairperson.assignSubjects')->with('success', 'Subject assigned successfully.');
-    }
-    public function toggleAssignedSubject(Request $request)
-    {
-        Gate::authorize('chairperson');
-        
-        $academicPeriodId = session('active_academic_period_id');
-        
-        $request->validate([
-            'subject_id' => 'required|exists:subjects,id',
-            'instructor_id' => 'nullable|exists:users,id', // instructor_id is nullable for unassign
-        ]);
-    
-        $subject = Subject::where('id', $request->subject_id)
-            ->where('department_id', Auth::user()->department_id)
-            ->where('course_id', Auth::user()->course_id)
-            ->where('academic_period_id', $academicPeriodId)
-            ->firstOrFail();
-    
-        // Check if there are any enrolled students in the subject
-        $enrolledStudents = $subject->students()->count(); // Assuming the 'students' relationship is defined
-    
-        // If there are enrolled students and we are trying to unassign the subject, prevent the action
-        if ($enrolledStudents > 0 && !$request->instructor_id) {
-            return redirect()->route('chairperson.assignSubjects')->with('error', 'Cannot unassign subject as it has enrolled students.');
-        }
-    
-        // If an instructor is selected, assign them, otherwise unassign the instructor
-        if ($request->instructor_id) {
+        if (Auth::user()->role === 1) {
+            $subject = Subject::where('id', $request->subject_id)
+                ->where('department_id', Auth::user()->department_id)
+                ->where('course_id', Auth::user()->course_id)
+                ->where('academic_period_id', $academicPeriodId)
+                ->firstOrFail();
             $instructor = User::where('id', $request->instructor_id)
-                ->where('role', 0) // Ensure the user is an instructor
+                ->where('role', 0)
                 ->where('department_id', Auth::user()->department_id)
                 ->where('course_id', Auth::user()->course_id)
                 ->where('is_active', true)
                 ->firstOrFail();
-    
+        } else {
+            // GE Coordinator: only GE subjects, any instructor
+            $subject = Subject::where('id', $request->subject_id)
+                ->where('is_universal', true)
+                ->where('academic_period_id', $academicPeriodId)
+                ->firstOrFail();
+            $instructor = User::where('id', $request->instructor_id)
+                ->where('role', 0)
+                ->where('is_active', true)
+                ->firstOrFail();
+        }
+        $subject->update([
+            'instructor_id' => $instructor->id,
+            'updated_by' => Auth::id(),
+        ]);
+        return redirect()->route('chairperson.assignSubjects')->with('success', 'Subject assigned successfully.');
+    }
+    public function toggleAssignedSubject(Request $request)
+    {
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            abort(403);
+        }
+        $academicPeriodId = session('active_academic_period_id');
+        $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'instructor_id' => 'nullable|exists:users,id',
+        ]);
+        if (Auth::user()->role === 1) {
+            $subject = Subject::where('id', $request->subject_id)
+                ->where('department_id', Auth::user()->department_id)
+                ->where('course_id', Auth::user()->course_id)
+                ->where('academic_period_id', $academicPeriodId)
+                ->firstOrFail();
+        } else {
+            $subject = Subject::where('id', $request->subject_id)
+                ->where('is_universal', true)
+                ->where('academic_period_id', $academicPeriodId)
+                ->firstOrFail();
+        }
+        $enrolledStudents = $subject->students()->count();
+        if ($enrolledStudents > 0 && !$request->instructor_id) {
+            return redirect()->route('chairperson.assignSubjects')->with('error', 'Cannot unassign subject as it has enrolled students.');
+        }
+        if ($request->instructor_id) {
+            if (Auth::user()->role === 1) {
+                $instructor = User::where('id', $request->instructor_id)
+                    ->where('role', 0)
+                    ->where('department_id', Auth::user()->department_id)
+                    ->where('course_id', Auth::user()->course_id)
+                    ->where('is_active', true)
+                    ->firstOrFail();
+            } else {
+                $instructor = User::where('id', $request->instructor_id)
+                    ->where('role', 0)
+                    ->where('is_active', true)
+                    ->firstOrFail();
+            }
             $subject->update([
                 'instructor_id' => $instructor->id,
                 'updated_by' => Auth::id(),
             ]);
-    
             return redirect()->route('chairperson.assignSubjects')->with('success', 'Instructor assigned successfully.');
         } else {
-            // Unassign the instructor only if no students are enrolled
             $subject->update([
                 'instructor_id' => null,
                 'updated_by' => Auth::id(),
             ]);
-    
             return redirect()->route('chairperson.assignSubjects')->with('success', 'Instructor unassigned successfully.');
         }
     }
@@ -227,7 +249,9 @@ class ChairpersonController extends Controller
 
     public function viewGrades(Request $request)
     {
-        Gate::authorize('chairperson');
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            abort(403);
+        }
         
         $selectedInstructorId = $request->input('instructor_id');
         $selectedSubjectId = $request->input('subject_id');
@@ -239,8 +263,6 @@ class ChairpersonController extends Controller
         // Fetch instructors in department and course (role: 0 = instructor)
         $instructors = User::where([
             ['role', 0],
-            ['department_id', $departmentId],
-            ['course_id', $courseId],
             ['is_active', true],
         ])
         ->orderBy('last_name')
@@ -249,27 +271,33 @@ class ChairpersonController extends Controller
         // Subjects are loaded only when an instructor is selected
         $subjects = [];
         if ($selectedInstructorId) {
-            $subjects = Subject::where([
+            $subjectQuery = Subject::where([
                 ['instructor_id', $selectedInstructorId],
-                ['department_id', $departmentId],
-                ['course_id', $courseId],
                 ['academic_period_id', $academicPeriodId],
                 ['is_deleted', false],
-            ])
-            ->orderBy('subject_code')
-            ->get();
+            ]);
+            if (Auth::user()->role === 1) {
+                $subjectQuery->where('department_id', $departmentId)
+                            ->where('course_id', $courseId);
+            } else if (Auth::user()->role === 4) {
+                $subjectQuery->where('is_universal', true);
+            }
+            $subjects = $subjectQuery->orderBy('subject_code')->get();
         }
     
         // Students and grades are only loaded when a subject is selected
         $students = [];
         if ($selectedSubjectId) {
-            // Get the subject and the students enrolled in it
-            $subject = Subject::where([
+            $subjectQuery = Subject::where([
                 ['id', $selectedSubjectId],
-                ['department_id', $departmentId],
-                ['course_id', $courseId],
-            ])
-            ->firstOrFail();
+            ]);
+            if (Auth::user()->role === 1) {
+                $subjectQuery->where('department_id', $departmentId)
+                            ->where('course_id', $courseId);
+            } else if (Auth::user()->role === 4) {
+                $subjectQuery->where('is_universal', true);
+            }
+            $subject = $subjectQuery->firstOrFail();
     
             $students = $subject->students()
                 ->with(['termGrades' => function ($q) use ($selectedSubjectId) {
@@ -295,16 +323,29 @@ class ChairpersonController extends Controller
 
     public function viewStudentsPerYear()
     {
-        Gate::authorize('chairperson');
-
-        $students = Student::where('department_id', Auth::user()->department_id)
-            ->where('course_id', Auth::user()->course_id)
-            ->where('is_deleted', false)
-            ->with('course')
-            ->orderBy('last_name')
-            ->orderBy('first_name')
-            ->get();
-
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            abort(403);
+        }
+        if (Auth::user()->role === 1) {
+            $students = Student::where('department_id', Auth::user()->department_id)
+                ->where('course_id', Auth::user()->course_id)
+                ->where('is_deleted', false)
+                ->with('course')
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->get();
+        } else {
+            // GE Coordinator: students enrolled in GE subjects
+            $geSubjectIds = Subject::where('is_universal', true)->pluck('id');
+            $students = Student::whereHas('subjects', function($q) use ($geSubjectIds) {
+                    $q->whereIn('subjects.id', $geSubjectIds);
+                })
+                ->where('is_deleted', false)
+                ->with('course')
+                ->orderBy('last_name')
+                ->orderBy('first_name')
+                ->get();
+        }
         return view('chairperson.students-by-year', compact('students'));
     }
 }

@@ -144,34 +144,68 @@ class CurriculumController extends Controller
 
     public function selectSubjects()
     {
-        Gate::authorize('admin-chair');
-
-        $query = Curriculum::with('course');
-        
-        // If user is chairperson, only show curriculums for their assigned course
-        if (Gate::allows('chairperson')) {
-            $query->whereHas('course', function($q) {
-                $q->where('id', Auth::user()->course_id);
-            });
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 2 || Auth::user()->role === 4)) {
+            abort(403);
         }
 
-        $curriculums = $query->get();
+        // For Chairperson: show curriculums for their assigned course
+        if (Auth::user()->role === 1) {
+            $curriculums = Curriculum::with('course')
+                ->whereHas('course', function($q) {
+                    $q->where('id', Auth::user()->course_id);
+                })
+                ->get();
+            return view('chairperson.select-curriculum-subjects', compact('curriculums'));
+        }
+
+        // For GE Coordinator: show all curriculums (they can select any, but will filter to GE subjects)
+        if (Auth::user()->role === 4) {
+            $curriculums = Curriculum::with('course')->get();
+            return view('chairperson.select-curriculum-subjects', compact('curriculums'));
+        }
+
+        // Default: show all curriculums (for admin/dean)
+        $curriculums = Curriculum::with('course')->get();
         return view('chairperson.select-curriculum-subjects', compact('curriculums'));
     }
 
     public function fetchSubjects(Curriculum $curriculum)
     {
-        Gate::authorize('admin-chair');
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 2 || Auth::user()->role === 4)) {
+            abort(403);
+        }
 
         // If user is chairperson, verify they can fetch subjects from this curriculum
-        if (Gate::allows('chairperson') && $curriculum->course_id !== Auth::user()->course_id) {
+        if (Auth::user()->role === 1 && $curriculum->course_id !== Auth::user()->course_id) {
             abort(403, 'Unauthorized to fetch subjects from this curriculum.');
         }
 
-        $subjects = $curriculum->subjects()
+        $curriculumSubjects = $curriculum->subjects()
             ->orderBy('year_level')
             ->orderBy('semester')
             ->get();
+
+        $subjects = $curriculumSubjects->map(function($cs) {
+            // Mark as GE if subject code starts with 'GE', 'NSTP', 'PD', 'PE', 'RS' or contains 'General Education'
+            $isGE = stripos($cs->subject_code, 'GE') === 0 || 
+                    stripos($cs->subject_code, 'NSTP') === 0 ||
+                    stripos($cs->subject_code, 'PD') === 0 ||
+                    stripos($cs->subject_code, 'PE') === 0 ||
+                    stripos($cs->subject_code, 'RS') === 0 ||
+                    stripos($cs->subject_description, 'General Education') !== false ||
+                    stripos($cs->subject_description, 'Understanding the Self') !== false ||
+                    stripos($cs->subject_description, 'Philippine History') !== false ||
+                    stripos($cs->subject_description, 'Mathematics in the Modern World') !== false;
+            
+            return [
+                'id' => $cs->id,
+                'subject_code' => $cs->subject_code,
+                'subject_description' => $cs->subject_description,
+                'year_level' => $cs->year_level,
+                'semester' => $cs->semester,
+                'is_universal' => $isGE,
+            ];
+        });
 
         return response()->json($subjects);
     }

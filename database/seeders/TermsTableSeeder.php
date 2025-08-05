@@ -15,13 +15,15 @@ class TermsTableSeeder extends Seeder
         $terms = ['Prelim', 'Midterm', 'Prefinal', 'Final'];
 
         foreach ($terms as $term) {
-            Term::create([
-                'name' => $term,
-                'term_name' => $term, // required if your table expects it
-                'is_deleted' => false,
-                'created_by' => null,
-                'updated_by' => null,
-            ]);
+            Term::updateOrCreate(
+                ['name' => $term],
+                [
+                    'term_name' => $term, // required if your table expects it
+                    'is_deleted' => false,
+                    'created_by' => null,
+                    'updated_by' => null,
+                ]
+            );
         }
     }
 }

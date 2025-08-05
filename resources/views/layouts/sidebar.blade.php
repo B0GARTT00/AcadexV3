@@ -203,5 +203,54 @@
                 </ul>
             </div>
         @endif
+
+        {{-- GE Coordinator --}}
+        @if ($role === 4)
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">DEPARTMENT MANAGEMENT</h6>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.instructors') }}"
+                           class="nav-link {{ request()->routeIs('chairperson.instructors') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-people me-3"></i>
+                            <span>Manage Instructors</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.assignSubjects') }}"
+                           class="nav-link {{ request()->routeIs('chairperson.assignSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-journal-plus me-3"></i>
+                            <span>Assign GE Subjects</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.studentsByYear') }}"
+                           class="nav-link {{ request()->routeIs('chairperson.studentsByYear') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-person-lines-fill me-3"></i>
+                            <span>Students List</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.viewGrades') }}"
+                           class="nav-link {{ request()->routeIs('chairperson.viewGrades') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-clipboard-data me-3"></i>
+                            <span>View Grades</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">DATA MANAGEMENT</h6>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('curriculum.selectSubjects') }}"
+                           class="nav-link {{ request()->routeIs('curriculum.selectSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-file-earmark-arrow-up me-3"></i>
+                            <span>Import Subjects</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        @endif
     </div>
 </div>

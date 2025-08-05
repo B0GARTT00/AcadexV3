@@ -89,10 +89,12 @@
 
 @php
     $activePeriod = \App\Models\AcademicPeriod::find(session('active_academic_period_id'));
+    $userRole = Auth::user()->role;
 @endphp
 
 <script>
     const currentSemester = @json($activePeriod?->semester ?? '');
+    const userRole = @json($userRole);
 </script>
 
 @push('scripts')
@@ -159,15 +161,22 @@ document.addEventListener('DOMContentLoaded', function () {
                     </li>
                 `);
 
-                const rows = subjects.map(s => `
-                    <tr>
-                        <td><input type="checkbox" class="form-check-input subject-checkbox" name="subject_ids[]" value="${s.id}" data-year="${s.year_level}" data-semester="${s.semester}"></td>
-                        <td>${s.subject_code}</td>
-                        <td>${s.subject_description}</td>
-                        <td>${s.year_level}</td>
-                        <td>${s.semester}</td>
-                    </tr>
-                `).join('');
+                const rows = subjects.map(s => {
+                    // For GE Coordinator, disable checkboxes for non-GE subjects
+                    const isDisabled = userRole === 4 && !s.is_universal;
+                    const disabledAttr = isDisabled ? 'disabled' : '';
+                    const disabledClass = isDisabled ? 'opacity-50' : '';
+                    
+                    return `
+                        <tr class="${disabledClass}">
+                            <td><input type="checkbox" class="form-check-input subject-checkbox" name="subject_ids[]" value="${s.id}" data-year="${s.year_level}" data-semester="${s.semester}" ${disabledAttr}></td>
+                            <td>${s.subject_code}</td>
+                            <td>${s.subject_description}</td>
+                            <td>${s.year_level}</td>
+                            <td>${s.semester}</td>
+                        </tr>
+                    `;
+                }).join('');
 
                 const table = `
                     <h5 class="mt-4 text-success">${currentSemester} Semester</h5>
@@ -215,7 +224,16 @@ document.addEventListener('DOMContentLoaded', function () {
             let allSelected = btn.dataset.selected === 'true';
             allSelected = !allSelected;
             btn.dataset.selected = allSelected;
-            document.querySelectorAll('.subject-checkbox').forEach(cb => cb.checked = allSelected);
+            
+            // For GE Coordinator, only select enabled checkboxes
+            document.querySelectorAll('.subject-checkbox').forEach(cb => {
+                if (userRole === 4 && cb.disabled) {
+                    cb.checked = false; // Keep disabled checkboxes unchecked
+                } else {
+                    cb.checked = allSelected;
+                }
+            });
+            
             btn.classList.toggle('btn-outline-success', !allSelected);
             btn.classList.toggle('btn-success', allSelected);
             btn.innerHTML = allSelected

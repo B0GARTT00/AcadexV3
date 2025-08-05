@@ -110,4 +110,12 @@ class User extends Authenticatable
     {
         return $this->role === 3;
     }
+
+    /**
+     * Check if the user is a GE Coordinator
+     */
+    public function isGECoordinator(): bool
+    {
+        return $this->role === 4;
+    }
 }

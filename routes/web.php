@@ -86,6 +86,17 @@ Route::prefix('chairperson')
         Route::post('/approvals/{id}/reject', [AccountApprovalController::class, 'reject'])->name('accounts.reject');
     });
 
+// GE Coordinator Routes
+Route::prefix('gecoordinator')
+    ->middleware(['auth', 'academic.period.set'])
+    ->name('gecoordinator.')
+    ->group(function () {
+        Route::get('/instructors', [\App\Http\Controllers\ChairpersonController::class, 'manageInstructors'])->name('instructors');
+        Route::get('/assign-subjects', [\App\Http\Controllers\ChairpersonController::class, 'assignSubjects'])->name('assignSubjects');
+        Route::get('/students-by-year', [\App\Http\Controllers\ChairpersonController::class, 'viewStudentsPerYear'])->name('studentsByYear');
+        Route::get('/grades', [\App\Http\Controllers\ChairpersonController::class, 'viewGrades'])->name('viewGrades');
+    });
+
 // Curriculum Routes
 Route::middleware(['auth', 'academic.period.set'])->group(function () {
     Route::get('/curriculum/select-subjects', [CurriculumController::class, 'selectSubjects'])->name('curriculum.selectSubjects');

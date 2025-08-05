@@ -23,19 +23,25 @@ class DashboardController extends Controller
 {
     public function index(Request $request)
     {
-        if (Gate::allows('instructor')) {
+        $role = Auth::user()->role;
+        
+        if ($role === 0) {
             return $this->instructorDashboard();
         }
 
-        if (Gate::allows('chairperson')) {
+        if ($role === 1) {
             return $this->chairpersonDashboard();
         }
 
-        if (Gate::allows('admin')) {
+        if ($role === 4) {
+            return $this->chairpersonDashboard();
+        }
+
+        if ($role === 3) {
             return $this->adminDashboard($request);
         }
 
-        if (Gate::allows('dean')) {
+        if ($role === 2) {
             return $this->deanDashboard();
         }
 

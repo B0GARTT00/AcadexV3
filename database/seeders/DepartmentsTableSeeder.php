@@ -9,24 +9,30 @@ class DepartmentsTableSeeder extends Seeder
 {
     public function run(): void
     {
-        Department::create([
-            'department_code' => 'ASBM',
-            'department_description' => 'Arts, Science, and Business Management',
-        ]);
+        $departments = [
+            [
+                'department_code' => 'ASBM',
+                'department_description' => 'Arts, Science, and Business Management',
+            ],
+            [
+                'department_code' => 'NURSING',
+                'department_description' => 'School of Nursing',
+            ],
+            [
+                'department_code' => 'MEDICINE',
+                'department_description' => 'School of Medicine',
+            ],
+            [
+                'department_code' => 'ALLIED',
+                'department_description' => 'Allied Health',
+            ],
+        ];
 
-        Department::create([
-            'department_code' => 'NURSING',
-            'department_description' => 'School of Nursing',
-        ]);
-
-        Department::create([
-            'department_code' => 'MEDICINE',
-            'department_description' => 'School of Medicine',
-        ]);
-
-        Department::create([
-            'department_code' => 'ALLIED',
-            'department_description' => 'Allied Health',
-        ]);
+        foreach ($departments as $department) {
+            Department::updateOrCreate(
+                ['department_code' => $department['department_code']],
+                $department
+            );
+        }
     }
 }

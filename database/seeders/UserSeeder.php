@@ -33,6 +33,16 @@ class UserSeeder extends Seeder
                 'department_id' => $department->id,
                 'course_id' => null,
             ],
+            // GE Coordinator
+            [
+                'first_name' => 'GE',
+                'middle_name' => null,
+                'last_name' => 'Coordinator',
+                'email' => 'gecoordinator@brokenshire.edu.ph',
+                'role' => 4,
+                'department_id' => $department->id,
+                'course_id' => null,
+            ],
             // BSIT Users
             [
                 'first_name' => 'Chairperson',
