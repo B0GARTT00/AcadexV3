@@ -16,6 +16,7 @@ use App\Http\Controllers\FinalGradeController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\CurriculumController;
 use App\Http\Controllers\StudentImportController;
+use App\Http\Controllers\CourseOutcomesController;
 use App\Http\Middleware\EnsureAcademicPeriodSet;
 
 // Welcome Page
@@ -156,6 +157,9 @@ Route::prefix('instructor')
         Route::post('/activities/store', [ActivityController::class, 'store'])->name('activities.store');
         Route::put('/activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
         Route::delete('/activities/{id}', [ActivityController::class, 'delete'])->name('activities.delete');
+
+        // Course Outcomes
+        Route::resource('course_outcomes', CourseOutcomesController::class);
     });
 
 // Dean Routes
