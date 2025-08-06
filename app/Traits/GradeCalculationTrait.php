@@ -28,7 +28,7 @@ trait GradeCalculationTrait
                 ->first();
                 
             if ($score && $score->score !== null) {
-                $scaledScore = ($score->score / $activity->number_of_items) * 50 + 50;
+                $scaledScore = ($score->score / $activity->number_of_items) * 60 + 40;
                 $scoresByType[$activity->type]['total'] += $scaledScore;
                 $scoresByType[$activity->type]['count']++;
             } else {
