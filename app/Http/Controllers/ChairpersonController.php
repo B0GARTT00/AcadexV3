@@ -254,7 +254,7 @@ class ChairpersonController extends Controller
         }
         $enrolledStudents = $subject->students()->count();
         if ($enrolledStudents > 0 && !$request->instructor_id) {
-            return redirect()->route('chairperson.assignSubjects')->with('error', 'Cannot unassign subject as it has enrolled students.');
+            return redirect()->route('chairperson.assign-subjects')->with('error', 'Cannot unassign subject as it has enrolled students.');
         }
         if ($request->instructor_id) {
             if (Auth::user()->role === 1) {
@@ -274,13 +274,13 @@ class ChairpersonController extends Controller
                 'instructor_id' => $instructor->id,
                 'updated_by' => Auth::id(),
             ]);
-            return redirect()->route('chairperson.assignSubjects')->with('success', 'Instructor assigned successfully.');
+            return redirect()->route('chairperson.assign-subjects')->with('success', 'Instructor assigned successfully.');
         } else {
             $subject->update([
                 'instructor_id' => null,
                 'updated_by' => Auth::id(),
             ]);
-            return redirect()->route('chairperson.assignSubjects')->with('success', 'Instructor unassigned successfully.');
+            return redirect()->route('chairperson.assign-subjects')->with('success', 'Instructor unassigned successfully.');
         }
     }
         
