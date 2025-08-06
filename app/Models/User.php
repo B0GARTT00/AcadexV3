@@ -21,6 +21,7 @@ class User extends Authenticatable
         'password',
         'role',
         'is_active',
+        'can_teach_ge',
         'department_id',
         'course_id',
         'is_universal',

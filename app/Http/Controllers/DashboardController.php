@@ -177,33 +177,36 @@ class DashboardController extends Controller
         }
 
         $departmentId = Auth::user()->department_id;
-        $courseId = Auth::user()->course_id;
+        $academicPeriodId = session('active_academic_period_id');
 
         $data = [
             "countInstructors" => User::where("role", 0)
                 ->where("department_id", $departmentId)
-                ->where("course_id", $courseId)
+                ->where("is_active", true)
                 ->count(),
             "countStudents" => Student::where("department_id", $departmentId)
-                ->where("course_id", $courseId)
                 ->where("is_deleted", false)
+                ->whereHas('subjects', function($query) use ($academicPeriodId) {
+                    $query->where('academic_period_id', $academicPeriodId);
+                })
                 ->count(),
-            "countCourses" => Course::where("department_id", $departmentId)
-                ->where("id", $courseId)
-                ->where("is_deleted", false)
-                ->count(),
+            "countCourses" => Subject::where('department_id', $departmentId)
+                ->where('academic_period_id', $academicPeriodId)
+                ->where('is_deleted', false)
+                ->distinct('course_id')
+                ->count('course_id'),
             "countActiveInstructors" => User::where("is_active", 1)
                 ->where("role", 0)
                 ->where("department_id", $departmentId)
-                ->where("course_id", $courseId)
+                ->whereHas('subjects', function($query) use ($academicPeriodId) {
+                    $query->where('academic_period_id', $academicPeriodId);
+                })
                 ->count(),
             "countInactiveInstructors" => User::where("is_active", 0)
                 ->where("role", 0)
                 ->where("department_id", $departmentId)
-                ->where("course_id", $courseId)
                 ->count(),
             "countUnverifiedInstructors" => UnverifiedUser::where("department_id", $departmentId)
-                ->where("course_id", $courseId)
                 ->count(),
         ];
 
@@ -309,10 +312,35 @@ class DashboardController extends Controller
             return back()->with('error', 'GE department not found. Please contact administrator.');
         }
 
+        // Count all instructors in GE department or approved to teach GE subjects
+        $countInstructors = User::where("role", 0)
+            ->where(function($query) use ($geDepartment) {
+                $query->where("department_id", $geDepartment->id)
+                      ->orWhere("can_teach_ge", true);
+            })
+            ->count();
+            
+        $countActiveInstructors = User::where("is_active", 1)
+            ->where("role", 0)
+            ->where(function($query) use ($geDepartment) {
+                $query->where("department_id", $geDepartment->id)
+                      ->orWhere("can_teach_ge", true);
+            })
+            ->count();
+            
+        $countInactiveInstructors = User::where("is_active", 0)
+            ->where("role", 0)
+            ->where(function($query) use ($geDepartment) {
+                $query->where("department_id", $geDepartment->id)
+                      ->orWhere("can_teach_ge", true);
+            })
+            ->count();
+            
+        $countPendingInstructors = UnverifiedUser::where("department_id", $geDepartment->id)
+            ->count();
+
         $data = [
-            "countInstructors" => User::where("role", 0)
-                ->where("department_id", $geDepartment->id)
-                ->count(),
+            "countInstructors" => $countInstructors,
             "countStudents" => Student::whereHas('subjects', function($query) use ($geDepartment) {
                     return $query->where('department_id', $geDepartment->id);
                 })
@@ -323,14 +351,12 @@ class DashboardController extends Controller
                 ->where("is_deleted", false)
                 ->distinct('subject_code')
                 ->count(),
-            "countActiveInstructors" => User::where("is_active", 1)
-                ->where("role", 0)
-                ->where("department_id", $geDepartment->id)
-                ->count(),
-            "countInactiveInstructors" => User::where("is_active", 0)
-                ->where("role", 0)
-                ->where("department_id", $geDepartment->id)
-                ->count(),
+            "countActiveInstructors" => $countActiveInstructors,
+            "countInactiveInstructors" => $countInactiveInstructors,
+            "countPendingInstructors" => $countPendingInstructors,
+            "activePercentage" => $countInstructors > 0 ? round(($countActiveInstructors / $countInstructors) * 100, 1) : 0,
+            "inactivePercentage" => $countInstructors > 0 ? round(($countInactiveInstructors / $countInstructors) * 100, 1) : 0,
+            "pendingPercentage" => ($countInstructors + $countPendingInstructors) > 0 ? round(($countPendingInstructors / ($countInstructors + $countPendingInstructors)) * 100, 1) : 0,
         ];
 
         return view('dashboard.gecoordinator', $data);

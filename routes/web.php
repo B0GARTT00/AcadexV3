@@ -74,7 +74,7 @@ Route::prefix('chairperson')
         Route::post('/instructors/{id}/activate', [ChairpersonController::class, 'activateInstructor'])->name('activateInstructor');
         Route::post('/instructors/{id}/request-ge-assignment', [ChairpersonController::class, 'requestGEAssignment'])->name('requestGEAssignment');
         
-        Route::get('/assign-subjects', [ChairpersonController::class, 'assignSubjects'])->name('assignSubjects');
+        Route::get('/assign-subjects', [ChairpersonController::class, 'assignSubjects'])->name('assign-subjects');
         Route::post('/assign-subjects/store', [ChairpersonController::class, 'storeAssignedSubject'])->name('storeAssignedSubject');
         
         // Add this route for toggling assigned subjects
@@ -98,7 +98,7 @@ Route::prefix('gecoordinator')
         Route::post('/instructors/{id}/deactivate', [\App\Http\Controllers\GECoordinatorController::class, 'deactivateInstructor'])->name('deactivateInstructor');
         Route::post('/instructors/{id}/activate', [\App\Http\Controllers\GECoordinatorController::class, 'activateInstructor'])->name('activateInstructor');
         
-        Route::get('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'assignSubjects'])->name('assignSubjects');
+        Route::get('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'assignSubjects'])->name('assign-subjects');
         Route::post('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'storeAssignedSubject'])->name('storeAssignedSubject');
         Route::post('/assign-subjects/toggle', [\App\Http\Controllers\GECoordinatorController::class, 'toggleAssignedSubject'])->name('toggleAssignedSubject');
         
@@ -113,6 +113,11 @@ Route::prefix('gecoordinator')
         // GE Assignment Request Routes
         Route::post('/ge-requests/{id}/approve', [\App\Http\Controllers\GECoordinatorController::class, 'approveGERequest'])->name('geRequests.approve');
         Route::post('/ge-requests/{id}/reject', [\App\Http\Controllers\GECoordinatorController::class, 'rejectGERequest'])->name('geRequests.reject');
+        
+        Route::get('/manage-schedule', [\App\Http\Controllers\GECoordinatorController::class, 'manageSchedule'])->name('manage-schedule');
+
+        // Reports Route
+        Route::get('/reports', [\App\Http\Controllers\GECoordinatorController::class, 'reports'])->name('reports');
     });
 
 // Curriculum Routes

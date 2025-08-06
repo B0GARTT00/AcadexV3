@@ -31,18 +31,25 @@ class ChairpersonController extends Controller
             abort(403);
         }
         
-        // Exclude GE department instructors from chairperson management
+        // Get GE department to exclude GE department instructors from chairperson management
         $geDepartment = Department::where('department_code', 'GE')->first();
         
         $query = User::where('role', 0);
+        
         if (Auth::user()->role === 1) {
-            $query->where('department_id', Auth::user()->department_id)
+            $query->where(function($q) use ($geDepartment) {
+                // Include instructors from the chairperson's department
+                $q->where('department_id', Auth::user()->department_id)
                   ->where('course_id', Auth::user()->course_id);
+            })->orWhere(function($q) use ($geDepartment) {
+                // Also include instructors from other departments who are approved to teach GE subjects
+                $q->where('can_teach_ge', true)
+                  ->where('department_id', '!=', $geDepartment->id);
+            });
         }
-        // Exclude GE department instructors
-        $query->where('department_id', '!=', $geDepartment->id);
         
         $instructors = $query->orderBy('last_name')->get();
+        
         $pendingAccounts = UnverifiedUser::with('department', 'course')
             ->when(Auth::user()->role === 1, function($q) {
                 $q->where('department_id', Auth::user()->department_id)
@@ -50,6 +57,7 @@ class ChairpersonController extends Controller
             })
             ->where('department_id', '!=', $geDepartment->id)
             ->get();
+            
         return view('chairperson.manage-instructors', compact('instructors', 'pendingAccounts'));
     }
 

@@ -31,12 +31,17 @@ class GECoordinatorController extends Controller
             abort(403);
         }
         
-        // GE Coordinator: show only instructors from GE department
+        // GE Coordinator: show instructors from GE department AND those approved to teach GE subjects
         $geDepartment = Department::where('department_code', 'GE')->first();
+        
         $instructors = User::where('role', 0)
-            ->where('department_id', $geDepartment->id)
+            ->where(function($query) use ($geDepartment) {
+                $query->where('department_id', $geDepartment->id)
+                      ->orWhere('can_teach_ge', true);
+            })
             ->orderBy('last_name')
             ->get();
+            
         $pendingAccounts = UnverifiedUser::with('department', 'course')
             ->where('department_id', $geDepartment->id)
             ->get();
@@ -124,7 +129,7 @@ class GECoordinatorController extends Controller
             $academicPeriodId = 1; // Default to 1 if not set
         }
 
-        // Get subjects (GE, PD, NSTP, RS, PE, and universal subjects)
+        // Get subjects (GE, PD, NSTP, RS, PE, and universal subjects) for the current academic period
         $subjects = Subject::where(function($query) {
                 $query->where('subject_code', 'LIKE', 'GE%')
                       ->orWhere('subject_code', 'LIKE', 'PD%')
@@ -133,6 +138,7 @@ class GECoordinatorController extends Controller
                       ->orWhere('subject_code', 'LIKE', 'PE%')
                       ->orWhere('is_universal', true);
             })
+            ->where('academic_period_id', $academicPeriodId) // Filter by current academic period
             ->where('is_deleted', false)
             ->orderBy('subject_code')
             ->get();
@@ -345,16 +351,17 @@ class GECoordinatorController extends Controller
             'reviewed_at' => now(),
         ]);
 
-        // Activate the instructor and set department to GE
-        $geDepartment = Department::where('department_code', 'GE')->first();
+        // Get the instructor without changing their department
         $instructor = User::find($request->instructor_id);
-        if ($instructor && $geDepartment) {
-            $instructor->is_active = true;
-            $instructor->department_id = $geDepartment->id;
+        
+        if ($instructor) {
+            // Instead of changing the department, we can add a flag or role
+            // to indicate they can teach GE subjects
+            $instructor->can_teach_ge = true;
             $instructor->save();
         }
 
-        return redirect()->back()->with('status', 'GE assignment request approved successfully.');
+        return redirect()->back()->with('status', 'GE assignment request approved successfully. The instructor can now teach GE subjects.');
     }
 
     public function rejectGERequest($id)

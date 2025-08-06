@@ -311,7 +311,7 @@
                     </div>
                     
                     <div class="d-flex flex-column gap-3 flex-grow-1 justify-content-between">
-                        <a href="{{ route('chairperson.assignSubjects') }}" 
+                        <a href="{{ route('chairperson.assign-subjects') }}" 
                            class="btn btn-light text-start rounded-3 p-3 hover-lift position-relative"
                            data-bs-toggle="tooltip"
                            data-bs-placement="right"

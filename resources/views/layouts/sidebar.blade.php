@@ -93,8 +93,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('chairperson.assignSubjects') }}" 
-                           class="nav-link {{ request()->routeIs('chairperson.assignSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                        <a href="{{ route('chairperson.assign-subjects') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.assign-subjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-journal-plus me-3"></i>
                             <span>Assign Subjects</span>
                         </a>
@@ -224,8 +224,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('gecoordinator.assignSubjects') }}"
-                           class="nav-link {{ request()->routeIs('gecoordinator.assignSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                        <a href="{{ route('gecoordinator.assign-subjects') }}"
+                           class="nav-link {{ request()->routeIs('gecoordinator.assign-subjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-journal-plus me-3"></i>
                             <span>Assign GE Subjects</span>
                         </a>
