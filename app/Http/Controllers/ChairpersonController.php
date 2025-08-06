@@ -38,17 +38,22 @@ class ChairpersonController extends Controller
         
         if (Auth::user()->role === 1) {
             $query->where(function($q) use ($geDepartment) {
-                // Include instructors from the chairperson's department
-                $q->where('department_id', Auth::user()->department_id)
-                  ->where('course_id', Auth::user()->course_id);
-            })->orWhere(function($q) use ($geDepartment) {
-                // Also include instructors from other departments who are approved to teach GE subjects
-                $q->where('can_teach_ge', true)
-                  ->where('department_id', '!=', $geDepartment->id);
+                // Include active instructors from the chairperson's department
+                // or inactive instructors from the chairperson's department
+                $q->where(function($q2) {
+                    $q2->where('department_id', Auth::user()->department_id)
+                       ->where('course_id', Auth::user()->course_id);
+                })->orWhere(function($q2) use ($geDepartment) {
+                    // Also include instructors from other departments who are approved to teach GE subjects
+                    $q2->where('can_teach_ge', true)
+                       ->where('department_id', '!=', $geDepartment->id);
+                });
             });
         }
         
-        $instructors = $query->orderBy('last_name')->get();
+        $instructors = $query->orderBy('is_active', 'desc') // Show active instructors first
+                           ->orderBy('last_name')
+                           ->get();
         
         $pendingAccounts = UnverifiedUser::with('department', 'course')
             ->when(Auth::user()->role === 1, function($q) {
