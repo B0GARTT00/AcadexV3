@@ -305,6 +305,8 @@ class DashboardController extends Controller
             return redirect()->route('select.academicPeriod');
         }
 
+        $academicPeriodId = session('active_academic_period_id');
+        
         // Get GE department
         $geDepartment = Department::where('department_code', 'GE')->first();
         
@@ -341,14 +343,16 @@ class DashboardController extends Controller
 
         $data = [
             "countInstructors" => $countInstructors,
-            "countStudents" => Student::whereHas('subjects', function($query) use ($geDepartment) {
-                    return $query->where('department_id', $geDepartment->id);
+            "countStudents" => Student::whereHas('subjects', function($query) use ($geDepartment, $academicPeriodId) {
+                    $query->where('department_id', $geDepartment->id)
+                          ->where('academic_period_id', $academicPeriodId);
                 })
                 ->where("is_deleted", false)
                 ->distinct()
                 ->count("students.id"),
             "countCourses" => Subject::where("department_id", $geDepartment->id)
                 ->where("is_deleted", false)
+                ->where('academic_period_id', $academicPeriodId)
                 ->distinct('subject_code')
                 ->count(),
             "countActiveInstructors" => $countActiveInstructors,

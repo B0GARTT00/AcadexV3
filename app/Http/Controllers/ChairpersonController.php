@@ -228,7 +228,7 @@ class ChairpersonController extends Controller
             'instructor_id' => $instructor->id,
             'updated_by' => Auth::id(),
         ]);
-        return redirect()->route('chairperson.assignSubjects')->with('success', 'Subject assigned successfully.');
+        return redirect()->route('chairperson.assign-subjects')->with('success', 'Subject assigned successfully.');
     }
     public function toggleAssignedSubject(Request $request)
     {
