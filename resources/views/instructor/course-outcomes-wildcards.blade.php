@@ -17,7 +17,7 @@
                 <div class="col-md-4">
                     <div
                         class="subject-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden transform transition hover:scale-105 hover:shadow-xl"
-                        data-url="{{ route('instructor.course_outcomes.index', ['subject_id' => $subjectItem->id]) }}"
+                        data-url="{{ route('instructor.course_outcomes.index', array_merge(request()->except('subject_id'), ['subject_id' => $subjectItem->id])) }}"
                         style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;"
                     >
                         <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
@@ -36,8 +36,8 @@
             @endforeach
         </div>
     @else
-        <div class="alert alert-info bg-info-subtle text-dark border-0 text-center">
-            No subjects found.
+        <div class="alert alert-warning bg-warning-subtle text-dark border-0 text-center">
+            No subjects found for the selected academic year.
         </div>
     @endif
 </div>

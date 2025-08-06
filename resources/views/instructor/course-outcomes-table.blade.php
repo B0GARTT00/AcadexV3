@@ -58,9 +58,17 @@
                                         @endif
                                     </td>
                                     <td class="text-end">
-                                        <a href="{{ route('instructor.course_outcomes.edit', $co->id) }}" class="btn btn-success btn-sm">
+                                        <button type="button" class="btn btn-success btn-sm" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#editCourseOutcomeModal"
+                                            data-id="{{ $co->id }}"
+                                            data-co_code="{{ $co->co_code }}"
+                                            data-co_identifier="{{ $co->co_identifier }}"
+                                            data-description="{{ $co->description }}"
+                                            data-academic_period_id="{{ $co->academic_period_id }}"
+                                        >
                                             <i class="bi bi-pencil-square"></i> Edit
-                                        </a>
+                                        </button>
                                         <form action="{{ route('instructor.course_outcomes.destroy', $co->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Are you sure you want to delete this course outcome?');">
                                             @csrf
                                             @method('DELETE')
@@ -82,6 +90,7 @@
         @endif
     </div>
 </div>
+
 
 {{-- Add Course Outcome Modal --}}
 <div class="modal fade" id="addCourseOutcomeModal" tabindex="-1" aria-labelledby="addCourseOutcomeModalLabel" aria-hidden="true">
@@ -125,4 +134,73 @@
         </form>
     </div>
 </div>
+
+
+{{-- Edit Course Outcome Modal (not nested, only once at the bottom) --}}
+<div class="modal fade" id="editCourseOutcomeModal" tabindex="-1" aria-labelledby="editCourseOutcomeModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form method="POST" id="editCourseOutcomeForm">
+            @csrf
+            @method('PUT')
+            <div class="modal-content shadow-sm border-0 rounded-3">
+                <div class="modal-header bg-success">
+                    <h5 class="modal-title" id="editCourseOutcomeModalLabel">✏️ Edit Course Outcome</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">CO Code <span class="text-danger">*</span></label>
+                        <input type="text" name="co_code" id="edit_co_code" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Identifier <span class="text-danger">*</span></label>
+                        <input type="text" name="co_identifier" id="edit_co_identifier" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description <span class="text-danger">*</span></label>
+                        <textarea name="description" id="edit_description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Academic Period <span class="text-danger">*</span></label>
+                        <select name="academic_period_id" id="edit_academic_period_id" class="form-select" required>
+                            <option value="">-- Select Academic Period --</option>
+                            @foreach($periods ?? [] as $period)
+                                <option value="{{ $period->id }}">{{ $period->academic_year }} - {{ $period->semester }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <input type="hidden" name="subject_id" value="{{ $selectedSubject->id ?? '' }}">
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Update Outcome</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var editModal = document.getElementById('editCourseOutcomeModal');
+    editModal.addEventListener('show.bs.modal', function (event) {
+        var button = event.relatedTarget;
+        var id = button.getAttribute('data-id');
+        var co_code = button.getAttribute('data-co_code');
+        var co_identifier = button.getAttribute('data-co_identifier');
+        var description = button.getAttribute('data-description');
+        var academic_period_id = button.getAttribute('data-academic_period_id');
+
+        document.getElementById('edit_co_code').value = co_code;
+        document.getElementById('edit_co_identifier').value = co_identifier;
+        document.getElementById('edit_description').value = description;
+        document.getElementById('edit_academic_period_id').value = academic_period_id;
+
+        // Set the form action dynamically
+        var form = document.getElementById('editCourseOutcomeForm');
+        form.action = '/instructor/course_outcomes/' + id;
+    });
+});
+</script>
+@endpush
 @endsection

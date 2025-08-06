@@ -14,11 +14,37 @@ class CourseOutcomesController extends Controller
      */
     public function index(Request $request)
     {
-        $subjects = Subject::where('instructor_id', $request->user()->id)
-            ->where('is_deleted', false)
-            ->get();
+        $academicYear = $request->input('academic_year');
+        $semester = $request->input('semester');
 
         $periods = AcademicPeriod::all();
+
+        // Filter subjects by semester (enum) in AcademicPeriod
+        $semester = $request->input('semester');
+        $subjectsQuery = Subject::where('instructor_id', $request->user()->id)
+            ->where('is_deleted', false);
+
+        $periodFilter = AcademicPeriod::query();
+        if ($academicYear) {
+            $periodFilter->where('academic_year', $academicYear);
+        }
+        if ($semester) {
+            $periodFilter->where('semester', $semester);
+        }
+        $periodIds = $periodFilter->pluck('id')->toArray();
+        if (!empty($periodIds)) {
+            $subjectsQuery->whereIn('academic_period_id', $periodIds);
+        } else if ($academicYear || $semester) {
+            // If filtering and no periods match, return empty collection
+            $subjects = collect();
+            return view('instructor.course-outcomes-wildcards', [
+                'subjects' => $subjects,
+                'periods' => $periods,
+                'academicYear' => $academicYear,
+                'semester' => $semester,
+            ]);
+        }
+        $subjects = $subjectsQuery->get();
 
         if ($request->filled('subject_id')) {
             $query = CourseOutcomes::where('is_deleted', false)
@@ -32,10 +58,13 @@ class CourseOutcomesController extends Controller
                 'periods' => $periods,
                 'subjects' => $subjects,
                 'selectedSubject' => $subjects->firstWhere('id', $request->subject_id),
+                'academicYear' => $academicYear,
             ]);
         } else {
             return view('instructor.course-outcomes-wildcards', [
-                'subjects' => $subjects
+                'subjects' => $subjects,
+                'periods' => $periods,
+                'academicYear' => $academicYear,
             ]);
         }
     }
@@ -69,16 +98,36 @@ class CourseOutcomesController extends Controller
 
         CourseOutcomes::create($validated);
 
+        // Filter subjects by academic year for consistency
+        $academicYear = $request->input('academic_year');
+        $periods = AcademicPeriod::all();
+        $subjectsQuery = Subject::where('instructor_id', $request->user()->id)
+            ->where('is_deleted', false);
+        if ($academicYear) {
+            $periodIds = AcademicPeriod::where('academic_year', $academicYear)->pluck('id')->toArray();
+            if (!empty($periodIds)) {
+                $subjectsQuery->whereIn('academic_period_id', $periodIds);
+            } else {
+                $subjects = collect();
+                return view('instructor.course-outcomes-table', [
+                    'cos' => collect(),
+                    'periods' => $periods,
+                    'subjects' => $subjects,
+                    'selectedSubject' => null,
+                    'academicYear' => $academicYear,
+                ])->with('success', 'Course Outcome created successfully.');
+            }
+        }
+        $subjects = $subjectsQuery->get();
         return view('instructor.course-outcomes-table', [
             'cos' => CourseOutcomes::where('subject_id', $validated['subject_id'])
                 ->where('is_deleted', false)
                 ->with(['subject', 'academicPeriod'])
                 ->get(),
-            'periods' => AcademicPeriod::all(),
-            'subjects' => Subject::where('instructor_id', $request->user()->id)
-                ->where('is_deleted', false)
-                ->get(),
-            'selectedSubject' => Subject::find($validated['subject_id']),
+            'periods' => $periods,
+            'subjects' => $subjects,
+            'selectedSubject' => $subjects->firstWhere('id', $validated['subject_id']),
+            'academicYear' => $academicYear,
         ])->with('success', 'Course Outcome created successfully.');
     }
 
