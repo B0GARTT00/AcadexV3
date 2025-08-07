@@ -257,7 +257,8 @@ class CurriculumController extends Controller
                 Auth::user()->department_id;
 
             Subject::firstOrCreate([
-                'subject_code' => $curriculumSubject->subject_code
+                'subject_code' => $curriculumSubject->subject_code,
+                'academic_period_id' => session('active_academic_period_id')
             ], [
                 'subject_description' => $curriculumSubject->subject_description,
                 'year_level' => $curriculumSubject->year_level,
