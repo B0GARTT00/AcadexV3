@@ -10,6 +10,12 @@
         </ol>
     </nav>
 
+    {{-- Debug Info --}}
+    <div class="alert alert-info mb-3">
+        <strong>Current Semester:</strong> {{ $debugSemester ?? session('active_semester') ?? 'Not set' }}<br>
+        <strong>Current Academic Year:</strong> {{ $academicYear ?? 'Not set' }}
+    </div>
+
     {{-- Subject Wild Cards --}}
     @if(isset($subjects) && count($subjects))
         <div class="row g-4 px-4 py-4" id="subject-selection">
@@ -30,6 +36,11 @@
                             <h6 class="fw-semibold mt-4 text-dark text-truncate" title="{{ $subjectItem->subject_description }}">
                                 {{ $subjectItem->subject_description }}
                             </h6>
+                            {{-- Debug: Show academic year and semester for each subject --}}
+                            <div class="mt-2 small text-muted">
+                                <span>Year: {{ $subjectItem->debug_academic_year ?? 'N/A' }}</span> |
+                                <span>Semester: {{ $subjectItem->debug_semester ?? 'N/A' }}</span>
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,6 +1,47 @@
 @extends('layouts.app')
 
 @section('content')
+<div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1080; min-width: 350px;">
+    @if(session('success'))
+        <div class="toast align-items-center text-bg-success border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000" id="toast-success">
+            <div class="d-flex">
+                <div class="toast-body">
+                    {{ session('success') }}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="progress" style="height: 3px;">
+                <div class="progress-bar bg-dark" id="toast-success-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
+            </div>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="toast align-items-center text-bg-danger border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000" id="toast-error">
+            <div class="d-flex">
+                <div class="toast-body">
+                    {{ session('error') }}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="progress" style="height: 3px;">
+                <div class="progress-bar bg-dark" id="toast-error-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
+            </div>
+        </div>
+    @endif
+    @if(session('info'))
+        <div class="toast align-items-center text-bg-info border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000" id="toast-info">
+            <div class="d-flex">
+                <div class="toast-body">
+                    {{ session('info') }}
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="progress" style="height: 3px;">
+                <div class="progress-bar bg-dark" id="toast-info-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
+            </div>
+        </div>
+    @endif
+</div>
 <div class="container-fluid px-4 py-4">
     {{-- Breadcrumbs --}}
     <nav aria-label="breadcrumb" class="mb-4">
@@ -117,11 +158,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Academic Period <span class="text-danger">*</span></label>
-                        <select name="academic_period_id" class="form-select" required>
-                            <option value="">-- Select Academic Period --</option>
-                            @foreach($periods ?? [] as $period)
-                                <option value="{{ $period->id }}">{{ $period->academic_year }} - {{ $period->semester }}</option>
-                            @endforeach
+                        <input type="hidden" name="academic_period_id" value="{{ $currentPeriod->id ?? '' }}">
+                        <select class="form-select" disabled>
+                            <option value="{{ $currentPeriod->id ?? '' }}">
+                                {{ $currentPeriod->academic_year ?? '' }} - {{ $currentPeriod->semester ?? '' }}
+                            </option>
                         </select>
                     </div>
                     <input type="hidden" name="subject_id" value="{{ $selectedSubject->id ?? '' }}">
@@ -162,11 +203,11 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Academic Period <span class="text-danger">*</span></label>
-                        <select name="academic_period_id" id="edit_academic_period_id" class="form-select" required>
-                            <option value="">-- Select Academic Period --</option>
-                            @foreach($periods ?? [] as $period)
-                                <option value="{{ $period->id }}">{{ $period->academic_year }} - {{ $period->semester }}</option>
-                            @endforeach
+                        <input type="hidden" name="academic_period_id" id="edit_academic_period_id" value="{{ $currentPeriod->id ?? '' }}">
+                        <select class="form-select" disabled>
+                            <option value="{{ $currentPeriod->id ?? '' }}">
+                                {{ $currentPeriod->academic_year ?? '' }} - {{ $currentPeriod->semester ?? '' }}
+                            </option>
                         </select>
                     </div>
                     <input type="hidden" name="subject_id" value="{{ $selectedSubject->id ?? '' }}">
@@ -182,6 +223,44 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    // Sync toast progress bar with Bootstrap toast timer   
+    function syncToastBar(toastId, barId, duration = 5000) {
+        var toastEl = document.getElementById(toastId);
+        var barEl = document.getElementById(barId);
+        if (toastEl && barEl) {
+            barEl.style.width = '100%';
+            barEl.style.background = '#343a40'; // Bootstrap dark
+            barEl.style.opacity = '1';
+            var barDuration = 4000; // 4 seconds, faster than toast
+            var start = Date.now();
+        var interval = setInterval(function() {
+            var elapsed = Date.now() - start;
+            var percent = Math.max(0, 100 - (elapsed / barDuration) * 100);
+            barEl.style.width = percent + '%';
+            if (elapsed >= barDuration) {
+                barEl.style.width = '0%';
+                barEl.style.opacity = '0.5';
+                clearInterval(interval);
+            }
+        }, 16); // ~60fps
+            // Listen for toast hidden event to clear bar immediately if closed early
+            toastEl.addEventListener('hidden.bs.toast', function() {
+                barEl.style.width = '0%';
+                barEl.style.opacity = '0.5';
+                clearInterval(interval);
+            });
+            // Use Bootstrap Toast API for auto-hide
+            if (window.bootstrap && window.bootstrap.Toast) {
+                var toastObj = bootstrap.Toast.getOrCreateInstance(toastEl);
+                toastObj.show();
+            }
+        }
+    }
+    syncToastBar('toast-success', 'toast-success-bar');
+    syncToastBar('toast-error', 'toast-error-bar');
+    syncToastBar('toast-info', 'toast-info-bar');
+
+    // Existing edit modal logic
     var editModal = document.getElementById('editCourseOutcomeModal');
     editModal.addEventListener('show.bs.modal', function (event) {
         var button = event.relatedTarget;

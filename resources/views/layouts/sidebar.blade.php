@@ -107,7 +107,7 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('chairperson.viewGrades') }}" 
+                        <a href="{{ route('chairperson.viewGrades') }}"     
                            class="nav-link {{ request()->routeIs('chairperson.viewGrades') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-clipboard-data me-3"></i>
                             <span>View Grades</span>
