@@ -112,7 +112,8 @@ class ChairpersonController extends Controller
         
         $query = User::where('id', $id)->where('role', 0);
         if (Auth::user()->role === 1) {
-            $query->where('department_id', Auth::user()->department_id);
+            $query->where('department_id', Auth::user()->department_id)
+                  ->where('course_id', Auth::user()->course_id);
         }
         $query->where('department_id', '!=', $geDepartment->id);
         $instructor = $query->firstOrFail();
@@ -131,7 +132,8 @@ class ChairpersonController extends Controller
         
         $query = User::where('id', $id)->where('role', 0);
         if (Auth::user()->role === 1) {
-            $query->where('department_id', Auth::user()->department_id);
+            $query->where('department_id', Auth::user()->department_id)
+                  ->where('course_id', Auth::user()->course_id);
         }
         $query->where('department_id', '!=', $geDepartment->id);
         $instructor = $query->firstOrFail();
@@ -314,6 +316,11 @@ class ChairpersonController extends Controller
             ['is_active', true],
         ])
         ->where('department_id', '!=', $geDepartment->id)
+        ->where(function($q) use ($departmentId, $courseId) {
+            $q->where('department_id', $departmentId)
+              ->where('course_id', $courseId)
+              ->orWhere('can_teach_ge', true);
+        })
         ->orderBy('last_name')
         ->get();
     
