@@ -65,8 +65,8 @@
         </div>
 
         {{-- GE Notice --}}
-        <div id="ge-notice" class="hidden bg-blue-100 border border-blue-400 text-blue-700 px-4 py-3 rounded relative">
-            <strong class="font-bold">General Education Instructor:</strong>
+        <div id="ge-notice" class="hidden p-4 rounded-lg bg-white/20 backdrop-blur-sm border border-white/30 text-white mt-2">
+            <strong class="font-semibold">General Education Instructor:</strong>
             <span class="block sm:inline">You will be able to teach GE subjects across all courses and will be managed by the GE Coordinator.</span>
         </div>
 
