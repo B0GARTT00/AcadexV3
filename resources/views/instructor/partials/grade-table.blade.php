@@ -1,5 +1,8 @@
 @php
     $hasData = count($students) > 0 && count($activities) > 0;
+    if (!isset($courseOutcomes) || empty($courseOutcomes)) {
+        $courseOutcomes = collect();
+    }
 @endphp
 
 @if ($hasData)
@@ -53,6 +56,26 @@
                                             style="width: 75px; margin: 0 auto; font-size: 0.95rem;"
                                             title="Number of Items"
                                             placeholder="Items">
+                                    </div>
+                                    <div class="mt-2">
+                                        <select name="course_outcomes[{{ $activity->id }}]" class="form-select form-select-sm course-outcome-dropdown" data-activity-id="{{ $activity->id }}">
+                                            <option value="">-- Select Course Outcome --</option>
+                                            @foreach ($courseOutcomes as $co)
+                                                <option value="{{ $co->id }}" @if($activity->course_outcome_id == $co->id) selected @endif>
+                                                    {{ $co->co_code }} - {{ $co->co_identifier }}
+                                                </option>
+                                            @endforeach
+                                            @if($courseOutcomes->isEmpty())
+                                                <option value="">No Course Outcome</option>
+                                            @endif
+                                        </select>
+                                        <div class="mt-1 text-muted small">
+                                            @if($activity->courseOutcome)
+                                                <span><strong>{{ $activity->courseOutcome->co_code }}</strong>: {{ $activity->courseOutcome->description }}</span>
+                                            @else
+                                                <span>No Course Outcome</span>
+                                            @endif
+                                        </div>
                                     </div>
                                 </th>
                             @endforeach

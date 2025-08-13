@@ -59,6 +59,18 @@
                         <label class="form-label">Number of Items</label>
                         <input type="number" name="number_of_items" class="form-control" min="1" value="{{ old('number_of_items') }}" required>
                     </div>
+
+                    <div class="col-md-12">
+                        <label class="form-label">Course Outcome</label>
+                        <select name="course_outcome_id" class="form-select">
+                            <option value="">-- Select Course Outcome --</option>
+                            @if(isset($courseOutcomes))
+                                @foreach($courseOutcomes as $co)
+                                    <option value="{{ $co->id }}">{{ $co->co_code }} - {{ $co->co_identifier }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
                 </div>
 
                 <div class="modal-footer bg-light">

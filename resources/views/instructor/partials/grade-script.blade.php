@@ -13,18 +13,23 @@
             return;
         }
 
-        const inputs = Array.from(tableBody.querySelectorAll('.grade-input') || []);
-        const itemsInputs = Array.from(document.querySelectorAll('.items-input') || []);
-        const saveButton = document.getElementById('saveGradesBtn');
-        const form = document.querySelector('form');
-        const studentSearch = document.getElementById('studentSearch');
+    const inputs = Array.from(tableBody.querySelectorAll('.grade-input') || []);
+    const itemsInputs = Array.from(document.querySelectorAll('.items-input') || []);
+    const courseOutcomeDropdowns = Array.from(document.querySelectorAll('.course-outcome-dropdown') || []);
+    const saveButton = document.getElementById('saveGradesBtn');
+    const form = document.querySelector('form');
+    const studentSearch = document.getElementById('studentSearch');
 
         // Track changes
         const originalValues = new Map();
+        const originalCourseOutcomes = new Map();
 
         // Store original values
         inputs.forEach(input => {
             originalValues.set(input, input.value);
+        });
+        courseOutcomeDropdowns.forEach(dropdown => {
+            originalCourseOutcomes.set(dropdown, dropdown.value);
         });
 
         // Define checkForChanges function
@@ -43,11 +48,26 @@
                 }
             });
 
+            courseOutcomeDropdowns.forEach(dropdown => {
+                if (dropdown.value !== originalCourseOutcomes.get(dropdown)) {
+                    hasChanges = true;
+                }
+            });
+
             return {
                 hasChanges,
                 hasInvalidInputs
             };
         };
+
+        // Track changes for course outcome dropdowns (moved outside checkForChanges)
+        if (courseOutcomeDropdowns.length > 0) {
+            courseOutcomeDropdowns.forEach(dropdown => {
+                dropdown.addEventListener('change', function() {
+                    updateSaveButtonState();
+                });
+            });
+        }
 
         // Function to update save button state
         function updateSaveButtonState() {

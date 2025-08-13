@@ -190,10 +190,11 @@ class CourseOutcomesController extends Controller
      */
     public function destroy(Request $request, CourseOutcomes $courseOutcome)
     {
-        $courseOutcome->delete();
+        $courseOutcome->update(['is_deleted' => 1]);
+
 
         return redirect()->route('instructor.course_outcomes.index')
-            ->with('success', 'Course Outcome permanently deleted.');
+            ->with('success', 'Course Outcome deleted.');
     }
 }
 

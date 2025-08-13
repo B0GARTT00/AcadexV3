@@ -83,6 +83,7 @@ class ActivityController extends Controller
     // ➕ Full Create Activity Form
     public function create()
     {
+
         Gate::authorize('instructor');
 
         $subjects = Subject::where('instructor_id', Auth::id())
@@ -114,9 +115,13 @@ class ActivityController extends Controller
             abort(403, 'This subject does not belong to the current academic period.');
         }
     
+        $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
+            ->where('is_deleted', false)
+            ->get();
         return view('instructor.activities.add', [
             'subject' => $subject,
-            'term' => $request->term
+            'term' => $request->term,
+            'courseOutcomes' => $courseOutcomes
         ]);
     }
 
@@ -131,6 +136,7 @@ class ActivityController extends Controller
             'type' => 'required|in:quiz,ocr,exam',
             'title' => 'required|string|max:255',
             'number_of_items' => 'required|integer|min:1',
+            'course_outcome_id' => 'nullable|exists:course_outcomes,id',
         ]);
     
         $subject = Subject::findOrFail($request->subject_id);
@@ -146,6 +152,7 @@ class ActivityController extends Controller
             'type' => $request->type,
             'title' => $request->title,
             'number_of_items' => $request->number_of_items,
+            'course_outcome_id' => $request->course_outcome_id,
             'is_deleted' => false,
             'created_by' => Auth::id(),
             'updated_by' => Auth::id(),
@@ -167,6 +174,7 @@ class ActivityController extends Controller
                 'type' => 'required|in:quiz,ocr,exam',
                 'title' => 'required|string|max:255',
                 'number_of_items' => 'required|integer|min:1',
+                'course_outcome_id' => 'nullable|exists:course_outcomes,id',
             ]);
 
             $subject = $activity->subject;
@@ -192,6 +200,7 @@ class ActivityController extends Controller
                 'type' => $validated['type'],
                 'title' => $validated['title'],
                 'number_of_items' => $validated['number_of_items'],
+                'course_outcome_id' => $validated['course_outcome_id'] ?? null,
                 'updated_by' => Auth::id(),
             ]);
 

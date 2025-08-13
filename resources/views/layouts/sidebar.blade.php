@@ -52,10 +52,17 @@
                     <li class="nav-item">
                         <a href="{{ route('instructor.course_outcomes.index') }}" 
                            class="nav-link d-flex align-items-center sidebar-link">
+                            <i class="bi bi-book me-3 "></i>
+                            <span>Manage Course Outcome</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" 
+                           class="nav-link d-flex align-items-center sidebar-link">
                             <i class="bi bi-award me-3"></i>
                             <span>Course Outcome</span>
                         </a>
-                    </li>  
+                    </li>   
                     <li class="nav-item">
                         <a href="{{ route('instructor.final-grades.index') }}" 
                            class="nav-link {{ request()->routeIs('instructor.final-grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">

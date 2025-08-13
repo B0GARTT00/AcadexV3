@@ -28,6 +28,17 @@
                         <label for="number_of_items" class="form-label">Number of Items</label>
                         <input type="number" class="form-control" id="number_of_items" name="number_of_items" value="{{ $activity->number_of_items }}" required>
                     </div>
+                    <div class="mb-3">
+                        <label for="course_outcome_id" class="form-label">Course Outcome</label>
+                        <select class="form-select" id="course_outcome_id" name="course_outcome_id">
+                            <option value="">-- Select Course Outcome --</option>
+                            @if(isset($courseOutcomes))
+                                @foreach($courseOutcomes as $co)
+                                    <option value="{{ $co->id }}" @if($activity->course_outcome_id == $co->id) selected @endif>{{ $co->co_code }} - {{ $co->co_identifier }}</option>
+                                @endforeach
+                            @endif
+                        </select>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>

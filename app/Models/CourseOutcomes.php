@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class CourseOutcomes extends Model
+    // For future use if needed
 {
     use HasFactory;
 
@@ -33,6 +34,11 @@ class CourseOutcomes extends Model
     public function academicPeriod()
     {
         return $this->belongsTo(AcademicPeriod::class);
+    }
+
+    public function activities()
+    {
+        return $this->hasMany(Activity::class, 'course_outcome_id');
     }
 
     public function creator()

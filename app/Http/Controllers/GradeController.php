@@ -61,32 +61,36 @@ class GradeController extends Controller
             };
         }
     
-        $students = $activities = $scores = $termGrades = [];
-        $subject = null;
+            $students = $activities = $scores = $termGrades = [];
+            $subject = null;
+            $courseOutcomes = collect();
     
         if ($request->filled('subject_id')) {
             $subject = Subject::where('id', $request->subject_id)
                 ->when($academicPeriodId, fn($q) => $q->where('academic_period_id', $academicPeriodId))
                 ->firstOrFail();
-    
+
             if ($academicPeriodId && $subject->academic_period_id !== (int) $academicPeriodId) {
                 abort(403, 'Subject does not belong to the current academic period.');
             }
-    
+
             $students = Student::whereHas('subjects', fn($q) => $q->where('subject_id', $subject->id))
                 ->where('is_deleted', false)
                 ->get();
-    
+
             $activities = $this->getOrCreateDefaultActivities($subject->id, $term);
-    
+
+            // Get all course outcomes for this subject
+            $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
+                ->where('is_deleted', false)
+                ->get();
+
             foreach ($students as $student) {
                 $activityScores = $this->calculateActivityScores($activities, $student->id);
-                
                 foreach ($activities as $activity) {
                     $scoreRecord = $student->scores()->where('activity_id', $activity->id)->first();
                     $scores[$student->id][$activity->id] = $scoreRecord?->score;
                 }
-                
                 if ($activityScores['allScored']) {
                     $termGrades[$student->id] = $this->calculateTermGrade($activityScores['scores']);
                 } else {
@@ -97,12 +101,12 @@ class GradeController extends Controller
     
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return view('instructor.partials.grade-body', compact(
-                'subject', 'term', 'students', 'activities', 'scores', 'termGrades'
+                'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes'
             ));
         }
-    
+
         return view('instructor.manage-grades', compact(
-            'subjects', 'subject', 'term', 'students', 'activities', 'scores', 'termGrades'
+            'subjects', 'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes'
         ));
     }
 
@@ -114,12 +118,24 @@ class GradeController extends Controller
             'subject_id' => 'required|exists:subjects,id',
             'term' => 'required|in:prelim,midterm,prefinal,final',
             'scores' => 'required|array',
+            'course_outcomes' => 'array',
         ]);
     
         $subject = Subject::findOrFail($request->subject_id);
         $termId = $this->getTermId($request->term);
         $activities = $this->getOrCreateDefaultActivities($subject->id, $request->term);
     
+        // Update course_outcome_id for each activity if provided
+        if ($request->has('course_outcomes')) {
+            foreach ($request->course_outcomes as $activityId => $coId) {
+                $activity = Activity::find($activityId);
+                if ($activity && ($coId === null || $coId === '' || \App\Models\CourseOutcomes::find($coId))) {
+                    $activity->course_outcome_id = $coId ?: null;
+                    $activity->save();
+                }
+            }
+        }
+
         foreach ($request->scores as $studentId => $activityScores) {
             // Save individual scores
             foreach ($activityScores as $activityId => $score) {
@@ -130,7 +146,7 @@ class GradeController extends Controller
                     );
                 }
             }
-    
+
             // Calculate and update term grade
             $activityScores = $this->calculateActivityScores($activities, $studentId);
             if ($activityScores['allScored']) {
@@ -156,6 +172,7 @@ class GradeController extends Controller
             'score' => 'nullable|numeric|min:0',
             'subject_id' => 'required|exists:subjects,id',
             'term' => 'required|in:prelim,midterm,prefinal,final',
+            'course_outcome_id' => 'nullable|exists:course_outcomes,id',
         ]);
     
         $studentId = $request->student_id;
