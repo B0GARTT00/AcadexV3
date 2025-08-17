@@ -57,12 +57,12 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="#" 
-                           class="nav-link d-flex align-items-center sidebar-link">
+                        <a href="{{ route('instructor.course-outcome-attainments.index') }}"
+                           class="nav-link {{ request()->routeIs('instructor.course-outcome-attainments.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-award me-3"></i>
-                            <span>Course Outcome</span>
+                            <span>Course Outcome Attainment</span>
                         </a>
-                    </li>   
+                    </li>
                     <li class="nav-item">
                         <a href="{{ route('instructor.final-grades.index') }}" 
                            class="nav-link {{ request()->routeIs('instructor.final-grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">

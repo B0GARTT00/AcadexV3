@@ -67,6 +67,7 @@
                                     <th>Identifier</th>
                                     <th>Description</th>
                                     <th>Academic Period</th>
+                                    <th>Percentage</th>
                                     <th class="text-end">Actions</th>
                                 </tr>
                             </thead>
@@ -81,6 +82,13 @@
                                                 {{ $co->academicPeriod->academic_year }} - {{ $co->academicPeriod->semester }}
                                             @else
                                                 -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if(!is_null($co->percent))
+                                                {{ $co->percent }}%
+                                            @else
+                                                <span class="text-muted">Not set</span>
                                             @endif
                                         </td>
                                         <td class="text-end">
@@ -145,6 +153,10 @@
                                 <option value="{{ $period->id }}">{{ $period->academic_year }} - {{ $period->semester }}</option>
                             @endforeach
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Percentage <span class="text-danger">*</span></label>
+                        <input type="number" name="percent" class="form-control" min="0" max="100" step="0.01" required placeholder="Enter percentage">
                     </div>
                     <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
                 </div>

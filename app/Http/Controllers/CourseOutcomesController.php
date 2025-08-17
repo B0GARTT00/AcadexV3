@@ -10,6 +10,39 @@ use Illuminate\Http\Request;
 class CourseOutcomesController extends Controller
 {
     /**
+     * AJAX: Return course outcomes for a subject and term.
+     */
+    public function ajaxCourseOutcomes(Request $request)
+    {
+        $subjectId = $request->query('subject_id');
+        $term = $request->query('term');
+        if (!$subjectId || !$term) {
+            return response()->json([]);
+        }
+
+        // Find the academic period for the subject and term
+        $subject = Subject::find($subjectId);
+        if (!$subject) {
+            return response()->json([]);
+        }
+        $academicPeriodId = $subject->academic_period_id;
+
+        // Get course outcomes for this subject and term
+        $outcomes = CourseOutcomes::where('subject_id', $subjectId)
+            ->where('academic_period_id', $academicPeriodId)
+            ->where('is_deleted', false)
+            ->get();
+
+        $result = $outcomes->map(function($co) {
+            return [
+                'id' => $co->id,
+                'code' => $co->co_code,
+                'name' => $co->co_identifier,
+            ];
+        });
+        return response()->json($result);
+    }
+    /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
@@ -104,6 +137,7 @@ class CourseOutcomesController extends Controller
             'co_code' => 'required|string|max:255',
             'co_identifier' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'percent' => 'nullable|numeric',
         ]);
 
         $validated['created_by'] = $request->user()->id;
@@ -111,39 +145,9 @@ class CourseOutcomesController extends Controller
 
         CourseOutcomes::create($validated);
 
-        session()->flash('success', 'Course Outcome created successfully.');
-
-        // Filter subjects by academic year for consistency
-        $academicYear = $request->input('academic_year');
-        $periods = AcademicPeriod::all();
-        $subjectsQuery = Subject::where('instructor_id', $request->user()->id)
-            ->where('is_deleted', false);
-        if ($academicYear) {
-            $periodIds = AcademicPeriod::where('academic_year', $academicYear)->pluck('id')->toArray();
-            if (!empty($periodIds)) {
-                $subjectsQuery->whereIn('academic_period_id', $periodIds);
-            } else {
-                $subjects = collect();
-                return view('instructor.course-outcomes-table', [
-                    'cos' => collect(),
-                    'periods' => $periods,
-                    'subjects' => $subjects,
-                    'selectedSubject' => null,
-                    'academicYear' => $academicYear,
-                ])->with('success', 'Course Outcome created successfully.');
-            }
-        }
-        $subjects = $subjectsQuery->get();
-        return view('instructor.course-outcomes-table', [
-            'cos' => CourseOutcomes::where('subject_id', $validated['subject_id'])
-                ->where('is_deleted', false)
-                ->with(['subject', 'academicPeriod'])
-                ->get(),
-            'periods' => $periods,
-            'subjects' => $subjects,
-            'selectedSubject' => $subjects->firstWhere('id', $validated['subject_id']),
-            'academicYear' => $academicYear,
-        ])->with('success', 'Course Outcome created successfully.');
+        // Redirect to the same page with subject_id for a full refresh
+        return redirect()->route('instructor.course_outcomes.index', ['subject_id' => $validated['subject_id']])
+            ->with('success', 'Course Outcome created successfully.');
     }
 
     /**
@@ -175,13 +179,14 @@ class CourseOutcomesController extends Controller
             'co_code' => 'required|string|max:255',
             'co_identifier' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'percent' => 'nullable|numeric',
         ]);
 
         $validated['updated_by'] = $request->user()->id;
 
         $courseOutcome->update($validated);
 
-        return redirect()->route('instructor.course_outcomes.index')
+        return redirect()->route('instructor.course_outcomes.index', ['subject_id' => $courseOutcome->subject_id])
             ->with('success', 'Course Outcome updated successfully.');
     }
 
@@ -193,7 +198,7 @@ class CourseOutcomesController extends Controller
         $courseOutcome->update(['is_deleted' => 1]);
 
 
-        return redirect()->route('instructor.course_outcomes.index')
+        return redirect()->route('instructor.course_outcomes.index', ['subject_id' => $courseOutcome->subject_id])
             ->with('success', 'Course Outcome deleted.');
     }
 }

@@ -18,6 +18,38 @@ use Illuminate\Support\Facades\Log;
 
 class GradeController extends Controller
 {
+    /**
+     * AJAX: Return course outcomes for a subject and term.
+     */
+    public function ajaxCourseOutcomes(Request $request)
+    {
+        $subjectId = $request->query('subject_id');
+        $term = $request->query('term');
+        if (!$subjectId || !$term) {
+            return response()->json([]);
+        }
+
+        $subject = Subject::find($subjectId);
+        if (!$subject) {
+            return response()->json([]);
+        }
+        $academicPeriodId = $subject->academic_period_id;
+
+        // Get course outcomes for this subject and term
+        $outcomes = \App\Models\CourseOutcomes::where('subject_id', $subjectId)
+            ->where('academic_period_id', $academicPeriodId)
+            ->where('is_deleted', false)
+            ->get();
+
+        $result = $outcomes->map(function($co) {
+            return [
+                'id' => $co->id,
+                'code' => $co->co_code,
+                'name' => $co->co_identifier,
+            ];
+        });
+        return response()->json($result);
+    }
     use GradeCalculationTrait, ActivityManagementTrait;
 
     public function __construct()
@@ -80,7 +112,7 @@ class GradeController extends Controller
 
             $activities = $this->getOrCreateDefaultActivities($subject->id, $term);
 
-            // Get all course outcomes for this subject
+            // Get all course outcomes for this subject and term's academic period
             $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
                 ->where('is_deleted', false)
                 ->get();
