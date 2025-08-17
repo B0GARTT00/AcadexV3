@@ -729,6 +729,53 @@
         bindGradeInputEvents();
     });
 
+    // Re-bind grade input events after term change
+
+    document.addEventListener('DOMContentLoaded', function() {
+        bindGradeInputEvents();
+
+        // Listen for term-stepper button clicks
+        document.querySelectorAll('.term-step').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                // Show loading overlay
+                const overlay = document.getElementById('fadeOverlay');
+                if (overlay) overlay.classList.remove('d-none');
+
+                // Get selected term
+                const term = btn.getAttribute('data-term');
+                const subjectId = document.querySelector('input[name="subject_id"]').value;
+
+                // Fetch new table via AJAX
+                const url = `/instructor/grades?subject_id=${subjectId}&term=${term}`;
+                fetch(url)
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const newSection = doc.getElementById('grade-section');
+                        const currentSection = document.getElementById('grade-section');
+                        if (newSection && currentSection) {
+                            currentSection.innerHTML = newSection.innerHTML;
+                            if (typeof bindGradeInputEvents === 'function') {
+                                bindGradeInputEvents();
+                            }
+                            window.history.pushState({}, '', url);
+                        } else {
+                            // Fallback: reload page if AJAX failed
+                            console.error('AJAX reload failed, falling back to full page reload.');
+                            window.location.href = url;
+                        }
+                        if (overlay) overlay.classList.add('d-none');
+                    })
+                    .catch(error => {
+                        if (overlay) overlay.classList.add('d-none');
+                        console.error('Failed to load term data:', error);
+                        alert('Failed to load term data.');
+                    });
+            });
+        });
+    });
+
     // Modify the beforeunload event handler
     window.addEventListener('beforeunload', function(e) {
         if (typeof checkForChanges === 'function') {
@@ -840,5 +887,45 @@
 
     // Export for external use
     window.bindGradeInputEvents = bindGradeInputEvents;
+
+        // Function to update course outcome dropdowns after term change
+        window.updateCourseOutcomeDropdowns = function(subjectId, term) {
+            // Fetch course outcomes for the selected subject and term
+            fetch(`/instructor/course-outcomes?subject_id=${subjectId}&term=${term}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.querySelectorAll('.course-outcome-dropdown').forEach(dropdown => {
+                        // Clear existing options
+                        dropdown.innerHTML = '';
+                        // Add default option
+                        const defaultOption = document.createElement('option');
+                        defaultOption.value = '';
+                        defaultOption.textContent = '-- Select Course Outcome --';
+                        dropdown.appendChild(defaultOption);
+                        // Add new options
+                        if (Array.isArray(data) && data.length > 0) {
+                            data.forEach(outcome => {
+                                const option = document.createElement('option');
+                                option.value = outcome.id;
+                                option.textContent = `${outcome.code} - ${outcome.name}`;
+                                dropdown.appendChild(option);
+                            });
+                        } else {
+                            const noOption = document.createElement('option');
+                            noOption.value = '';
+                            noOption.textContent = 'No Course Outcome';
+                            dropdown.appendChild(noOption);
+                        }
+                    });
+                })
+                .catch(() => {
+                    document.querySelectorAll('.course-outcome-dropdown').forEach(dropdown => {
+                        dropdown.innerHTML = '';
+                        const noOption = document.createElement('option');
+                        noOption.value = '';
+                        noOption.textContent = 'No Course Outcome';
+                        dropdown.appendChild(noOption);
+                    });
+                });
+        };
 </script>
-    

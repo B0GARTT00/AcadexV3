@@ -14,6 +14,15 @@
                 <div class="progress-bar bg-dark" id="toast-success-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
             </div>
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.bootstrap && window.bootstrap.Toast) {
+                var toastEl = document.getElementById('toast-success');
+                var toastObj = bootstrap.Toast.getOrCreateInstance(toastEl);
+                toastObj.show();
+            }
+        });
+        </script>
     @endif
     @if(session('error'))
         <div class="toast align-items-center text-bg-danger border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000" id="toast-error">
@@ -27,6 +36,15 @@
                 <div class="progress-bar bg-dark" id="toast-error-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
             </div>
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.bootstrap && window.bootstrap.Toast) {
+                var toastEl = document.getElementById('toast-error');
+                var toastObj = bootstrap.Toast.getOrCreateInstance(toastEl);
+                toastObj.show();
+            }
+        });
+        </script>
     @endif
     @if(session('info'))
         <div class="toast align-items-center text-bg-info border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000" id="toast-info">
@@ -40,6 +58,15 @@
                 <div class="progress-bar bg-dark" id="toast-info-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
             </div>
         </div>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.bootstrap && window.bootstrap.Toast) {
+                var toastEl = document.getElementById('toast-info');
+                var toastObj = bootstrap.Toast.getOrCreateInstance(toastEl);
+                toastObj.show();
+            }
+        });
+        </script>
     @endif
 </div>
 <div class="container-fluid px-4 py-4">
@@ -82,6 +109,7 @@
                                 <th>Identifier</th>
                                 <th>Description</th>
                                 <th>Academic Period</th>
+                                <th>Percentage</th>
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
@@ -98,6 +126,13 @@
                                             -
                                         @endif
                                     </td>
+                                    <td>
+                                        @if(!is_null($co->percent))
+                                            {{ $co->percent }}%
+                                        @else
+                                            <span class="text-muted">Not set</span>
+                                        @endif
+                                    </td>
                                     <td class="text-end">
                                         <button type="button" class="btn btn-success btn-sm" 
                                             data-bs-toggle="modal" 
@@ -107,6 +142,7 @@
                                             data-co_identifier="{{ $co->co_identifier }}"
                                             data-description="{{ $co->description }}"
                                             data-academic_period_id="{{ $co->academic_period_id }}"
+                                            data-percent="{{ $co->percent }}"
                                         >
                                             <i class="bi bi-pencil-square"></i> Edit
                                         </button>
@@ -155,6 +191,10 @@
                     <div class="mb-3">
                         <label class="form-label">Description <span class="text-danger">*</span></label>
                         <textarea name="description" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Percentage <span class="text-danger">*</span></label>
+                        <input type="number" name="percent" class="form-control" min="0" max="100" step="0.01" required placeholder="Enter percentage">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Academic Period <span class="text-danger">*</span></label>
@@ -209,6 +249,10 @@
                                 {{ $currentPeriod->academic_year ?? '' }} - {{ $currentPeriod->semester ?? '' }}
                             </option>
                         </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Percentage <span class="text-danger">*</span></label>
+                        <input type="number" name="percent" id="edit_percent" class="form-control" min="0" max="100" step="0.01" required placeholder="Enter percentage">
                     </div>
                     <input type="hidden" name="subject_id" value="{{ $selectedSubject->id ?? '' }}">
                 </div>
@@ -269,11 +313,13 @@ document.addEventListener('DOMContentLoaded', function () {
         var co_identifier = button.getAttribute('data-co_identifier');
         var description = button.getAttribute('data-description');
         var academic_period_id = button.getAttribute('data-academic_period_id');
+        var percent = button.getAttribute('data-percent');
 
         document.getElementById('edit_co_code').value = co_code;
         document.getElementById('edit_co_identifier').value = co_identifier;
         document.getElementById('edit_description').value = description;
         document.getElementById('edit_academic_period_id').value = academic_period_id;
+        document.getElementById('edit_percent').value = percent;
 
         // Set the form action dynamically
         var form = document.getElementById('editCourseOutcomeForm');

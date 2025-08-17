@@ -18,6 +18,7 @@ use App\Http\Controllers\CurriculumController;
 use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\CourseOutcomesController;
 use App\Http\Middleware\EnsureAcademicPeriodSet;
+use App\Http\Controllers\CourseOutcomeAttainmentController;
 
 // Welcome Page
 use Illuminate\Support\Facades\Auth;
@@ -171,6 +172,16 @@ Route::prefix('instructor')
 
         // Course Outcomes
         Route::resource('course_outcomes', CourseOutcomesController::class);
+        // AJAX endpoint for course outcomes by subject and term (use GradeController)
+        Route::get('/course-outcomes', [GradeController::class, 'ajaxCourseOutcomes'])  ->name('course-outcomes.ajax');
+
+        // Course Outcome Attainments
+        Route::get('/course-outcome-attainments', [CourseOutcomeAttainmentController::class,    'index'])->name('course-outcome-attainments.index');
+        Route::get('/course-outcome-attainments/subject/{subject}', [CourseOutcomeAttainmentController::class, 'subject'])->name('course-outcome-attainments.subject');
+        Route::post('/course-outcome-attainments', [CourseOutcomeAttainmentController::class,   'store'])->name('course-outcome-attainments.store');
+        Route::get('/course-outcome-attainments/{id}',  [CourseOutcomeAttainmentController::class, 'show'])->name('course-outcome-attainments.show');
+        Route::put('/course-outcome-attainments/{id}',  [CourseOutcomeAttainmentController::class, 'update'])->name('course-outcome-attainments. update');
+        Route::delete('/course-outcome-attainments/{id}', [CourseOutcomeAttainmentController::class, 'destroy'])->name('course-outcome-attainments.destroy');
     });
 
 // Dean Routes

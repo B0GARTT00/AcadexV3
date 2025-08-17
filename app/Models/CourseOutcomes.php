@@ -18,6 +18,7 @@ class CourseOutcomes extends Model
         'co_code',
         'co_identifier',
         'description',
+        'percent',
         'created_by',
         'updated_by',
         'is_deleted',
