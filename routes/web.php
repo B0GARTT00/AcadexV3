@@ -59,7 +59,7 @@ Route::middleware('auth')->group(function () {
 
 // Dashboard
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified', 'academic.period.set'])
+    ->middleware(['auth', 'verified'])
     ->name('dashboard');
 
 // Chairperson Routes
@@ -98,6 +98,12 @@ Route::prefix('gecoordinator')
         Route::post('/instructors/{id}/deactivate', [\App\Http\Controllers\GECoordinatorController::class, 'deactivateInstructor'])->name('deactivateInstructor');
         Route::post('/instructors/{id}/activate', [\App\Http\Controllers\GECoordinatorController::class, 'activateInstructor'])->name('activateInstructor');
         
+        // Subject Assignment Routes
+        Route::get('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'assignSubjects'])->name('assign-subjects');
+        Route::post('/assign-subjects/store', [\App\Http\Controllers\GECoordinatorController::class, 'storeAssignedSubject'])->name('storeAssignedSubject');
+        Route::post('/assign-subjects/toggle', [\App\Http\Controllers\GECoordinatorController::class, 'toggleAssignedSubject'])->name('toggleAssignedSubject');
+        
+        // Subject Management
         Route::get('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'assignSubjects'])->name('assign-subjects');
         Route::post('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'storeAssignedSubject'])->name('storeAssignedSubject');
         Route::post('/assign-subjects/toggle', [\App\Http\Controllers\GECoordinatorController::class, 'toggleAssignedSubject'])->name('toggleAssignedSubject');
@@ -199,6 +205,35 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::post('/users/confirm-password', [AdminController::class, 'adminConfirmUserCreationWithPassword'])->name('confirmUserCreationWithPassword');
     Route::post('/users/store-verified-user', [AdminController::class, 'storeUser'])->name('storeVerifiedUser');
 });
+
+// VPAA Routes
+use App\Http\Controllers\VPAAController as VPAAController;
+
+Route::prefix('vpaa')
+    ->middleware(['auth', 'academic.period.set'])
+    ->name('vpaa.')
+    ->group(function () {
+        // Dashboard
+        Route::get('/dashboard', [VPAAController::class, 'index'])->name('dashboard');
+        
+        // Departments
+        Route::get('/departments', [VPAAController::class, 'viewDepartments'])->name('departments');
+        
+        // Instructors
+        Route::get('/instructors', [VPAAController::class, 'viewInstructors'])->name('instructors');
+        Route::get('/instructors/{departmentId}', [VPAAController::class, 'viewInstructors'])->name('instructors.department');
+        
+        // Students
+        Route::get('/students', [VPAAController::class, 'viewStudents'])->name('students');
+        
+        // Grades
+        Route::get('/grades', [VPAAController::class, 'viewGrades'])->name('grades');
+    });
+
+// Add a fallback redirect for VPAA dashboard
+Route::get('/vpaa', function () {
+    return redirect()->route('vpaa.dashboard');
+})->middleware(['auth', 'academic.period.set']);
 
 // Auth Routes
 require __DIR__.'/auth.php';

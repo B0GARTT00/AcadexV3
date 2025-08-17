@@ -4,6 +4,8 @@ namespace App\Http;
 
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 use App\Http\Middleware\NoCacheHeaders;
+use App\Http\Middleware\EnsureUserIsVPAA;
+use App\Http\Middleware\EnsureAcademicPeriodSet;
 
 class Kernel extends HttpKernel
 {
@@ -21,11 +23,18 @@ class Kernel extends HttpKernel
      */
     protected $middlewareGroups = [
         'web' => [
-            // Your existing Breeze middleware, if any
+            \App\Http\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
 
         'api' => [
-            // Your API middleware, if any
+            // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ],
     ];
 
@@ -33,6 +42,8 @@ class Kernel extends HttpKernel
      * Route-specific middleware.
      */
     protected $routeMiddleware = [
-        'no.cache' => NoCacheHeaders::class,  // Define route middleware
+        'no.cache' => NoCacheHeaders::class,
+        'academic.period.set' => EnsureAcademicPeriodSet::class,
+        'vpaa' => EnsureUserIsVPAA::class,
     ];
 }

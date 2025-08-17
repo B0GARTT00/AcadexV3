@@ -55,6 +55,11 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('select.academicPeriod');
         }
 
+        // Redirect VPAA to their dashboard
+        if ($user->isVPAA()) {
+            return redirect()->intended(route('vpaa.dashboard'));
+        }
+
         // Redirect to the intended route (dashboard or other)
         return redirect()->intended(route('dashboard', absolute: false));
     }

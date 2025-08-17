@@ -46,6 +46,10 @@ class DashboardController extends Controller
             return $this->deanDashboard();
         }
 
+        if ($user->isVPAA()) {
+            return redirect()->route('vpaa.dashboard');
+        }
+
         abort(403, 'Unauthorized access.');
     }
 
@@ -179,9 +183,13 @@ class DashboardController extends Controller
         $departmentId = Auth::user()->department_id;
         $academicPeriodId = session('active_academic_period_id');
 
+        // Get the chairperson's course ID
+        $chairpersonCourseId = Auth::user()->course_id;
+        
         $data = [
             "countInstructors" => User::where("role", 0)
                 ->where("department_id", $departmentId)
+                ->where("course_id", $chairpersonCourseId) // Only count instructors in the same course
                 ->where("is_active", true)
                 ->count(),
             "countStudents" => Student::where("department_id", $departmentId)
@@ -198,6 +206,7 @@ class DashboardController extends Controller
             "countActiveInstructors" => User::where("is_active", 1)
                 ->where("role", 0)
                 ->where("department_id", $departmentId)
+                ->where("course_id", $chairpersonCourseId) // Only count active instructors in the same course
                 ->whereHas('subjects', function($query) use ($academicPeriodId) {
                     $query->where('academic_period_id', $academicPeriodId);
                 })
@@ -205,6 +214,7 @@ class DashboardController extends Controller
             "countInactiveInstructors" => User::where("is_active", 0)
                 ->where("role", 0)
                 ->where("department_id", $departmentId)
+                ->where("course_id", $chairpersonCourseId) // Only count inactive instructors in the same course
                 ->count(),
             "countUnverifiedInstructors" => UnverifiedUser::where("department_id", $departmentId)
                 ->count(),

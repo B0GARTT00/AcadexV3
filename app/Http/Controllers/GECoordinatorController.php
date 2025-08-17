@@ -192,13 +192,13 @@ class GECoordinatorController extends Controller
         }
         
         $subject = Subject::where('id', $request->subject_id)
-            ->where('course_id', 1)
+            ->where('course_id', 2)
             ->where('academic_period_id', $academicPeriodId)
             ->firstOrFail();
         $instructor = User::findOrFail($request->instructor_id);
 
-        // Ensure the subject is managed by GE Coordinator (course_id = 1)
-        if ($subject->course_id != 1) {
+        // Ensure the subject is managed by GE Coordinator (course_id = 2)
+        if ($subject->course_id != 2) {
             return redirect()->back()->with('error', 'Only General Education subjects can be assigned by GE Coordinator.');
         }
 
@@ -227,12 +227,12 @@ class GECoordinatorController extends Controller
         }
         
         $subject = Subject::where('id', $request->subject_id)
-            ->where('course_id', 1)
+            ->where('course_id', 2)
             ->where('academic_period_id', $academicPeriodId)
             ->firstOrFail();
         
-        // Ensure the subject is managed by GE Coordinator (course_id = 1)
-        if ($subject->course_id != 1) {
+        // Ensure the subject is managed by GE Coordinator (course_id = 2)
+        if ($subject->course_id != 2) {
             return response()->json(['error' => 'Only General Education subjects can be managed by GE Coordinator.'], 403);
         }
 

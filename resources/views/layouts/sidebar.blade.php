@@ -266,5 +266,42 @@
                 </ul>
             </div>
         @endif
+
+        {{-- VPAA --}}
+        @if ($role === 5)
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">VPAA DASHBOARD</h6>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('vpaa.departments') }}" 
+                           class="nav-link {{ request()->routeIs('vpaa.departments') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-building me-3"></i>
+                            <span>Departments Overview</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('vpaa.instructors') }}" 
+                           class="nav-link {{ request()->routeIs('vpaa.instructors*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-people me-3"></i>
+                            <span>Manage Instructors</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('vpaa.students') }}" 
+                           class="nav-link {{ request()->routeIs('vpaa.students*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-mortarboard me-3"></i>
+                            <span>Manage Students</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('vpaa.grades') }}" 
+                           class="nav-link {{ request()->routeIs('vpaa.grades*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-card-checklist me-3"></i>
+                            <span>View Grades</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        @endif
     </div>
 </div>

@@ -205,10 +205,10 @@
         </div>
         <div class="p-4">
             <p>Are you sure you want to unassign this subject? This action cannot be undone.</p>
-            <form id="unassignForm" action="{{ route('gecoordinator.toggleAssignedSubject') }}" method="POST">
+            <form id="unassignForm">
                 @csrf
+                @method('POST')
                 <input type="hidden" name="subject_id" id="unassign_subject_id">
-                <input type="hidden" name="instructor_id" value="">
                 <div class="text-end mt-3">
                     <button type="submit" class="btn btn-danger">
                         <i class="bi bi-x-circle me-1"></i> Unassign
@@ -218,6 +218,43 @@
                     </button>
                 </div>
             </form>
+            
+            <script>
+                document.getElementById('unassignForm').addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const subjectId = document.getElementById('unassign_subject_id').value;
+                    
+                    fetch('{{ route('gecoordinator.toggleAssignedSubject') }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            subject_id: subjectId,
+                            _token: '{{ csrf_token() }}'
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) {
+                            return response.json().then(err => { throw err; });
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            window.location.reload();
+                        } else {
+                            alert('Error: ' + (data.message || 'Failed to unassign subject'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error: ' + (error.message || 'Failed to unassign subject'));
+                    });
+                });
+            </script>
         </div>
     </div>
 </div>

@@ -127,4 +127,12 @@ class User extends Authenticatable
     {
         return $this->role === 4;
     }
+
+    /**
+     * Check if the user is a VPAA
+     */
+    public function isVPAA(): bool
+    {
+        return $this->role === 5;
+    }
 }
