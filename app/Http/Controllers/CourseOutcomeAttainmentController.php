@@ -16,6 +16,9 @@ class CourseOutcomeAttainmentController extends Controller
     {
         $academicPeriodId = session('active_academic_period_id');
 
+        // Get the selected subject with course and academicPeriod relationships
+        $selectedSubject = \App\Models\Subject::with(['course', 'academicPeriod'])->findOrFail($subjectId);
+
         // Get students enrolled in the subject
         $students = \App\Models\Student::whereHas('subjects', function($q) use ($subjectId) {
             $q->where('subject_id', $subjectId);
@@ -78,6 +81,7 @@ class CourseOutcomeAttainmentController extends Controller
             'coDetails' => $coDetails,
             'terms' => $terms,
             'subjectId' => $subjectId,
+            'selectedSubject' => $selectedSubject,
         ]);
     }
 
