@@ -81,7 +81,7 @@
                                             <td>{{ $subject->subject_description }}</td>
                                             <td class="text-center">
                                                 <button class="btn btn-sm btn-outline-primary" 
-                                                        onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')">
+                                                        onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'view')">
                                                     <i class="bi bi-people-fill me-1"></i>
                                                     <span>View ({{ $subject->instructors_count ?? $subject->instructors->count() }})</span>
                                                 </button>
@@ -95,8 +95,8 @@
                                                     </button>
                                                     @if($subject->instructors->isNotEmpty())
                                                         <button class="btn btn-sm btn-danger" 
-                                                                onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')"
-                                                                title="Manage assigned instructors">
+                                                                onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'unassign')"
+                                                                title="Unassign instructors">
                                                             <i class="bi bi-person-dash"></i> Unassign
                                                         </button>
                                                     @endif
@@ -155,7 +155,7 @@
                                                     <td>{{ $subject->subject_description }}</td>
                                                     <td class="text-center">
                                                         <button class="btn btn-sm btn-outline-primary" 
-                                                                onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')">
+                                                                onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'view')">
                                                             <i class="bi bi-people-fill me-1"></i>
                                                             <span>View ({{ $subject->instructors_count ?? $subject->instructors->count() }})</span>
                                                         </button>
@@ -170,7 +170,7 @@
                                                             </button>
                                                             @if($subject->instructors->count() > 0)
                                                                 <button
-                                                                    onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}')"
+                                                                    onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}', 'unassign')"
                                                                     class="btn btn-danger btn-sm" 
                                                                     title="Unassign Instructor">
                                                                     <i class="bi bi-x-circle me-1"></i> Unassign
@@ -267,11 +267,13 @@
 {{-- Instructor List Modal --}}
 <div id="instructorListModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
     <div class="bg-white w-full max-w-lg rounded-4 shadow-lg overflow-hidden flex flex-col">
-        <div class="bg-primary text-white px-4 py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold">
-                <i class="bi bi-people-fill me-2"></i> Assigned Instructors
-            </h5>
-            <button onclick="closeInstructorListModal()" class="btn-close btn-close-white" aria-label="Close"></button>
+        <div class="bg-primary text-white px-4 py-3">
+                <h5 class="mb-0 fw-semibold text-center">
+                    <span id="instructorListModalTitle">
+                        <i class="bi bi-people-fill me-2"></i>
+                        <span id="instructorListSubjectName"></span>
+                    </span>
+                </h5>
         </div>
         <div class="p-4">
             <p class="mb-3">Subject: <span id="instructorListSubjectName" class="fw-semibold"></span></p>
@@ -326,10 +328,20 @@
 @push('scripts')
 <script>
     let currentSubjectId = null;
+    let currentModalMode = 'view'; // 'view' or 'unassign'
 
-    function openInstructorListModal(subjectId, subjectName) {
+    function openInstructorListModal(subjectId, subjectName, mode = 'view') {
         currentSubjectId = subjectId;
+        currentModalMode = mode; // Store the mode (view or unassign)
         document.getElementById('instructorListSubjectName').textContent = subjectName;
+        
+        // Update modal title based on mode
+        const modalTitle = document.getElementById('instructorListModalTitle');
+        if (mode === 'unassign') {
+            modalTitle.innerHTML = '<i class="bi bi-person-dash me-2"></i> Unassign Instructor';
+        } else {
+            modalTitle.innerHTML = '<i class="bi bi-people-fill me-2"></i> Assigned Instructors';
+        }
         
         // Show loading state
         const instructorList = document.getElementById('instructorList');
@@ -368,19 +380,24 @@
                 instructors.forEach(instructor => {
                     const item = document.createElement('div');
                     item.className = 'list-group-item d-flex justify-content-between align-items-center';
-                    item.innerHTML = `
+                    
+                    const instructorInfo = `
                         <div class="d-flex align-items-center">
                             <i class="bi bi-person-fill text-primary me-2"></i>
                             <span>${instructor.name}</span>
-                        </div>
-                        <button 
-                            onclick="confirmUnassignInstructor(${instructor.id}, '${instructor.name.replace(/'/g, "\\'")}')" 
-                            class="btn btn-outline-danger btn-sm"
-                            title="Unassign instructor"
-                        >
-                            <i class="bi bi-x-lg"></i>
-                        </button>
-                    `;
+                        </div>`;
+                    
+                    if (mode === 'unassign') {
+                        // Add unassign button (X) only in unassign mode
+                        item.innerHTML = instructorInfo + `
+                            <button class="btn btn-outline-danger btn-sm" 
+                                    onclick="confirmUnassignInstructor(${instructor.id}, '${instructor.name.replace(/'/g, "\\'")}')">
+                                <i class="bi bi-x-lg"></i>
+                            </button>`;
+                    } else {
+                        item.innerHTML = instructorInfo;
+                    }
+                    
                     listGroup.appendChild(item);
                 });
                 
