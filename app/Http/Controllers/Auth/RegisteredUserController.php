@@ -62,6 +62,15 @@ class RegisteredUserController extends Controller
             'course_id'     => $request->course_id,
         ]);
 
-        return redirect()->route('login')->with('status', 'Your account request has been submitted and is pending chairperson approval.');
+        // Check if the selected department is GE
+        $isGEDepartment = Department::where('id', $request->department_id)
+            ->where('department_code', 'GE')
+            ->exists();
+
+        $approvalMessage = $isGEDepartment 
+            ? 'Your account request has been submitted and is pending GE Coordinator approval.'
+            : 'Your account request has been submitted and is pending Department Chairperson approval.';
+
+        return redirect()->route('login')->with('status', $approvalMessage);
     }
 }

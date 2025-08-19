@@ -71,10 +71,15 @@ class DashboardController extends Controller
 
     private function getInstructorSubjects($instructorId, $academicPeriodId)
     {
-        return Subject::where('instructor_id', $instructorId)
-            ->where('academic_period_id', $academicPeriodId)
-            ->with('students')
-            ->get();
+        return Subject::where(function($query) use ($instructorId) {
+            $query->where('instructor_id', $instructorId)
+                  ->orWhereHas('instructors', function($q) use ($instructorId) {
+                      $q->where('instructor_id', $instructorId);
+                  });
+        })
+        ->where('academic_period_id', $academicPeriodId)
+        ->with('students')
+        ->get();
     }
 
     private function getInstructorDashboardData($subjects, $academicPeriodId)

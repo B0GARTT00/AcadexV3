@@ -76,7 +76,8 @@ class User extends Authenticatable
 
     public function subjects()
     {
-        return $this->hasMany(Subject::class, 'instructor_id');
+        return $this->belongsToMany(Subject::class, 'instructor_subject', 'instructor_id', 'subject_id')
+            ->withTimestamps();
     }
 
     public function createdStudents()

@@ -20,6 +20,59 @@ class GECoordinatorController extends Controller
     {
         $this->middleware('auth');
     }
+    
+    /**
+     * Get all available instructors who can teach GE subjects
+     */
+    public function getAvailableInstructors()
+    {
+        if (!Auth::user()->isGECoordinator()) {
+            abort(403);
+        }
+        
+        $geDepartment = Department::where('department_code', 'GE')->firstOrFail();
+        
+        $instructors = User::where('role', 0)
+            ->where('is_active', true)
+            ->where(function($query) use ($geDepartment) {
+                $query->where('department_id', $geDepartment->id)
+                      ->orWhere('can_teach_ge', true);
+            })
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'middle_name', 'last_name'])
+            ->map(function($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => trim($user->first_name . ' ' . ($user->middle_name ? $user->middle_name . ' ' : '') . $user->last_name)
+                ];
+            });
+            
+        return response()->json($instructors);
+    }
+    
+    /**
+     * Get all instructors assigned to a subject
+     */
+    public function getSubjectInstructors(Subject $subject)
+    {
+        if (!Auth::user()->isGECoordinator()) {
+            abort(403);
+        }
+        
+        // Ensure the subject is a GE subject
+        if ($subject->course_id != 2) {
+            return response()->json([], 403);
+        }
+        
+        $instructors = $subject->instructors->map(function($instructor) {
+            return [
+                'id' => $instructor->id,
+                'name' => $instructor->name
+            ];
+        });
+        
+        return response()->json($instructors);
+    }
 
     // ============================
     // Instructor Management
@@ -130,7 +183,8 @@ class GECoordinatorController extends Controller
         }
 
         // Get subjects (GE, PD, NSTP, RS, PE, and universal subjects) for the current academic period
-        $subjects = Subject::where(function($query) {
+        $subjects = Subject::with('instructors')
+            ->where(function($query) {
                 $query->where('subject_code', 'LIKE', 'GE%')
                       ->orWhere('subject_code', 'LIKE', 'PD%')
                       ->orWhere('subject_code', 'LIKE', 'NSTP%')
@@ -151,8 +205,13 @@ class GECoordinatorController extends Controller
             
         // Get all GE instructors
         $geDepartment = Department::where('department_code', 'GE')->firstOrFail();
+        
+        // Get available instructors
         $instructors = User::where('role', 0)
-            ->where('department_id', $geDepartment->id)
+            ->where(function($query) use ($geDepartment) {
+                $query->where('department_id', $geDepartment->id)
+                      ->orWhere('can_teach_ge', true);
+            })
             ->where('is_active', true)
             ->orderBy('last_name')
             ->get();
@@ -184,29 +243,19 @@ class GECoordinatorController extends Controller
             'instructor_id' => 'required|exists:users,id',
         ]);
 
-        $academicPeriodId = session('active_academic_period_id');
-        
-        // If no academic period is set, use academic period 1 as default
-        if (!$academicPeriodId) {
-            $academicPeriodId = 1;
-        }
-        
         $subject = Subject::where('id', $request->subject_id)
-            ->where('course_id', 2)
-            ->where('academic_period_id', $academicPeriodId)
+            ->where('course_id', 2) // Only General Education subjects for GE Coordinator
             ->firstOrFail();
-        $instructor = User::findOrFail($request->instructor_id);
 
         // Ensure the subject is managed by GE Coordinator (course_id = 2)
         if ($subject->course_id != 2) {
             return redirect()->back()->with('error', 'Only General Education subjects can be assigned by GE Coordinator.');
         }
 
-        $subject->update([
-            'instructor_id' => $request->instructor_id,
-        ]);
+        // Attach the instructor to the subject (many-to-many)
+        $subject->instructors()->syncWithoutDetaching([$request->instructor_id]);
 
-        return redirect()->back()->with('success', 'Subject assigned successfully.');
+        return redirect()->back()->with('success', 'Instructor assigned to subject successfully.');
     }
 
     public function toggleAssignedSubject(Request $request)
@@ -217,18 +266,11 @@ class GECoordinatorController extends Controller
 
         $request->validate([
             'subject_id' => 'required|exists:subjects,id',
+            'instructor_id' => 'required|exists:users,id',
         ]);
 
-        $academicPeriodId = session('active_academic_period_id');
-        
-        // If no academic period is set, use academic period 1 as default
-        if (!$academicPeriodId) {
-            $academicPeriodId = 1;
-        }
-        
         $subject = Subject::where('id', $request->subject_id)
-            ->where('course_id', 2)
-            ->where('academic_period_id', $academicPeriodId)
+            ->where('course_id', 2) // Only General Education subjects for GE Coordinator
             ->firstOrFail();
         
         // Ensure the subject is managed by GE Coordinator (course_id = 2)
@@ -236,11 +278,27 @@ class GECoordinatorController extends Controller
             return response()->json(['error' => 'Only General Education subjects can be managed by GE Coordinator.'], 403);
         }
 
-        $subject->update([
-            'instructor_id' => null,
-        ]);
-
-        return response()->json(['success' => true]);
+        // Check if we're assigning or unassigning
+        if ($request->isMethod('delete')) {
+            // Unassign the instructor
+            $subject->instructors()->detach($request->instructor_id);
+            return response()->json([
+                'success' => true, 
+                'message' => 'Instructor unassigned successfully.',
+                'action' => 'unassigned'
+            ]);
+        } else {
+            // Assign the instructor (if not already assigned)
+            $subject->instructors()->syncWithoutDetaching([$request->instructor_id]);
+            $instructor = User::find($request->instructor_id);
+            
+            return response()->json([
+                'success' => true, 
+                'message' => 'Instructor assigned successfully.',
+                'action' => 'assigned',
+                'instructor_name' => $instructor->name
+            ]);
+        }
     }
 
     // ============================

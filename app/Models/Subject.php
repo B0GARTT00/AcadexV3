@@ -21,9 +21,16 @@ class Subject extends Model
     }
     
     public function instructor()
-{
-    return $this->belongsTo(User::class, 'instructor_id');
-}
+    {
+        // Keep this for backward compatibility
+        return $this->belongsTo(User::class, 'instructor_id');
+    }
+    
+    public function instructors()
+    {
+        return $this->belongsToMany(User::class, 'instructor_subject', 'subject_id', 'instructor_id')
+            ->withTimestamps();
+    }
 
 public function course()
 {

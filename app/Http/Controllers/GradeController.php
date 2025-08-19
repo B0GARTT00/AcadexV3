@@ -63,10 +63,15 @@ class GradeController extends Controller
         $academicPeriodId = session('active_academic_period_id');
         $term = $request->term ?? 'prelim';
     
-        $subjects = Subject::where('instructor_id', Auth::id())
-            ->when($academicPeriodId, fn($q) => $q->where('academic_period_id', $academicPeriodId))
-            ->withCount('students')
-            ->get();
+        $subjects = Subject::where(function($query) use ($academicPeriodId) {
+            $query->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($q) {
+                      $q->where('instructor_id', Auth::id());
+                  });
+        })
+        ->when($academicPeriodId, fn($q) => $q->where('academic_period_id', $academicPeriodId))
+        ->withCount('students')
+        ->get();
     
         foreach ($subjects as $subject) {
             $total = $subject->students_count;
