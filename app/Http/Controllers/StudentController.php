@@ -26,19 +26,28 @@ class StudentController extends Controller
     
         $academicPeriodId = session('active_academic_period_id');
     
-        $subjects = Subject::where('instructor_id', Auth::id())
-            ->where('is_deleted', false)
-            ->where('academic_period_id', $academicPeriodId)
-            ->get();
+        $subjects = Subject::where(function($query) use ($academicPeriodId) {
+            $query->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($q) {
+                      $q->where('instructor_id', Auth::id());
+                  });
+        })
+        ->where('is_deleted', false)
+        ->where('academic_period_id', $academicPeriodId)
+        ->get();
     
         $courses = Course::where('department_id', Auth::user()->department_id)->get();
     
         $students = null;
         if ($request->has('subject_id')) {
-            $subject = Subject::findOrFail($request->subject_id);
-            if ($subject->instructor_id !== Auth::id()) {
-                abort(403);
-            }
+            $subject = Subject::where('id', $request->subject_id)
+                ->where(function($query) {
+                    $query->where('instructor_id', Auth::id())
+                          ->orWhereHas('instructors', function($q) {
+                              $q->where('instructor_id', Auth::id());
+                          });
+                })
+                ->firstOrFail();
     
             $students = $subject->students()
                 ->where('students.is_deleted', 0)

@@ -95,19 +95,21 @@ Route::prefix('gecoordinator')
     ->name('gecoordinator.')
     ->group(function () {
         Route::get('/instructors', [\App\Http\Controllers\GECoordinatorController::class, 'manageInstructors'])->name('instructors');
+        Route::get('/available-instructors', [\App\Http\Controllers\GECoordinatorController::class, 'getAvailableInstructors'])->name('available-instructors');
         Route::post('/instructors', [\App\Http\Controllers\GECoordinatorController::class, 'storeInstructor'])->name('storeInstructor');
         Route::post('/instructors/{id}/deactivate', [\App\Http\Controllers\GECoordinatorController::class, 'deactivateInstructor'])->name('deactivateInstructor');
         Route::post('/instructors/{id}/activate', [\App\Http\Controllers\GECoordinatorController::class, 'activateInstructor'])->name('activateInstructor');
         
-        // Subject Assignment Routes
+        // Subject Management Routes
         Route::get('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'assignSubjects'])->name('assign-subjects');
-        Route::post('/assign-subjects/store', [\App\Http\Controllers\GECoordinatorController::class, 'storeAssignedSubject'])->name('storeAssignedSubject');
-        Route::post('/assign-subjects/toggle', [\App\Http\Controllers\GECoordinatorController::class, 'toggleAssignedSubject'])->name('toggleAssignedSubject');
         
-        // Subject Management
-        Route::get('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'assignSubjects'])->name('assign-subjects');
-        Route::post('/assign-subjects', [\App\Http\Controllers\GECoordinatorController::class, 'storeAssignedSubject'])->name('storeAssignedSubject');
-        Route::post('/assign-subjects/toggle', [\App\Http\Controllers\GECoordinatorController::class, 'toggleAssignedSubject'])->name('toggleAssignedSubject');
+        // Handle assigning instructors (POST for new assignments, DELETE for unassigning)
+        Route::post('/subjects/assign', [\App\Http\Controllers\GECoordinatorController::class, 'toggleAssignedSubject'])->name('assignInstructor');
+        Route::delete('/subjects/unassign', [\App\Http\Controllers\GECoordinatorController::class, 'toggleAssignedSubject'])->name('unassignInstructor');
+        
+        // Get instructors for a subject
+        Route::get('/subjects/{subject}/instructors', [\App\Http\Controllers\GECoordinatorController::class, 'getSubjectInstructors'])
+            ->name('getSubjectInstructors');
         
         Route::get('/students-by-year', [\App\Http\Controllers\GECoordinatorController::class, 'viewStudentsPerYear'])->name('studentsByYear');
         Route::get('/grades', [\App\Http\Controllers\GECoordinatorController::class, 'viewGrades'])->name('viewGrades');

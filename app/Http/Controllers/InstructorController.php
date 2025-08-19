@@ -36,11 +36,16 @@ class InstructorController extends Controller
         $subjects = collect();
 
         if ($academicPeriodId) {
-            $subjects = Subject::where('instructor_id', Auth::id())
-                ->where('is_deleted', false)
-                ->where('academic_period_id', $academicPeriodId)
-                ->withCount('students')
-                ->get();
+            $subjects = Subject::where(function($query) use ($academicPeriodId) {
+                $query->where('instructor_id', Auth::id())
+                      ->orWhereHas('instructors', function($q) {
+                          $q->where('instructor_id', Auth::id());
+                      });
+            })
+            ->where('is_deleted', false)
+            ->where('academic_period_id', $academicPeriodId)
+            ->withCount('students')
+            ->get();
 
             foreach ($subjects as $subject) {
                 $totalStudents = $subject->students_count;

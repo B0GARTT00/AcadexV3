@@ -82,7 +82,6 @@ class VPAAController extends Controller
 
     public function viewInstructors($departmentId = null)
     {
-
         $query = User::where('role', 0) // Instructor role
             ->where('is_active', true)
             ->with(['department' => function($query) {
@@ -94,7 +93,7 @@ class VPAAController extends Controller
             $query->where('department_id', $departmentId);
         }
 
-        $instructors = $query->get();
+        $instructors = $query->paginate(15); // Paginate with 15 items per page
         $departments = Department::where('is_deleted', false)->orderBy('department_description')->get();
         $selectedDepartment = $departmentId ? Department::find($departmentId) : null;
 

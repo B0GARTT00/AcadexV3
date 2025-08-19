@@ -79,22 +79,29 @@
                                         <tr>
                                             <td>{{ $subject->subject_code }}</td>
                                             <td>{{ $subject->subject_description }}</td>
-                                            <td class="text-center">
-                                                <button class="btn btn-sm btn-outline-primary" 
-                                                        onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')">
-                                                    <i class="bi bi-people-fill me-1"></i>
-                                                    <span>View ({{ $subject->instructors_count ?? $subject->instructors->count() }})</span>
-                                                </button>
+                                            <td>
+                                                @if($subject->instructors->isNotEmpty())
+                                                    <div class="assigned-instructors">
+                                                        @foreach($subject->instructors as $instructor)
+                                                            <div class="d-flex align-items-center mb-1">
+                                                                <i class="bi bi-person-fill text-primary me-2"></i>
+                                                                <span>{{ $instructor->name }}</span>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    <span class="text-muted">No instructors assigned</span>
+                                                @endif
                                             </td>
                                             <td class="text-nowrap">
                                                 <div class="d-flex">
-                                                    <button class="btn btn-sm btn-success me-2" 
+                                                    <button class="btn btn-sm btn-primary me-2" 
                                                             onclick="openConfirmAssignModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')"
                                                             title="Assign new instructor">
                                                         <i class="bi bi-person-plus"></i> Assign
                                                     </button>
                                                     @if($subject->instructors->isNotEmpty())
-                                                        <button class="btn btn-sm btn-danger" 
+                                                        <button class="btn btn-sm btn-outline-danger" 
                                                                 onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')"
                                                                 title="Manage assigned instructors">
                                                             <i class="bi bi-person-dash"></i> Unassign
@@ -153,25 +160,32 @@
                                                 <tr>
                                                     <td class="fw-medium">{{ $subject->subject_code }}</td>
                                                     <td>{{ $subject->subject_description }}</td>
-                                                    <td class="text-center">
-                                                        <button class="btn btn-sm btn-outline-primary" 
-                                                                onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')">
-                                                            <i class="bi bi-people-fill me-1"></i>
-                                                            <span>View ({{ $subject->instructors_count ?? $subject->instructors->count() }})</span>
-                                                        </button>
+                                                    <td>
+                                                        @if($subject->instructors->count() > 0)
+                                                            <div class="d-flex flex-column">
+                                                                @foreach($subject->instructors as $instructor)
+                                                                    <div class="d-flex align-items-center mb-1">
+                                                                        <i class="bi bi-person-check-fill text-success me-2"></i>
+                                                                        <span>{{ $instructor->name }}</span>
+                                                                    </div>
+                                                                @endforeach
+                                                            </div>
+                                                        @else
+                                                            <span class="text-muted">No instructors assigned</span>
+                                                        @endif
                                                     </td>
                                                     <td class="text-center">
                                                         <div class="d-flex gap-2 justify-content-center">
                                                             <button
                                                                 onclick="openConfirmAssignModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}')"
-                                                                class="btn btn-success btn-sm" 
+                                                                class="btn btn-success shadow-sm btn-sm" 
                                                                 title="Assign Instructor">
                                                                 <i class="bi bi-person-plus me-1"></i> Assign
                                                             </button>
                                                             @if($subject->instructors->count() > 0)
                                                                 <button
                                                                     onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}')"
-                                                                    class="btn btn-danger btn-sm" 
+                                                                    class="btn btn-outline-danger btn-sm" 
                                                                     title="Unassign Instructor">
                                                                     <i class="bi bi-x-circle me-1"></i> Unassign
                                                                 </button>
@@ -264,6 +278,24 @@
     </div>
 </div>
 
+{{-- View All Instructors Modal --}}
+<div id="viewAllInstructorsModal" class="modal fade" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">Assigned Instructors</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="allInstructorsList">
+                <!-- Instructors will be inserted here by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Instructor List Modal --}}
 <div id="instructorListModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
     <div class="bg-white w-full max-w-lg rounded-4 shadow-lg overflow-hidden flex flex-col">
@@ -323,8 +355,34 @@
     </div>
 </div>
 
+{{-- View All Instructors Modal --}}
+<div class="modal fade" id="viewAllInstructorsModal" tabindex="-1" aria-labelledby="viewAllInstructorsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="viewAllInstructorsModalLabel">Assigned Instructors</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="allInstructorsList">
+                <!-- Instructors will be inserted here by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
+    // Show all instructors in a modal
+    function showAllInstructors(subjectId) {
+        const instructorsHtml = document.getElementById(`instructors-data-${subjectId}`).innerHTML;
+        document.getElementById('allInstructorsList').innerHTML = instructorsHtml;
+        
+        const modal = new bootstrap.Modal(document.getElementById('viewAllInstructorsModal'));
+        modal.show();
+    }
     let currentSubjectId = null;
 
     function openInstructorListModal(subjectId, subjectName) {
@@ -477,58 +535,17 @@
 
     function openConfirmAssignModal(subjectId, subjectName) {
         currentSubjectId = subjectId;
+        document.getElementById('assign_subject_id').value = subjectId;
         document.getElementById('assignSubjectName').textContent = subjectName;
+        
+        // Reset the form
+        const form = document.getElementById('assignInstructorForm');
+        form.reset();
+        
+        // Show the modal
         const modal = document.getElementById('confirmAssignModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
-        document.getElementById('assignInstructorForm').action = `/gecoordinator/subjects/${subjectId}/assign`;
-        
-        // Reset the select first
-        const select = document.getElementById('instructor_select');
-        const defaultOption = select.options[0];
-        select.innerHTML = '';
-        select.appendChild(defaultOption);
-        
-        // Show loading state
-        const submitBtn = document.querySelector('#assignInstructorForm button[type="submit"]');
-        submitBtn.disabled = true;
-        select.disabled = true;
-        
-        // Fetch all instructors
-        fetch('/gecoordinator/available-instructors')
-            .then(response => response.json())
-            .then(instructors => {
-                // Fetch assigned instructors for this subject
-                return fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
-                    .then(response => response.json())
-                    .then(assignedInstructors => {
-                        const assignedIds = assignedInstructors.map(i => i.id);
-                        
-                        // Add available instructors to select
-                        instructors.forEach(instructor => {
-                            if (!assignedIds.includes(instructor.id)) {
-                                const option = new Option(instructor.name, instructor.id);
-                                select.add(option);
-                            }
-                        });
-                        
-                        // Enable controls if there are available instructors
-                        if (select.options.length > 1) {
-                            select.disabled = false;
-                            submitBtn.disabled = false;
-                        } else {
-                            const option = new Option('No available instructors', '');
-                            option.disabled = true;
-                            option.selected = true;
-                            select.add(option);
-                        }
-                    });
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error loading instructors. Please try again.');
-                closeConfirmAssignModal();
-            });
     }
 
     function closeConfirmAssignModal() {
