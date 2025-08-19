@@ -1,5 +1,14 @@
 @php
     $finalCOs = isset($coColumnsByTerm) && is_array($coColumnsByTerm) ? array_unique(array_merge(...array_values($coColumnsByTerm))) : [];
+    
+    // Sort finalCOs by co_code to ensure proper ordering (CO1, CO2, CO3, CO4)
+    if (!empty($finalCOs) && isset($coDetails)) {
+        usort($finalCOs, function($a, $b) use ($coDetails) {
+            $codeA = $coDetails[$a]['co_code'] ?? $coDetails[$a]->co_code ?? '';
+            $codeB = $coDetails[$b]['co_code'] ?? $coDetails[$b]->co_code ?? '';
+            return strcmp($codeA, $codeB);
+        });
+    }
 @endphp
 @extends('layouts.app')
 
@@ -284,12 +293,13 @@
                                             }
                                         }
                                         $percentPassed = $attempted > 0 ? round(($passed / $attempted) * 100, 2) : 0;
+                                        $textClass = $percentPassed >= 75 ? 'text-success' : 'text-danger';
                                     @endphp
-                                    <td class="fw-bold text-success">{{ $percentPassed }}%</td>
+                                    <td class="fw-bold {{ $textClass }}">{{ $percentPassed }}%</td>
                                 @endforeach
                             </tr>
                             <tr style="background:#fff;">
-                                <td class="fw-bold text-dark text-start">🎯 Target Achieved</td>
+                                <td class="fw-bold text-dark text-start">❌ Failed Percentage</td>
                                 @foreach($finalCOs as $coId)
                                     @php
                                         $threshold = 75; // Fixed threshold
@@ -304,12 +314,13 @@
                                                 if($percent > $threshold) $passed++;
                                             }
                                         }
-                                        $targetPercentage = $attempted > 0 ? round(($passed / $attempted) * 100, 1) : 0;
-                                        $badgeClass = $targetPercentage >= 75 ? 'bg-success' : 'bg-danger';
+                                        $failed = $attempted - $passed;
+                                        $failedPercentage = $attempted > 0 ? round(($failed / $attempted) * 100, 1) : 0;
+                                        $textClass = $failedPercentage >= 75 ? 'text-danger' : 'text-success';
                                     @endphp
                                     <td>
-                                        <span class="badge {{ $badgeClass }}">
-                                            75%
+                                        <span class="fw-bold {{ $textClass }}">
+                                            {{ $failedPercentage }}%
                                         </span>
                                     </td>
                                 @endforeach
@@ -886,6 +897,14 @@
                 content = getPrintTableContent('combined');
                 reportTitle = 'Course Outcome Attainment Results - All Terms Combined';
                 break;
+            case 'passfail':
+                content = getPassFailContent();
+                reportTitle = 'Course Outcome Pass/Fail Analysis Report';
+                break;
+            case 'copasssummary':
+                content = getCourseOutcomeSummaryContent();
+                reportTitle = 'Course Outcomes Summary Dashboard Report';
+                break;
             case 'all':
                 content = getAllTablesContent();
                 reportTitle = 'Complete Course Outcome Attainment Report';
@@ -1308,6 +1327,130 @@
         content += '<div class="page-break"></div>';
         content += getPrintTableContent('combined');
         
+        // Add Pass/Fail Analysis
+        content += '<div class="page-break"></div>';
+        content += getPassFailContent();
+        
+        // Add Course Outcomes Summary
+        content += '<div class="page-break"></div>';
+        content += getCourseOutcomeSummaryContent();
+        
+        return content;
+    }
+    
+    function getPassFailContent() {
+        const passFailTable = document.querySelector('#passfail-table table');
+        if (!passFailTable) {
+            return '<p>No Pass/Fail analysis data available.</p>';
+        }
+        
+        let content = '<div class="term-section">';
+        content += '<h3 class="term-title">Pass/Fail Analysis Summary</h3>';
+        content += '<table class="print-table">';
+        
+        // Copy the Pass/Fail table content
+        const rows = passFailTable.querySelectorAll('tr');
+        rows.forEach((row) => {
+            const isHeader = row.closest('thead') !== null;
+            const tag = isHeader ? 'th' : 'td';
+            
+            content += '<tr>';
+            const cells = row.querySelectorAll(isHeader ? 'th' : 'td');
+            cells.forEach(cell => {
+                let cellContent = cell.textContent.trim();
+                let cellClass = '';
+                let cellAttrs = '';
+                
+                // Preserve attributes
+                if (cell.hasAttribute('colspan')) {
+                    cellAttrs += ` colspan="${cell.getAttribute('colspan')}"`;
+                }
+                if (cell.hasAttribute('rowspan')) {
+                    cellAttrs += ` rowspan="${cell.getAttribute('rowspan')}"`;
+                }
+                
+                // Preserve important CSS classes
+                if (cell.classList.contains('table-success')) {
+                    cellClass += ' table-success';
+                }
+                if (cell.classList.contains('text-center')) {
+                    cellClass += ' text-center';
+                }
+                if (cell.classList.contains('fw-bold')) {
+                    cellClass += ' fw-bold';
+                }
+                if (cell.classList.contains('bg-light')) {
+                    cellClass += ' bg-light';
+                }
+                
+                content += `<${tag}${cellAttrs} class="${cellClass.trim()}">${cellContent}</${tag}>`;
+            });
+            content += '</tr>';
+        });
+        
+        content += '</table></div>';
+        return content;
+    }
+    
+    function getCourseOutcomeSummaryContent() {
+        const summaryTable = document.querySelector('#copasssummary-table table');
+        if (!summaryTable) {
+            return '<p>No Course Outcomes Summary data available.</p>';
+        }
+        
+        let content = '<div class="term-section">';
+        content += '<h3 class="term-title">Course Outcomes Summary Dashboard</h3>';
+        content += '<table class="print-table">';
+        
+        // Copy the Course Outcomes Summary table content
+        const rows = summaryTable.querySelectorAll('tr');
+        rows.forEach((row) => {
+            const isHeader = row.closest('thead') !== null;
+            const tag = isHeader ? 'th' : 'td';
+            
+            content += '<tr>';
+            const cells = row.querySelectorAll(isHeader ? 'th' : 'td');
+            cells.forEach(cell => {
+                let cellContent = cell.textContent.trim();
+                let cellClass = '';
+                let cellAttrs = '';
+                
+                // Preserve attributes
+                if (cell.hasAttribute('colspan')) {
+                    cellAttrs += ` colspan="${cell.getAttribute('colspan')}"`;
+                }
+                if (cell.hasAttribute('rowspan')) {
+                    cellAttrs += ` rowspan="${cell.getAttribute('rowspan')}"`;
+                }
+                
+                // Preserve important CSS classes
+                if (cell.classList.contains('table-success')) {
+                    cellClass += ' table-success';
+                }
+                if (cell.classList.contains('text-center')) {
+                    cellClass += ' text-center';
+                }
+                if (cell.classList.contains('fw-bold')) {
+                    cellClass += ' fw-bold';
+                }
+                if (cell.classList.contains('bg-light')) {
+                    cellClass += ' bg-light';
+                }
+                if (cell.classList.contains('average-cell')) {
+                    cellClass += ' average-cell';
+                }
+                
+                // Handle percentage values
+                if (cellContent.includes('%')) {
+                    cellClass += ' percentage-value';
+                }
+                
+                content += `<${tag}${cellAttrs} class="${cellClass.trim()}">${cellContent}</${tag}>`;
+            });
+            content += '</tr>';
+        });
+        
+        content += '</table></div>';
         return content;
     }
     
@@ -1406,6 +1549,12 @@
                                     <button class="btn btn-success" onclick="printSpecificTable('combined'); closePrintModal();">
                                         <i class="bi bi-table me-2"></i>Print Combined Table
                                     </button>
+                                    <button class="btn btn-success" onclick="printSpecificTable('passfail'); closePrintModal();">
+                                        <i class="bi bi-check-circle me-2"></i>Print Pass/Fail Analysis
+                                    </button>
+                                    <button class="btn btn-success" onclick="printSpecificTable('copasssummary'); closePrintModal();">
+                                        <i class="bi bi-graph-up me-2"></i>Print Course Outcomes Summary
+                                    </button>
                                     <button class="btn btn-success" onclick="printSpecificTable('all'); closePrintModal();">
                                         <i class="bi bi-grid-3x3 me-2"></i>Print Everything
                                     </button>
@@ -1415,7 +1564,11 @@
                                     <i class="bi bi-info-circle me-1"></i>
                                     <strong>Combined Table:</strong> Shows all terms in one view<br>
                                     <i class="bi bi-info-circle me-1"></i>
-                                    <strong>Print Everything:</strong> Includes summary dashboard
+                                    <strong>Pass/Fail Analysis:</strong> Student performance analysis<br>
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Course Outcomes Summary:</strong> Dashboard overview<br>
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Print Everything:</strong> Includes all tables and analysis
                                 </div>
                             </div>
                         </div>

@@ -6,6 +6,7 @@ use App\Models\CourseOutcomes;
 use App\Models\Subject;
 use App\Models\AcademicPeriod;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class CourseOutcomesController extends Controller
 {
@@ -69,7 +70,12 @@ class CourseOutcomesController extends Controller
         // Only show subjects in the selected academic year and semester
         $subjectsQuery = Subject::query()
             ->join('academic_periods', 'subjects.academic_period_id', '=', 'academic_periods.id')
-            ->where('subjects.instructor_id', $request->user()->id)
+            ->where(function($query) {
+                $query->where('subjects.instructor_id', Auth::id())
+                      ->orWhereHas('instructors', function($q) {
+                          $q->where('instructor_id', Auth::id());
+                      });
+            })
             ->where('subjects.is_deleted', false);
         if ($academicYear) {    
             $subjectsQuery->where('academic_periods.academic_year', $academicYear);
