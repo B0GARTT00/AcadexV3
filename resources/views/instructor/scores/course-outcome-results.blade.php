@@ -922,6 +922,10 @@
                             .report-title {
                                 font-size: 16px;
                             }
+                            
+                            .percentage-value {
+                                color: #000000 !important;
+                            }
                         }
                         
                         body {
@@ -1101,7 +1105,7 @@
                         }
 
                         .percentage-value {
-                            color: #0066cc;
+                            color: #000000;
                             font-weight: 500;
                         }
 

@@ -38,7 +38,20 @@ class CourseOutcomeAttainmentController extends Controller
                 ->whereNotNull('course_outcome_id')
                 ->get();
             $activitiesByTerm[$term] = $activities;
-            $coColumnsByTerm[$term] = $activities->pluck('course_outcome_id')->unique()->toArray();
+            
+            // Get unique course outcome IDs and sort them properly
+            $coIds = $activities->pluck('course_outcome_id')->unique()->toArray();
+            
+            // Sort by getting the actual CourseOutcomes and ordering by co_code
+            if (!empty($coIds)) {
+                $sortedCos = \App\Models\CourseOutcomes::whereIn('id', $coIds)
+                    ->orderBy('co_code')
+                    ->pluck('id')
+                    ->toArray();
+                $coColumnsByTerm[$term] = $sortedCos;
+            } else {
+                $coColumnsByTerm[$term] = [];
+            }
         }
 
         // Build activityCoMap: [term => [activity_id => co_id]]
