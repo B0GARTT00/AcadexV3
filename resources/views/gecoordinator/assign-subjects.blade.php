@@ -567,6 +567,11 @@
                 // Show loading state
                 submitButton.disabled = true;
                 
+                // Get the form data
+                const formData = new FormData(form);
+                // Add the subject_id to the form data
+                formData.append('subject_id', currentSubjectId);
+                
                 // Send the request
                 fetch('{{ route("gecoordinator.assignInstructor") }}', {
                     method: 'POST',
@@ -575,7 +580,7 @@
                         'X-Requested-With': 'XMLHttpRequest',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
-                    body: new FormData(form)
+                    body: formData
                 })
                 .then(response => {
                     if (!response.ok) {

@@ -58,6 +58,7 @@ class VPAAController extends Controller
     {
         // Get all non-deleted departments
         $departments = Department::where('is_deleted', false)
+            ->select('id', 'department_code', 'department_description')
             ->orderBy('department_description')
             ->get();
 
@@ -94,7 +95,10 @@ class VPAAController extends Controller
         }
 
         $instructors = $query->paginate(15); // Paginate with 15 items per page
-        $departments = Department::where('is_deleted', false)->orderBy('department_description')->get();
+        $departments = Department::where('is_deleted', false)
+            ->select('id', 'department_code', 'department_description')
+            ->orderBy('department_description')
+            ->get();
         $selectedDepartment = $departmentId ? Department::find($departmentId) : null;
 
         return view('vpaa.instructors', compact('instructors', 'departments', 'selectedDepartment'));
@@ -106,7 +110,6 @@ class VPAAController extends Controller
 
     public function viewStudents(Request $request)
     {
-
         $selectedDepartmentId = $request->input('department_id');
         $selectedCourseId = $request->input('course_id');
         
@@ -126,6 +129,7 @@ class VPAAController extends Controller
         $students = $query->get();
         
         $departments = Department::where('is_deleted', false)
+            ->select('id', 'department_code', 'department_description')
             ->orderBy('department_description')
             ->get();
             
@@ -164,6 +168,7 @@ class VPAAController extends Controller
     
         // Get departments for the filter
         $departments = Department::where('is_deleted', false)
+            ->select('id', 'department_code', 'department_description')
             ->orderBy('department_description')
             ->get();
             

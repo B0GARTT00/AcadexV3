@@ -27,7 +27,7 @@
                         <option value="">All Departments</option>
                         @foreach($departments as $dept)
                             <option value="{{ $dept->id }}" {{ $selectedDepartmentId == $dept->id ? 'selected' : '' }}>
-                                {{ $dept->name }}
+                                {{ $dept->department_description }}
                             </option>
                         @endforeach
                     </select>
