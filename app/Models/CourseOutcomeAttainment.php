@@ -12,7 +12,6 @@ class CourseOutcomeAttainment extends Model
         'co_id',
         'score',
         'max',
-        'percent',
         'semester_total',
     ];
 

@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('co_code'); // CO1, CO2, CO3, etc.
             $table->string('co_identifier'); // IT 101.1, IT 101.2, etc.
             $table->text('description'); // Course outcome description
-            $table->float('percent')->default(0); // Percentage attainment for this CO
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->foreignId('updated_by')->constrained('users')->onDelete('cascade');
             $table->boolean('is_deleted')->default(false);

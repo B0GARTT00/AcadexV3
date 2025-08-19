@@ -239,6 +239,9 @@
             background-color: var(--primary-green);
         }
     </style>
+
+    <!-- Additional Page Styles -->
+    @stack('styles')
 </head>
 <body>
     <!-- Sidebar -->

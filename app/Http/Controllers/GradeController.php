@@ -14,7 +14,6 @@ use App\Traits\ActivityManagementTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Log;
 
 class GradeController extends Controller
 {
@@ -25,7 +24,8 @@ class GradeController extends Controller
     {
         $subjectId = $request->query('subject_id');
         $term = $request->query('term');
-        if (!$subjectId || !$term) {
+        
+        if (!$subjectId) {
             return response()->json([]);
         }
 
@@ -33,11 +33,9 @@ class GradeController extends Controller
         if (!$subject) {
             return response()->json([]);
         }
-        $academicPeriodId = $subject->academic_period_id;
 
-        // Get course outcomes for this subject and term
+        // Get course outcomes for this subject
         $outcomes = \App\Models\CourseOutcomes::where('subject_id', $subjectId)
-            ->where('academic_period_id', $academicPeriodId)
             ->where('is_deleted', false)
             ->get();
 
@@ -48,6 +46,7 @@ class GradeController extends Controller
                 'name' => $co->co_identifier,
             ];
         });
+        
         return response()->json($result);
     }
     use GradeCalculationTrait, ActivityManagementTrait;
@@ -116,7 +115,7 @@ class GradeController extends Controller
             $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
                 ->where('is_deleted', false)
                 ->get();
-
+                
             foreach ($students as $student) {
                 $activityScores = $this->calculateActivityScores($activities, $student->id);
                 foreach ($activities as $activity) {
@@ -238,11 +237,16 @@ class GradeController extends Controller
         $students = Student::whereHas('subjects', fn($q) => $q->where('subject_id', $subject->id))
             ->where('is_deleted', false)
             ->get();
-    
+
         $activities = $this->getOrCreateDefaultActivities($subject->id, $term);
+        
+        $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
+            ->where('is_deleted', false)
+            ->get();
+            
         $scores = [];
         $termGrades = [];
-    
+
         foreach ($students as $student) {
             $activityScores = $this->calculateActivityScores($activities, $student->id);
             
@@ -257,9 +261,9 @@ class GradeController extends Controller
                 $termGrades[$student->id] = null;
             }
         }
-    
+
         return view('instructor.partials.grade-body', compact(
-            'subject', 'term', 'students', 'activities', 'scores', 'termGrades'
+            'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes'
         ));
     }
 

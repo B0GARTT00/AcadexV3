@@ -145,7 +145,6 @@ class CourseOutcomeAttainmentController extends Controller
             'co_id' => 'required|exists:course_outcomes,id',
             'score' => 'required|integer',
             'max' => 'required|integer',
-            'percent' => 'required|numeric',
             'semester_total' => 'required|numeric',
         ]);
         $attainment = CourseOutcomeAttainment::create($data);
@@ -164,7 +163,6 @@ class CourseOutcomeAttainmentController extends Controller
         $data = $request->validate([
             'score' => 'integer',
             'max' => 'integer',
-            'percent' => 'numeric',
             'semester_total' => 'numeric',
         ]);
         $attainment->update($data);

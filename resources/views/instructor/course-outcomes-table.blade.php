@@ -109,7 +109,6 @@
                                 <th>Identifier</th>
                                 <th>Description</th>
                                 <th>Academic Period</th>
-                                <th>Percentage</th>
                                 <th class="text-end">Actions</th>
                             </tr>
                         </thead>
@@ -126,13 +125,6 @@
                                             -
                                         @endif
                                     </td>
-                                    <td>
-                                        @if(!is_null($co->percent))
-                                            {{ $co->percent }}%
-                                        @else
-                                            <span class="text-muted">Not set</span>
-                                        @endif
-                                    </td>
                                     <td class="text-end">
                                         <button type="button" class="btn btn-success btn-sm" 
                                             data-bs-toggle="modal" 
@@ -142,7 +134,6 @@
                                             data-co_identifier="{{ $co->co_identifier }}"
                                             data-description="{{ $co->description }}"
                                             data-academic_period_id="{{ $co->academic_period_id }}"
-                                            data-percent="{{ $co->percent }}"
                                         >
                                             <i class="bi bi-pencil-square"></i> Edit
                                         </button>
@@ -182,19 +173,15 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">CO Code <span class="text-danger">*</span></label>
-                        <input type="text" name="co_code" class="form-control" required>
+                        <input type="text" name="co_code" id="co_code" class="form-control" readonly style="background-color: #f8f9fa;" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Identifier <span class="text-danger">*</span></label>
-                        <input type="text" name="co_identifier" class="form-control" required>
+                        <input type="text" name="co_identifier" id="co_identifier" class="form-control" readonly style="background-color: #f8f9fa;" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description <span class="text-danger">*</span></label>
                         <textarea name="description" class="form-control" rows="3" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Percentage <span class="text-danger">*</span></label>
-                        <input type="number" name="percent" class="form-control" min="0" max="100" step="0.01" required placeholder="Enter percentage">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Academic Period <span class="text-danger">*</span></label>
@@ -231,11 +218,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">CO Code <span class="text-danger">*</span></label>
-                        <input type="text" name="co_code" id="edit_co_code" class="form-control" required>
+                        <input type="text" name="co_code" id="edit_co_code" class="form-control" required readonly style="background-color: #f8f9fa;">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Identifier <span class="text-danger">*</span></label>
-                        <input type="text" name="co_identifier" id="edit_co_identifier" class="form-control" required>
+                        <input type="text" name="co_identifier" id="edit_co_identifier" class="form-control" required readonly style="background-color: #f8f9fa;">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description <span class="text-danger">*</span></label>
@@ -249,10 +236,6 @@
                                 {{ $currentPeriod->academic_year ?? '' }} - {{ $currentPeriod->semester ?? '' }}
                             </option>
                         </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Percentage <span class="text-danger">*</span></label>
-                        <input type="number" name="percent" id="edit_percent" class="form-control" min="0" max="100" step="0.01" required placeholder="Enter percentage">
                     </div>
                     <input type="hidden" name="subject_id" value="{{ $selectedSubject->id ?? '' }}">
                 </div>
@@ -313,18 +296,64 @@ document.addEventListener('DOMContentLoaded', function () {
         var co_identifier = button.getAttribute('data-co_identifier');
         var description = button.getAttribute('data-description');
         var academic_period_id = button.getAttribute('data-academic_period_id');
-        var percent = button.getAttribute('data-percent');
 
         document.getElementById('edit_co_code').value = co_code;
         document.getElementById('edit_co_identifier').value = co_identifier;
         document.getElementById('edit_description').value = description;
         document.getElementById('edit_academic_period_id').value = academic_period_id;
-        document.getElementById('edit_percent').value = percent;
 
         // Set the form action dynamically
         var form = document.getElementById('editCourseOutcomeForm');
         form.action = '/instructor/course_outcomes/' + id;
     });
+
+    // Auto-generate CO Code and Identifier when add modal is shown
+    const addModal = document.getElementById('addCourseOutcomeModal');
+    if (addModal) {
+        addModal.addEventListener('show.bs.modal', function(e) {
+            generateNextCOCode();
+        });
+    }
+
+    function generateNextCOCode() {
+        // Get subject code from the page
+        const subjectCode = '{{ $selectedSubject->subject_code ?? "" }}';
+        
+        // Get existing course outcomes from the table
+        const existingCOs = [];
+        const coRows = document.querySelectorAll('tbody tr');
+        
+        coRows.forEach(row => {
+            const coCodeCell = row.querySelector('td:first-child');
+            if (coCodeCell) {
+                const coCode = coCodeCell.textContent.trim();
+                // Extract number from CO code (e.g., "CO1" -> 1)
+                const match = coCode.match(/CO(\d+)/i);
+                if (match) {
+                    existingCOs.push(parseInt(match[1]));
+                }
+            }
+        });
+
+        // Determine next CO number
+        let nextCONumber = 1;
+        if (existingCOs.length > 0) {
+            const maxCO = Math.max(...existingCOs);
+            nextCONumber = maxCO + 1;
+        }
+
+        // Set the auto-generated values
+        const coCodeInput = document.getElementById('co_code');
+        const coIdentifierInput = document.getElementById('co_identifier');
+        
+        if (coCodeInput && coIdentifierInput) {
+            const newCOCode = `CO${nextCONumber}`;
+            const newIdentifier = subjectCode ? `${subjectCode}.${nextCONumber}` : `CO${nextCONumber}`;
+            
+            coCodeInput.value = newCOCode;
+            coIdentifierInput.value = newIdentifier;
+        }
+    }
 });
 </script>
 @endpush

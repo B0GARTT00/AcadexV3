@@ -137,7 +137,6 @@ class CourseOutcomesController extends Controller
             'co_code' => 'required|string|max:255',
             'co_identifier' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'percent' => 'nullable|numeric',
         ]);
 
         $validated['created_by'] = $request->user()->id;
@@ -179,7 +178,6 @@ class CourseOutcomesController extends Controller
             'co_code' => 'required|string|max:255',
             'co_identifier' => 'required|string|max:255',
             'description' => 'nullable|string',
-            'percent' => 'nullable|numeric',
         ]);
 
         $validated['updated_by'] = $request->user()->id;

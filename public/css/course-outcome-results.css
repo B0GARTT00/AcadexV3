@@ -1,0 +1,928 @@
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 0.75in 0.5in;
+    }
+    
+    * {
+        box-shadow: none !important;
+        text-shadow: none !important;
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+    }
+    
+    body {
+        font-family: Arial, sans-serif !important;
+        font-size: 11px;
+        line-height: 1.2;
+        color: #000 !important;
+        background: white !important;
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Hide UI elements but show print content */
+    .no-print, .no-print *,
+    .header-section, .controls-panel, .stepper-container,
+    .notification-bell, .btn, button, .modal, .fade-overlay {
+        display: none !important;
+        visibility: hidden !important;
+    }
+
+    /* Ensure main content wrapper doesn't interfere */
+    .main-content {
+        width: 100% !important;
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Show only the print area */
+    #print-area {
+        display: block !important;
+        visibility: visible !important;
+    }
+    
+    .results-card {
+        box-shadow: none !important;
+        border: none !important;
+        page-break-inside: avoid;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0 !important;
+        background: white !important;
+    }
+    
+    .card-header-custom {
+        display: block !important;
+        background: white !important;
+        color: #000 !important;
+        padding: 1rem 0 !important;
+        border: none !important;
+        font-size: 18px !important;
+        font-weight: bold !important;
+        text-align: center !important;
+        margin-bottom: 1rem !important;
+    }
+    
+    .table-responsive {
+        overflow: visible !important;
+        padding: 0 !important;
+    }
+    
+    /* Main data table styling */
+    table.co-table {
+        font-size: 10px !important;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        margin: 0 !important;
+        background: white !important;
+        border: 2px solid #000 !important;
+    }
+    
+    /* First header row - STUDENTS and CO headers */
+    table.co-table thead tr:first-child th:first-child {
+        background: #198754 !important;
+        color: white !important;
+        font-weight: bold !important;
+        font-size: 12px !important;
+        text-align: center !important;
+        padding: 20px 10px !important;
+        border: 2px solid #000 !important;
+        vertical-align: middle !important;
+        width: 150px !important;
+    }
+    
+    /* CO1, CO2, CO3 headers */
+    table.co-table thead tr:first-child th:not(:first-child) {
+        background: #198754 !important;
+        color: white !important;
+        font-weight: bold !important;
+        font-size: 14px !important;
+        text-align: center !important;
+        padding: 15px 5px !important;
+        border: 2px solid #000 !important;
+        vertical-align: middle !important;
+    }
+    
+    /* Second header row - term columns */
+    table.co-table thead tr:nth-child(2) th {
+        background: #198754 !important;
+        color: white !important;
+        font-weight: bold !important;
+        font-size: 10px !important;
+        text-align: center !important;
+        padding: 8px 3px !important;
+        border: 2px solid #000 !important;
+        vertical-align: middle !important;
+        min-width: 60px !important;
+    }
+    
+    /* TOTAL columns - darker green */
+    table.co-table thead tr:nth-child(2) th.bg-primary,
+    table.co-table thead tr:nth-child(2) th[style*="bg-primary"] {
+        background: #157347 !important;
+        color: white !important;
+        font-weight: bold !important;
+    }
+    
+    /* Data cells */
+    table.co-table tbody td {
+        border: 1px solid #000 !important;
+        padding: 5px 3px !important;
+        text-align: center !important;
+        font-size: 9px !important;
+        background: white !important;
+        color: #000 !important;
+        vertical-align: middle !important;
+        font-weight: normal !important;
+        text-decoration: none !important;
+        font-style: normal !important;
+    }
+    
+    /* Student names column */
+    table.co-table tbody td:first-child {
+        text-align: left !important;
+        padding: 5px 8px !important;
+        font-weight: normal !important;
+        background: #f8f9fa !important;
+        width: 150px !important;
+        color: #000 !important;
+        text-decoration: none !important;
+        font-style: normal !important;
+    }
+    
+    /* Summary row - Total number of items */
+    table.co-table tbody tr:first-child td {
+        background: #e8f5e8 !important;
+        font-weight: normal !important;
+        font-size: 9px !important;
+        color: #000 !important;
+        text-decoration: none !important;
+        font-style: normal !important;
+    }
+    
+    table.co-table tbody tr:first-child td:first-child {
+        background: #e8f5e8 !important;
+        text-align: left !important;
+        padding: 5px 8px !important;
+        color: #000 !important;
+        font-weight: normal !important;
+        text-decoration: none !important;
+        font-style: normal !important;
+    }
+    
+    /* Data rows */
+    table.co-table tbody tr:not(:first-child) td {
+        background: white !important;
+        color: #000 !important;
+        font-weight: normal !important;
+        text-decoration: none !important;
+        font-style: normal !important;
+    }
+    
+    table.co-table tbody tr:not(:first-child):nth-child(even) td {
+        background: #fafafa !important;
+        color: #000 !important;
+        font-weight: normal !important;
+        text-decoration: none !important;
+        font-style: normal !important;
+    }
+    
+    table.co-table tbody tr:not(:first-child) td:first-child {
+        background: #f8f9fa !important;
+        color: #000 !important;
+        font-weight: normal !important;
+        text-decoration: none !important;
+        font-style: normal !important;
+    }
+    
+    /* Force all table borders to be visible */
+    table.co-table th,
+    table.co-table td {
+        border: 1px solid #000 !important;
+    }
+
+    /* Header borders should be thicker */
+    table.co-table thead th {
+        border: 2px solid #000 !important;
+    }
+
+    /* Critical: Override Bootstrap table styles */
+    .table-bordered th,
+    .table-bordered td {
+        border: 1px solid #000 !important;
+    }
+
+    /* Force table structure */
+    #print-area table {
+        border-collapse: collapse !important;
+        width: 100% !important;
+    }
+
+    /* Override any Bootstrap color classes */
+    .table-success,
+    .table-success th,
+    .table-success > th,
+    .table-success > td {
+        background-color: #198754 !important;
+        color: white !important;
+    }
+
+    /* Hide any extra padding/margins */
+    .p-3, .p-2, .p-1 {
+        padding: 0 !important;
+    }
+    
+    .m-3, .m-2, .m-1, .mb-0 {
+        margin: 0 !important;
+    }
+    
+    /* Text alignment classes */
+    .text-center {
+        text-align: center !important;
+    }
+    
+    .text-start {
+        text-align: left !important;
+    }
+    
+    .fw-bold {
+        font-weight: bold !important;
+    }
+    
+    /* Ensure proper table width */
+    .align-middle {
+        vertical-align: middle !important;
+    }
+    
+    /* Hide other tables that might interfere */
+    table:not(.co-table) {
+        display: none !important;
+    }
+    
+    /* Show only the main combined table */
+    #combined-table {
+        display: block !important;
+    }
+    
+    #passfail-table,
+    #copasssummary-table,
+    .term-table {
+        display: none !important;
+    }
+}
+
+/* Enhanced UI Styles for Course Outcome Results */
+.header-section {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%);
+    border-radius: 20px;
+    padding: 2rem;
+    margin: 1rem 0 1.5rem 0;
+    box-shadow: 0 8px 32px rgba(25, 135, 84, 0.15);
+    color: white;
+}
+
+.header-title {
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+.header-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 0;
+}
+
+.controls-panel {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    border: 1px solid #e9ecef;
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.control-label {
+    font-weight: 600;
+    color: #2c3e50;
+    min-width: 120px;
+    font-size: 0.95rem;
+}
+
+.control-select {
+    border-radius: 10px;
+    border: 2px solid #e9ecef;
+    padding: 0.6rem 1rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.control-select:focus {
+    border-color: #198754;
+    box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.15);
+}
+
+.print-btn {
+    background: linear-gradient(135deg, #198754 0%, #157347 100%);
+    border: none;
+    border-radius: 12px;
+    padding: 0.7rem 1.5rem;
+    font-weight: 600;
+    color: white;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(25, 135, 84, 0.2);
+}
+
+.print-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(25, 135, 84, 0.3);
+}
+
+/* System-wide table style for CO Results - Modern Clean Design */
+.co-table {
+    border-radius: 0;
+    overflow: hidden;
+    background: #fff;
+    border: none;
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.co-table th, .co-table td {
+    padding: 1.2rem 1rem;
+    vertical-align: middle;
+    font-size: 0.95rem;
+    border: none;
+    border-bottom: 1px solid #f0f4f3;
+    color: #000;
+    font-weight: normal;
+    text-decoration: none;
+    font-style: normal;
+}
+
+.co-table thead th {
+    background: #198754 !important;
+    color: white !important;
+    border-bottom: none !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-size: 0.85rem;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.co-table thead th:first-child {
+    border-top-left-radius: 0;
+    text-align: left;
+    padding-left: 1.5rem;
+}
+
+.co-table thead th:last-child {
+    border-top-right-radius: 0;
+}
+
+.co-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.co-table tbody tr:hover {
+    background-color: #f8fffe;
+    transform: scale(1.001);
+}
+
+.co-table tbody td {
+    background-color: #fff;
+    transition: all 0.2s ease;
+    border-bottom: 1px solid #f0f4f3;
+    color: #000;
+    font-weight: normal;
+    text-decoration: none;
+    font-style: normal;
+}
+
+.co-table tbody td:first-child {
+    font-weight: normal;
+    color: #000;
+    padding-left: 1.5rem;
+    text-align: left;
+    text-decoration: none;
+    font-style: normal;
+}
+
+.co-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.co-table th:not(:last-child),
+.co-table td:not(:last-child) {
+    border-right: 1px solid rgba(255,255,255,0.3);
+}
+
+.co-table .fw-bold {
+    color: #000;
+    font-weight: normal;
+    text-decoration: none;
+    font-style: normal;
+}
+
+.co-table .text-success {
+    color: #000 !important;
+    font-weight: normal;
+    text-decoration: none;
+    font-style: normal;
+}
+
+.co-table .text-danger {
+    color: #000 !important;
+    font-weight: normal;
+    text-decoration: none;
+    font-style: normal;
+}
+
+.co-table .text-info {
+    color: #000 !important;
+    font-weight: normal;
+    text-decoration: none;
+    font-style: normal;
+}
+
+.co-table .text-primary {
+    color: #000 !important;
+    font-weight: normal;
+    text-decoration: none;
+    font-style: normal;
+}
+
+.co-table .score-value {
+    font-weight: normal;
+    font-size: 1.1em;
+    padding: 0.4rem 0.8rem;
+    border-radius: 12px;
+    background: transparent;
+    display: inline-block;
+    min-width: 50px;
+    text-align: center;
+    color: #000;
+    border: none;
+    text-decoration: none;
+    font-style: normal;
+}
+
+.co-table .badge {
+    font-size: 0.9em;
+    padding: 0.6em 1.2em;
+    border-radius: 25px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.co-table .badge.bg-success {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%) !important;
+    border: none;
+}
+
+.co-table .badge.bg-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #e74c3c 100%) !important;
+    border: none;
+}
+
+.co-table .bi {
+    font-size: 1.2em;
+    vertical-align: middle;
+    margin-right: 0.4em;
+}
+
+/* Override all table text styling to be plain black */
+.co-table, .co-table * {
+    color: #000 !important;
+    font-weight: normal !important;
+    text-decoration: none !important;
+    font-style: normal !important;
+}
+
+/* Ensure headers remain white text on colored background */
+.co-table thead th, .co-table thead th * {
+    color: white !important;
+    font-weight: 700 !important;
+}
+
+.results-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    margin-bottom: 2rem;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.results-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.12);
+}
+
+.card-header-custom {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+    color: white;
+    font-weight: 700;
+    font-size: 1.3rem;
+    padding: 1.5rem 2rem;
+    border: none;
+    position: relative;
+    overflow: hidden;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
+
+.card-header-custom::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+}
+
+.results-card:hover .card-header-custom::before {
+    transform: translateX(100%);
+}
+
+.card-header-primary {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+}
+
+.card-header-info {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+}
+
+/* Term Stepper - Modern Clean Design like Manage Grades */
+.stepper-container {
+    margin-bottom: 2rem;
+}
+
+.stepper-container .results-card {
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: blur(10px);
+}
+
+.stepper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 1rem 0;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    flex: 1;
+    text-decoration: none;
+    transition: all 0.3s ease;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 1.5rem 1rem;
+    border-radius: 16px;
+}
+
+.step:hover {
+    background: rgba(25, 135, 84, 0.05);
+    transform: translateY(-3px);
+}
+
+.step:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: calc(50% + 50px);
+    width: calc(100% - 100px);
+    height: 3px;
+    background: linear-gradient(90deg, rgba(25, 135, 84, 0.2) 0%, rgba(25, 135, 84, 0.1) 100%);
+    z-index: 0;
+    transition: all 0.3s ease;
+    border-radius: 2px;
+}
+
+.step.highlight-line:not(:last-child)::after {
+    background: linear-gradient(90deg, #198754 0%, #20c997 100%);
+    box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+}
+
+.circle-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.circle {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    color: white;
+    z-index: 2;
+    transition: all 0.3s ease;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    border: 3px solid white;
+}
+
+.step:hover .circle {
+    transform: scale(1.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.completed .circle {
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+}
+
+.active .circle {
+    background: linear-gradient(135deg, #157347 0%, #198754 100%);
+    animation: pulse-modern 2s infinite;
+}
+
+.upcoming .circle {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    color: #6c757d;
+    border-color: #dee2e6;
+}
+
+.progress-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    transform: rotate(-90deg);
+    z-index: 1;
+}
+
+.progress-ring circle {
+    fill: none;
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.progress-ring-bg {
+    stroke: rgba(25, 135, 84, 0.1);
+}
+
+.progress-ring-bar {
+    stroke: #198754;
+    transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+.step-label {
+    font-size: 16px;
+    margin-top: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.completed .step-label {
+    color: #198754;
+    font-weight: 700;
+}
+
+.active .step-label {
+    color: #157347;
+    font-weight: 700;
+}
+
+.upcoming .step-label {
+    color: #6c757d;
+    font-weight: 500;
+}
+
+@keyframes pulse-modern {
+    0% {
+        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.5);
+    }
+    70% {
+        box-shadow: 0 0 0 20px rgba(25, 135, 84, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
+    }
+}
+
+.fade-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.7);
+    z-index: 9999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.fade-overlay.active {
+    display: flex;
+}
+
+.spinner {
+    border: 4px solid #e5e7eb;
+    border-top: 4px solid #198754;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Bell Notification Icon Styles */
+.notification-bell {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+    border: none;
+    font-size: 18px;
+}
+
+.notification-bell:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(243, 156, 18, 0.4);
+    background: linear-gradient(135deg, #e67e22 0%, #d35400 100%);
+    color: white;
+}
+
+.notification-bell .badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: #dc3545;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    font-size: 10px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid white;
+    animation: pulse-badge 2s infinite;
+}
+
+@keyframes pulse-badge {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.2);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.notification-bell .bell-icon {
+    animation: bell-shake 2s ease-in-out infinite;
+}
+
+@keyframes bell-shake {
+    0%, 50%, 100% {
+        transform: rotate(0deg);
+    }
+    10%, 30% {
+        transform: rotate(-10deg);
+    }
+    20%, 40% {
+        transform: rotate(10deg);
+    }
+}
+
+/* Warning Modal Styles */
+.warning-modal .modal-header {
+    background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+    color: white;
+    border-bottom: none;
+}
+
+.warning-modal .modal-header .btn-close {
+    filter: invert(1);
+    opacity: 1;
+}
+
+.warning-modal .modal-body {
+    padding: 2rem;
+}
+
+.warning-modal .modal-footer {
+    border-top: none;
+    padding: 1rem 2rem 2rem 2rem;
+}
+
+.warning-modal .incomplete-co-table {
+    background: rgba(255,255,255,0.8);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+}
+
+.warning-modal .quick-actions {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    border-left: 4px solid #f39c12;
+}
+
+.stepper-hint {
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    font-style: italic;
+}
+
+.view-indicator {
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-left: 1rem;
+    box-shadow: 0 2px 8px rgba(25,135,84,0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .header-title {
+        font-size: 1.8rem;
+    }
+    
+    .control-group {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .control-label {
+        min-width: auto;
+    }
+    
+    .step {
+        padding: 0.5rem;
+    }
+    
+    .circle {
+        width: 44px;
+        height: 44px;
+        font-size: 16px;
+    }
+    
+    .step-label {
+        font-size: 12px;
+    }
+}

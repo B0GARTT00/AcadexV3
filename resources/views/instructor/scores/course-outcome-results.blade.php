@@ -3,455 +3,12 @@
 @endphp
 @extends('layouts.app')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/course-outcome-results.css') }}">
+@endpush
+
 @section('content')
-<div class="container-fluid px-4 py-4">
-<style>
-    /* Print Settings - Default A4 Portrait */
-    @media print {
-        @page {
-            size: A4 portrait;
-            margin: 0.75in 0.5in;
-        }
-        
-        body {
-            font-size: 12px;
-            line-height: 1.4;
-        }
-        
-        .no-print {
-            display: none !important;
-        }
-        
-        .header-section, .controls-panel, .stepper-container {
-            display: none !important;
-        }
-        
-        .results-card {
-            box-shadow: none !important;
-            border: 1px solid #dee2e6 !important;
-            page-break-inside: avoid;
-        }
-        
-        table {
-            font-size: 10px;
-            page-break-inside: auto;
-        }
-        
-        tr {
-            page-break-inside: avoid;
-            page-break-after: auto;
-        }
-        
-        thead {
-            display: table-header-group;
-        }
-        
-        tfoot {
-            display: table-footer-group;
-        }
-    }
-
-    /* Enhanced UI Styles for Course Outcome Results */
-    .co-results-container {
-        background: linear-gradient(135deg, #f8fffe 0%, #e8f5f0 100%);
-        min-height: 100vh;
-        padding: 2rem 0;
-    }
-    
-    .header-section {
-        background: linear-gradient(135deg, #198754 0%, #157347 100%);
-        border-radius: 20px;
-        padding: 2rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 8px 32px rgba(25, 135, 84, 0.15);
-        color: white;
-    }
-    
-    .header-title {
-        font-size: 2.2rem;
-        font-weight: 700;
-        margin-bottom: 0.5rem;
-        text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .header-subtitle {
-        font-size: 1.1rem;
-        opacity: 0.9;
-        margin-bottom: 0;
-    }
-    
-    .controls-panel {
-        background: white;
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        border: 1px solid #e9ecef;
-    }
-    
-    .control-group {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1rem;
-    }
-    
-    .control-label {
-        font-weight: 600;
-        color: #2c3e50;
-        min-width: 120px;
-        font-size: 0.95rem;
-    }
-    
-    .control-select {
-        border-radius: 10px;
-        border: 2px solid #e9ecef;
-        padding: 0.6rem 1rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    
-    .control-select:focus {
-        border-color: #198754;
-        box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.15);
-    }
-    
-    .print-btn {
-        background: linear-gradient(135deg, #198754 0%, #157347 100%);
-        border: none;
-        border-radius: 12px;
-        padding: 0.7rem 1.5rem;
-        font-weight: 600;
-        color: white;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(25, 135, 84, 0.2);
-    }
-    
-    .print-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(25, 135, 84, 0.3);
-    }
-
-    /* System-wide table style for CO Results */
-    .co-table {
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 6px 30px rgba(25,135,84,0.08);
-        background: #fff;
-        border: none;
-    }
-    .co-table th, .co-table td {
-        padding: 1rem 0.75rem;
-        vertical-align: middle;
-        font-size: 0.95rem;
-        border-color: #e9ecef;
-    }
-    .co-table thead th {
-        background: linear-gradient(135deg, #198754 0%, #157347 100%) !important;
-        color: white !important;
-        border-bottom: none !important;
-        position: sticky;
-        top: 0;
-        z-index: 10;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        font-size: 0.9rem;
-    }
-    .co-table tbody tr:hover td {
-        background-color: rgba(25,135,84,0.05);
-        transition: background-color 0.2s;
-    }
-    .co-table tbody td {
-        background-color: #fff;
-        transition: background-color 0.2s;
-    }
-    .co-table th:not(:last-child) {
-        border-right: 1px solid rgba(255,255,255,0.2);
-    }
-    .co-table .fw-bold {
-        color: #198754;
-    }
-    .co-table .text-success {
-        color: #388e3c !important;
-    }
-    .co-table .text-danger {
-        color: #d32f2f !important;
-    }
-    .co-table .text-info {
-        color: #20c997 !important;
-    }
-    .co-table .text-primary {
-        color: #198754 !important;
-    }
-    .co-table .score-value {
-        font-weight: 600;
-        font-size: 1.05em;
-        padding: 0.3rem 0.6rem;
-        border-radius: 8px;
-        background: rgba(25,135,84,0.05);
-        display: inline-block;
-        min-width: 40px;
-        text-align: center;
-    }
-    .co-table .badge {
-        font-size: 0.85em;
-        padding: 0.5em 1em;
-        border-radius: 20px;
-        font-weight: 600;
-    }
-    .co-table .bi {
-        font-size: 1.1em;
-        vertical-align: middle;
-        margin-right: 0.3em;
-    }
-    
-    .results-card {
-        background: white;
-        border-radius: 20px;
-        overflow: hidden;
-        box-shadow: 0 8px 40px rgba(0,0,0,0.06);
-        border: none;
-        margin-bottom: 2rem;
-        transition: all 0.3s ease;
-    }
-    
-    .results-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 50px rgba(0,0,0,0.08);
-    }
-    
-    .card-header-custom {
-        background: linear-gradient(135deg, #198754 0%, #157347 100%);
-        color: white;
-        font-weight: 700;
-        font-size: 1.2rem;
-        padding: 1.5rem 2rem;
-        border: none;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .card-header-custom::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="rgba(255,255,255,0.1)"/><circle cx="75" cy="75" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-        opacity: 0.3;
-    }
-    
-    .card-header-primary {
-        background: linear-gradient(135deg, #198754 0%, #157347 100%);
-    }
-    
-    .card-header-info {
-        background: linear-gradient(135deg, #198754 0%, #20c997 100%);
-    }
-    
-    /* Term Stepper Enhanced Styles */
-    .stepper-container {
-        background: white;
-        border-radius: 16px;
-        padding: 1.5rem;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-        border: 1px solid #e9ecef;
-    }
-    
-    .stepper {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin: 0;
-        position: relative;
-    }
-
-    .step {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        position: relative;
-        flex: 1;
-        text-decoration: none;
-        transition: all 0.3s ease;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 1rem;
-        border-radius: 12px;
-    }
-    
-    .step:hover {
-        background: rgba(25,135,84,0.05);
-        transform: translateY(-2px);
-    }
-
-    .step:not(:last-child)::after {
-        content: '';
-        position: absolute;
-        top: 40px;
-        left: calc(50% + 40px);
-        width: calc(100% - 80px);
-        height: 3px;
-        background: linear-gradient(90deg, #d1e7db 0%, #a7d4c1 100%);
-        border-radius: 2px;
-        z-index: 0;
-        transition: all 0.3s ease;
-    }
-
-    .step.highlight-line:not(:last-child)::after {
-        background: linear-gradient(90deg, #198754 0%, #20c997 100%);
-        box-shadow: 0 2px 8px rgba(25,135,84,0.3);
-    }
-
-    .circle-wrapper {
-        position: relative;
-        width: 70px;
-        height: 70px;
-    }
-
-    .circle {
-        position: absolute;
-        top: 8px;
-        left: 8px;
-        width: 54px;
-        height: 54px;
-        border-radius: 50%;
-        font-weight: bold;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 18px;
-        color: white;
-        z-index: 2;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-    }
-
-    .step:hover .circle {
-        transform: scale(1.1);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
-    }
-
-    .completed .circle {
-        background: linear-gradient(135deg, #198754 0%, #20c997 100%);
-        animation: completedPulse 2s ease-in-out;
-    }
-
-    .active .circle {
-        background: linear-gradient(135deg, #198754 0%, #20c997 100%);
-        animation: activePulse 1.5s infinite;
-    }
-
-    .upcoming .circle {
-        background: linear-gradient(135deg, #e9ecef 0%, #dee2e6 100%);
-        color: #6c757d;
-        border: 2px solid #dee2e6;
-    }
-
-    .step-label {
-        font-size: 14px;
-        margin-top: 0.75rem;
-        font-weight: 600;
-        transition: all 0.3s ease;
-    }
-
-    .completed .step-label {
-        color: #198754;
-        font-weight: 700;
-    }
-
-    .active .step-label {
-        color: #198754;
-        font-weight: 700;
-    }
-
-    .upcoming .step-label {
-        color: #6c757d;
-    }
-
-    @keyframes activePulse {
-        0% {
-            box-shadow: 0 0 0 0 rgba(25, 135, 84, 0.4);
-        }
-        70% {
-            box-shadow: 0 0 0 15px rgba(25, 135, 84, 0);
-        }
-        100% {
-            box-shadow: 0 0 0 0 rgba(25, 135, 84, 0);
-        }
-    }
-    
-    @keyframes completedPulse {
-        0% {
-            transform: scale(1);
-        }
-        50% {
-            transform: scale(1.05);
-        }
-        100% {
-            transform: scale(1);
-        }
-    }
-    
-    .stepper-hint {
-        text-align: center;
-        color: #6c757d;
-        font-size: 0.9rem;
-        margin-top: 1rem;
-        font-style: italic;
-    }
-    
-    .view-indicator {
-        display: inline-block;
-        padding: 0.5rem 1rem;
-        background: linear-gradient(135deg, #198754 0%, #20c997 100%);
-        color: white;
-        border-radius: 20px;
-        font-size: 0.85rem;
-        font-weight: 600;
-        margin-left: 1rem;
-        box-shadow: 0 2px 8px rgba(25,135,84,0.2);
-    }
-    
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
-        .header-title {
-            font-size: 1.8rem;
-        }
-        
-        .control-group {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 0.5rem;
-        }
-        
-        .control-label {
-            min-width: auto;
-        }
-        
-        .step {
-            padding: 0.5rem;
-        }
-        
-        .circle {
-            width: 44px;
-            height: 44px;
-            font-size: 16px;
-        }
-        
-        .step-label {
-            font-size: 12px;
-        }
-    }
-</style>
-
-<div class="co-results-container">
+<div>
     {{-- Debug Subject Data (remove in production) --}}
     @if(config('app.debug'))
         <div class="alert alert-info" style="display: none;" id="debug-info">
@@ -465,6 +22,54 @@
         </div>
     @endif
 
+    {{-- Warning System for Incomplete CO Records --}}
+    @php
+        $incompleteActivities = [];
+        $incompleteCOs = [];
+        $zeroScoreCounts = [];
+        
+        // Check for incomplete records across all terms and COs
+        if(isset($terms) && is_array($terms) && isset($coColumnsByTerm) && isset($students)) {
+            foreach($terms as $term) {
+                if(!empty($coColumnsByTerm[$term])) {
+                    foreach($coColumnsByTerm[$term] as $coId) {
+                        $totalZeroScores = 0;
+                        $totalStudents = is_countable($students) ? count($students) : 0;
+                        $activities = \App\Models\Activity::where('term', $term)
+                            ->where('course_outcome_id', $coId)
+                            ->where('subject_id', $subjectId)
+                            ->get();
+                    
+                    foreach($students as $student) {
+                        foreach($activities as $activity) {
+                            $score = \App\Models\Score::where('student_id', $student->id)
+                                ->where('activity_id', $activity->id)
+                                ->first();
+                            if(!$score || $score->score == 0) {
+                                $totalZeroScores++;
+                                if(!in_array($activity->id, $incompleteActivities)) {
+                                    $incompleteActivities[] = $activity->id;
+                                }
+                            }
+                        }
+                    }
+                    
+                    if($totalZeroScores > 0) {
+                        $incompleteCOs[] = [
+                            'co_id' => $coId,
+                            'co_code' => $coDetails[$coId]->co_code ?? 'CO'.$coId,
+                            'term' => $term,
+                            'zero_scores' => $totalZeroScores,
+                            'total_possible' => $totalStudents * count($activities),
+                            'percentage_incomplete' => $totalStudents > 0 && count($activities) > 0 ? round(($totalZeroScores / ($totalStudents * count($activities))) * 100, 1) : 0
+                        ];
+                    }
+                    }
+                }
+            }
+        }
+    @endphp
+
     {{-- Header Section --}}
     <div class="header-section">
         <div class="d-flex align-items-center justify-content-between">
@@ -472,41 +77,22 @@
                 <h1 class="header-title">📊 Course Outcome Attainment Results</h1>
                 <p class="header-subtitle">Comprehensive analysis of student performance across all terms and course outcomes</p>
             </div>
-            <div class="d-flex align-items-center no-print">
-                @if(isset($coDetails) && count($coDetails) > 0)
-                    <!-- Print Options Dropdown -->
-                    <div class="dropdown me-2">
-                        <button class="btn btn-success dropdown-toggle" type="button" id="printDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                            🖨️ Print Options
-                        </button>
-                        <ul class="dropdown-menu" aria-labelledby="printDropdown">
-                            <li><h6 class="dropdown-header">🔄 Individual Terms</h6></li>
-                            <li><a class="dropdown-item" href="#" onclick="printSpecificTable('prelim')">
-                                <i class="bi bi-printer me-2"></i>Print Prelim Only
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="printSpecificTable('midterm')">
-                                <i class="bi bi-printer me-2"></i>Print Midterm Only
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="printSpecificTable('prefinal')">
-                                <i class="bi bi-printer me-2"></i>Print Prefinal Only
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="printSpecificTable('final')">
-                                <i class="bi bi-printer me-2"></i>Print Final Only
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><h6 class="dropdown-header">📋 Complete Reports</h6></li>
-                            <li><a class="dropdown-item" href="#" onclick="printSpecificTable('combined')">
-                                <i class="bi bi-table me-2"></i>Print Combined Table
-                            </a></li>
-                            <li><a class="dropdown-item" href="#" onclick="printSpecificTable('all')">
-                                <i class="bi bi-collection me-2"></i>Print Everything
-                            </a></li>
-                        </ul>
-                    </div>
+            <div class="d-flex align-items-center gap-3 no-print">
+                @if(isset($incompleteCOs) && is_array($incompleteCOs) && count($incompleteCOs) > 0)
+                    <!-- Incomplete Records Bell Notification -->
+                    <button class="notification-bell" type="button" data-bs-toggle="modal" data-bs-target="#warningModal" title="Incomplete Course Outcome Records Detected">
+                        <i class="bi bi-bell-fill bell-icon"></i>
+                        <span class="badge">{{ count($incompleteCOs) }}</span>
+                    </button>
                 @endif
-                <button onclick="printTable()" class="print-btn">
-                    <i class="bi bi-printer me-2"></i>Print Results
-                </button>
+                
+                @if(isset($coDetails) && is_countable($coDetails) && count($coDetails) > 0)
+                    <!-- Print Options Modal Trigger -->
+                    <button class="btn btn-success" type="button" data-bs-toggle="modal" data-bs-target="#printOptionsModal">
+                        🖨️ Print Options
+                    </button>
+                @endif
+            </div>
             </div>
         </div>
     </div>
@@ -516,7 +102,7 @@
         <div class="control-group">
             <label class="control-label">Display Type:</label>
             <select id="scoreType" class="control-select" onchange="toggleScoreType()">
-                <option value="score">📝 Raw Score</option>
+                <option value="score">📝 Scores</option>
                 <option value="percentage">📊 Percentage</option>
                 <option value="passfail">✅ Pass/Fail Analysis</option>
                 <option value="copasssummary">📈 Course Outcome Summary</option>
@@ -540,12 +126,22 @@
                     $isActive = $index === 0; // Default to first term
                     $class = $isActive ? 'active' : 'upcoming';
                     $highlightLine = false; // Will be managed by JavaScript
+                    
+                    // Progress ring calculations
+                    $radius = 36;
+                    $circumference = 2 * pi() * $radius;
                 @endphp
                 <button type="button"
                         class="step term-step {{ $class }}"
                         data-term="{{ $termSlug }}"
                         onclick="switchTerm('{{ $termSlug }}', {{ $index }})">
                     <div class="circle-wrapper">
+                        <svg class="progress-ring" width="80" height="80">
+                            <circle class="progress-ring-bg" cx="40" cy="40" r="{{ $radius }}" />
+                            <circle class="progress-ring-bar" cx="40" cy="40" r="{{ $radius }}"
+                                    stroke-dasharray="{{ $circumference }}"
+                                    stroke-dashoffset="{{ $isActive ? 0 : $circumference }}" />
+                        </svg>
                         <div class="circle">{{ $step }}</div>
                     </div>
                     <div class="step-label">{{ ucfirst($termSlug) }}</div>
@@ -560,14 +156,73 @@
         </div>
     </div>
 
-    {{-- Course Outcome Pass Summary --}}
-    @if(is_countable($finalCOs) && count($finalCOs))
-    <div id="copasssummary-table" style="display:none;">
-        <div id="print-area">
+    {{-- Fade Overlay for Loading States --}}
+    <div id="fadeOverlay" class="fade-overlay">
+        <div class="spinner"></div>
+    </div>
+
+    {{-- Main Container for Stepper and Results --}}
+    <div class="main-results-container">
+        {{-- Term Stepper for Raw Score and Percentage views --}}
+        <div id="term-stepper-container" class="stepper-container no-print" style="display:none;">
             <div class="results-card">
-                <div class="card-header-custom card-header-info">
-                    <i class="bi bi-graph-up me-2"></i>Course Outcome Summary Dashboard
+                <div class="card-header-custom">
+                    <i class="bi bi-list-ol me-2"></i>Term Navigation
                 </div>
+                <div class="p-3">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <h6 class="mb-0 fw-bold text-dark">📅 Navigate by Terms</h6>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="showAllTerms()">
+                            <i class="bi bi-grid-3x3-gap me-1"></i>Show All Terms
+                        </button>
+                    </div>
+                    <div class="stepper">
+                        @foreach($terms as $index => $termSlug)
+                            @php
+                                $step = $index + 1;
+                                $isActive = $index === 0; // Default to first term
+                                $class = $isActive ? 'active' : 'upcoming';
+                                $highlightLine = false; // Will be managed by JavaScript
+                                
+                                // Progress ring calculations
+                                $radius = 36;
+                                $circumference = 2 * pi() * $radius;
+                            @endphp
+                            <button type="button"
+                                    class="step term-step {{ $class }}"
+                                    data-term="{{ $termSlug }}"
+                                    onclick="switchTerm('{{ $termSlug }}', {{ $index }})">
+                                <div class="circle-wrapper">
+                                    <svg class="progress-ring" width="80" height="80">
+                                        <circle class="progress-ring-bg" cx="40" cy="40" r="{{ $radius }}" />
+                                        <circle class="progress-ring-bar" cx="40" cy="40" r="{{ $radius }}"
+                                                stroke-dasharray="{{ $circumference }}"
+                                                stroke-dashoffset="{{ $isActive ? 0 : $circumference }}" />
+                                    </svg>
+                                    <div class="circle">{{ $step }}</div>
+                                </div>
+                                <div class="step-label">{{ ucfirst($termSlug) }}</div>
+                            </button>
+                        @endforeach
+                    </div>
+                    <div class="stepper-hint text-center mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Click on any term above to view specific results, or use the "Show All Terms" button to view the combined view
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Course Outcome Pass Summary --}}
+        @if(is_countable($finalCOs) && count($finalCOs))
+        <div id="copasssummary-table" style="display:none;">
+            <div id="print-area">
+                <div class="results-card">
+                    <div class="card-header-custom card-header-info">
+                        <i class="bi bi-graph-up me-2"></i>Course Outcome Summary Dashboard
+                    </div>
                 <div class="table-responsive p-3">
                     <table class="table co-table table-bordered align-middle mb-0 text-center">
                         <thead>
@@ -598,7 +253,7 @@
                                 <td class="fw-bold text-dark text-start">✅ Students Passed</td>
                                 @foreach($finalCOs as $coId)
                                     @php
-                                        $threshold = $coDetails[$coId]->percent ?? 0;
+                                        $threshold = 75; // Fixed threshold
                                         $passed = 0;
                                         foreach($students as $student) {
                                             $raw = $coResults[$student->id]['semester_raw'][$coId] ?? null;
@@ -616,7 +271,7 @@
                                 <td class="fw-bold text-dark text-start">📊 Pass Percentage</td>
                                 @foreach($finalCOs as $coId)
                                     @php
-                                        $threshold = $coDetails[$coId]->percent ?? 0;
+                                        $threshold = 75; // Fixed threshold
                                         $attempted = 0;
                                         $passed = 0;
                                         foreach($students as $student) {
@@ -637,7 +292,7 @@
                                 <td class="fw-bold text-dark text-start">🎯 Target Achieved</td>
                                 @foreach($finalCOs as $coId)
                                     @php
-                                        $threshold = $coDetails[$coId]->percent ?? 75;
+                                        $threshold = 75; // Fixed threshold
                                         $attempted = 0;
                                         $passed = 0;
                                         foreach($students as $student) {
@@ -649,12 +304,12 @@
                                                 if($percent > $threshold) $passed++;
                                             }
                                         }
-                                        $targetAchieved = ($attempted > 0 && ($passed / $attempted) * 100 > 75) ? 'Yes' : 'No';
-                                        $badgeClass = $targetAchieved === 'Yes' ? 'bg-success' : 'bg-danger';
+                                        $targetPercentage = $attempted > 0 ? round(($passed / $attempted) * 100, 1) : 0;
+                                        $badgeClass = $targetPercentage >= 75 ? 'bg-success' : 'bg-danger';
                                     @endphp
                                     <td>
                                         <span class="badge {{ $badgeClass }}">
-                                            {{ $targetAchieved === 'Yes' ? '✓ Yes' : '✗ No' }}
+                                            75%
                                         </span>
                                     </td>
                                 @endforeach
@@ -667,156 +322,113 @@
     </div>
     @endif
 
-    {{-- Warning System for Incomplete CO Records --}}
-    @php
-        $incompleteActivities = [];
-        $incompleteCOs = [];
-        $zeroScoreCounts = [];
-        
-        // Check for incomplete records across all terms and COs
-        foreach($terms as $term) {
-            if(!empty($coColumnsByTerm[$term])) {
-                foreach($coColumnsByTerm[$term] as $coId) {
-                    $totalZeroScores = 0;
-                    $totalStudents = count($students);
-                    $activities = \App\Models\Activity::where('term', $term)
-                        ->where('course_outcome_id', $coId)
-                        ->where('subject_id', $subjectId)
-                        ->get();
-                    
-                    foreach($students as $student) {
-                        foreach($activities as $activity) {
-                            $score = \App\Models\Score::where('student_id', $student->id)
-                                ->where('activity_id', $activity->id)
-                                ->first();
-                            if(!$score || $score->score == 0) {
-                                $totalZeroScores++;
-                                if(!in_array($activity->id, $incompleteActivities)) {
-                                    $incompleteActivities[] = $activity->id;
-                                }
-                            }
-                        }
-                    }
-                    
-                    if($totalZeroScores > 0) {
-                        $incompleteCOs[] = [
-                            'co_id' => $coId,
-                            'co_code' => $coDetails[$coId]->co_code ?? 'CO'.$coId,
-                            'term' => $term,
-                            'zero_scores' => $totalZeroScores,
-                            'total_possible' => $totalStudents * count($activities),
-                            'percentage_incomplete' => $totalStudents > 0 && count($activities) > 0 ? round(($totalZeroScores / ($totalStudents * count($activities))) * 100, 1) : 0
-                        ];
-                    }
-                }
-            }
-        }
-    @endphp
-
-    @if(count($incompleteCOs) > 0)
-    <div class="alert alert-warning border-0 shadow-sm mb-4" style="background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%); border-left: 5px solid #f39c12 !important;">
-        <div class="d-flex align-items-start">
-            <div class="flex-shrink-0 me-3">
-                <i class="bi bi-exclamation-triangle-fill text-warning" style="font-size: 2rem;"></i>
-            </div>
-            <div class="flex-grow-1">
-                <h5 class="alert-heading mb-3">
-                    <i class="bi bi-clipboard-data me-2"></i>
-                    Incomplete Course Outcome Records Detected
-                </h5>
-                <p class="mb-3">
-                    <strong>{{ count($incompleteCOs) }}</strong> Course Outcome(s) have incomplete or missing score records. 
-                    This may affect the accuracy of your Course Outcome Attainment analysis.
-                </p>
-                
-                <div class="row">
-                    <div class="col-md-8">
-                        <div class="table-responsive">
-                            <table class="table table-sm table-hover mb-3" style="background: rgba(255,255,255,0.8);">
-                                <thead class="table-warning">
-                                    <tr>
-                                        <th style="font-size: 0.85rem;">Course Outcome</th>
-                                        <th style="font-size: 0.85rem;">Term</th>
-                                        <th style="font-size: 0.85rem;">Missing/Zero Scores</th>
-                                        <th style="font-size: 0.85rem;">Completion Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($incompleteCOs as $incomplete)
-                                    <tr>
-                                        <td>
-                                            <span class="badge bg-warning text-dark fw-bold">
-                                                {{ $incomplete['co_code'] }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="text-capitalize fw-medium">{{ $incomplete['term'] }}</span>
-                                        </td>
-                                        <td>
-                                            <span class="text-danger fw-bold">{{ $incomplete['zero_scores'] }}</span>
-                                            <small class="text-muted">/ {{ $incomplete['total_possible'] }}</small>
-                                        </td>
-                                        <td>
-                                            @php $completion = 100 - $incomplete['percentage_incomplete']; @endphp
-                                            <div class="progress" style="height: 20px; width: 100px;">
-                                                <div class="progress-bar bg-{{ $completion >= 80 ? 'success' : ($completion >= 50 ? 'warning' : 'danger') }}" 
-                                                     role="progressbar" 
-                                                     style="width: {{ $completion }}%"
-                                                     aria-valuenow="{{ $completion }}" 
-                                                     aria-valuemin="0" 
-                                                     aria-valuemax="100">
-                                                    <small class="fw-bold">{{ $completion }}%</small>
-                                                </div>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+    @if(isset($incompleteCOs) && is_array($incompleteCOs) && count($incompleteCOs) > 0)
+    <!-- Warning Modal -->
+    <div class="modal fade warning-modal" id="warningModal" tabindex="-1" aria-labelledby="warningModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title d-flex align-items-center" id="warningModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Incomplete Course Outcome Records Detected
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning border-0 mb-4">
+                        <p class="mb-3">
+                            <strong>{{ count($incompleteCOs) }}</strong> Course Outcome(s) have incomplete or missing score records. 
+                            This may affect the accuracy of your Course Outcome Attainment analysis.
+                        </p>
                     </div>
-                    <div class="col-md-4">
-                        <div class="bg-light p-3 rounded" style="border-left: 4px solid #f39c12;">
-                            <h6 class="fw-bold mb-3">
-                                <i class="bi bi-tools me-1"></i>Quick Actions
-                            </h6>
-                            <div class="d-grid gap-2">
-                                <a href="{{ route('instructor.activities.index') }}" class="btn btn-outline-success btn-sm">
-                                    <i class="bi bi-plus-circle me-2"></i>Manage Activities
-                                </a>
-                                <a href="{{ route('instructor.grades.index') }}" class="btn btn-success btn-sm">
-                                    <i class="bi bi-pencil-square me-2"></i>Manage Grades
-                                </a>
-                                <button type="button" class="btn btn-outline-success btn-sm" onclick="refreshData()">
-                                    <i class="bi bi-arrow-clockwise me-2"></i>Refresh Data
-                                </button>
+                    
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="table-responsive">
+                                <table class="table table-sm table-hover incomplete-co-table">
+                                    <thead class="table-warning">
+                                        <tr>
+                                            <th>Course Outcome</th>
+                                            <th>Term</th>
+                                            <th>Missing/Zero Scores</th>
+                                            <th>Completion Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($incompleteCOs as $incomplete)
+                                        <tr>
+                                            <td>
+                                                <span class="badge bg-warning text-dark fw-bold">
+                                                    {{ $incomplete['co_code'] }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <span class="text-capitalize fw-medium">{{ $incomplete['term'] }}</span>
+                                            </td>
+                                            <td>
+                                                <span class="text-danger fw-bold">{{ $incomplete['zero_scores'] }}</span>
+                                                <small class="text-muted">/ {{ $incomplete['total_possible'] }}</small>
+                                            </td>
+                                            <td>
+                                                @php $completion = 100 - $incomplete['percentage_incomplete']; @endphp
+                                                <div class="progress" style="height: 20px; width: 100px;">
+                                                    <div class="progress-bar bg-{{ $completion >= 80 ? 'success' : ($completion >= 50 ? 'warning' : 'danger') }}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ $completion }}%"
+                                                         aria-valuenow="{{ $completion }}" 
+                                                         aria-valuemin="0" 
+                                                         aria-valuemax="100">
+                                                        <small class="fw-bold">{{ $completion }}%</small>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="quick-actions p-3">
+                                <h6 class="fw-bold mb-3">
+                                    <i class="bi bi-tools me-1"></i>Quick Actions
+                                </h6>
+                                <div class="d-grid gap-2">
+                                    <a href="{{ route('instructor.activities.index') }}" class="btn btn-outline-success btn-sm">
+                                        <i class="bi bi-plus-circle me-2"></i>Manage Activities
+                                    </a>
+                                    <a href="{{ route('instructor.grades.index') }}" class="btn btn-success btn-sm">
+                                        <i class="bi bi-pencil-square me-2"></i>Manage Grades
+                                    </a>
+                                    <button type="button" class="btn btn-outline-success btn-sm" onclick="refreshData()">
+                                        <i class="bi bi-arrow-clockwise me-2"></i>Refresh Data
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                
-                <hr class="my-3">
-                <div class="d-flex align-items-center justify-content-between">
-                    <div>
+                <div class="modal-footer">
+                    <div class="d-flex align-items-center justify-content-between w-100">
                         <small class="text-muted">
                             <i class="bi bi-info-circle me-1"></i>
                             <strong>Tip:</strong> Complete all activity scores to ensure accurate Course Outcome analysis.
                         </small>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i>Close
+                        </button>
                     </div>
-                    <button type="button" class="btn btn-outline-success btn-sm" onclick="dismissWarning()">
-                        <i class="bi bi-x-lg me-1"></i>Dismiss Warning
-                    </button>
                 </div>
             </div>
         </div>
-    </div>
-    @endif
+        </div>
+        @endif
 
-    <div id="print-area">
-        @php $finalCOs = array_unique(array_merge(...array_values($coColumnsByTerm))); @endphp
+        <div id="print-area">
+            @php $finalCOs = array_unique(array_merge(...array_values($coColumnsByTerm))); @endphp
         
         {{-- Combined Table for All Terms (shown by default) --}}
-        @if(count($finalCOs))
+        @if(isset($finalCOs) && is_countable($finalCOs) && count($finalCOs))
         <div class="results-card main-table" id="combined-table">
             <div class="card-header-custom">
                 <i class="bi bi-table me-2"></i>Course Outcome Results - All Terms Combined
@@ -852,17 +464,15 @@
                                             ->get() as $activity) {
                                             $max += $activity->number_of_items;
                                         }
-                                        $percent = $coDetails[$coId]->percent ?? null;
                                     @endphp
                                     <td>
-                                        <span class="score-value" data-score="{{ $max }}" data-percentage="{{ $percent ?? '' }}">
+                                        <span class="score-value" data-score="{{ $max }}" data-percentage="75">
                                             {{ $max }}
                                         </span>
                                     </td>
                                 @endforeach
                                 @php
                                     $totalMax = 0;
-                                    $percent = $coDetails[$coId]->percent ?? null;
                                     foreach($terms as $term) {
                                         foreach(\App\Models\Activity::where('term', $term)->where('course_outcome_id', $coId)->where('subject_id', $subjectId)->get() as $activity) {
                                             $totalMax += $activity->number_of_items;
@@ -950,10 +560,9 @@
                                             ->get() as $activity) {
                                             $max += $activity->number_of_items;
                                         }
-                                        $percent = $coDetails[$coId]->percent ?? null;
                                     @endphp
                                     <td>
-                                        <span class="score-value" data-score="{{ $max }}" data-percentage="{{ $percent ?? '' }}">
+                                        <span class="score-value" data-score="{{ $max }}" data-percentage="75">
                                             {{ $max }}
                                         </span>
                                     </td>
@@ -996,7 +605,7 @@
         @endif
 
         {{-- Pass/Fail Table --}}
-        @if(count($finalCOs))
+        @if(isset($finalCOs) && is_countable($finalCOs) && count($finalCOs))
     <div id="passfail-table" class="results-card" style="display:none;">
             <div class="card-header-custom">
                 <i class="bi bi-check-circle me-2"></i>Pass/Fail Analysis Summary
@@ -1020,7 +629,7 @@
                                         $raw = $coResults[$student->id]['semester_raw'][$coId] ?? 0;
                                         $max = $coResults[$student->id]['semester_max'][$coId] ?? 0;
                                         $percent = ($max > 0) ? ($raw / $max) * 100 : 0;
-                                        $threshold = $coDetails[$coId]->percent ?? 75;
+                                        $threshold = 75; // Fixed threshold
                                     @endphp
                                     <td class="fw-bold text-{{ $percent >= $threshold ? 'success' : 'danger' }}">
                                         {{ $percent >= $threshold ? 'Passed' : 'Failed' }}
@@ -1035,8 +644,8 @@
             </div>
         </div>
         @endif
-    </div>
-</div>
+        </div> {{-- End of print-area --}}
+    </div> {{-- End of main-results-container --}}
 @endsection
 
 @push('scripts')
@@ -1120,17 +729,34 @@
         var activeTable = document.getElementById('term-' + term);
         if (activeTable) activeTable.style.display = 'block';
         
-        // Update stepper appearance
+        // Update stepper appearance with progress ring animations
         var steps = document.querySelectorAll('.term-step');
+        var radius = 36;
+        var circumference = 2 * Math.PI * radius;
+        
         steps.forEach(function(step, i) {
+            var progressBar = step.querySelector('.progress-ring-bar');
+            
             step.classList.remove('active', 'completed', 'upcoming', 'highlight-line');
             
             if (i < index) {
+                // Completed terms - 100% progress
                 step.classList.add('completed', 'highlight-line');
+                if (progressBar) {
+                    progressBar.style.strokeDashoffset = '0'; // 100% completion
+                }
             } else if (i === index) {
+                // Active term (clicked) - 100% progress
                 step.classList.add('active');
+                if (progressBar) {
+                    progressBar.style.strokeDashoffset = '0'; // 100% completion when clicked
+                }
             } else {
+                // Upcoming terms - no progress
                 step.classList.add('upcoming');
+                if (progressBar) {
+                    progressBar.style.strokeDashoffset = circumference; // 0% completion
+                }
             }
         });
         
@@ -1282,11 +908,11 @@
                             }
                             
                             body {
-                                font-size: 11px;
+                                font-size: 10px;
                             }
                             
                             table {
-                                font-size: 10px;
+                                font-size: 9px;
                             }
                             
                             .banner {
@@ -1326,8 +952,8 @@
                             margin: 15px 0;
                             text-transform: uppercase;
                             letter-spacing: 1px;
-                            color: #1a5f38;
-                            border-bottom: 2px solid #1a5f38;
+                            color: #4a7c59;
+                            border-bottom: 2px solid #4a7c59;
                             padding-bottom: 8px;
                         }
 
@@ -1337,18 +963,18 @@
                             margin-bottom: 25px;
                             background-color: #fff;
                             font-size: 11px;
-                            border: 2px solid #1a5f38;
+                            border: 2px solid #4a7c59;
                         }
 
                         .header-table td {
                             padding: 8px 12px;
-                            border: 1px solid #7fb3a3;
+                            border: 1px solid #2d4a35;
                         }
 
                         .header-label {
                             font-weight: bold;
                             width: 120px;
-                            background-color: #1a5f38;
+                            background-color: #4a7c59;
                             color: #fff;
                         }
 
@@ -1360,7 +986,7 @@
                         .print-table {
                             width: 100%;
                             border-collapse: collapse;
-                            border: 2px solid #1a5f38;
+                            border: 2px solid #4a7c59;
                             background-color: #fff;
                             margin-top: 15px;
                             font-size: 10px;
@@ -1368,14 +994,14 @@
                         }
 
                         .print-table th, .print-table td {
-                            border: 1px solid #7fb3a3;
+                            border: 1px solid #2d4a35;
                             padding: 6px 4px;
                             text-align: center;
                             vertical-align: middle;
                         }
 
                         .print-table th {
-                            background-color: #1a5f38;
+                            background-color: #4a7c59;
                             color: #fff;
                             font-weight: bold;
                             text-transform: uppercase;
@@ -1384,8 +1010,79 @@
                         }
 
                         .print-table th:first-child {
-                            background-color: #0d4b2a;
+                            background-color: #2d4a35;
                             text-align: left;
+                        }
+
+                        /* Multi-level header styles for All Terms Combined */
+                        .print-table .table-success th,
+                        .print-table th.table-success {
+                            background-color: #4a7c59 !important;
+                            color: white !important;
+                        }
+
+                        /* TOTAL columns - darker green */
+                        .print-table .bg-primary,
+                        .print-table th.bg-primary,
+                        .print-table td.bg-primary {
+                            background-color: #2d4a35 !important;
+                            color: white !important;
+                            font-weight: bold !important;
+                        }
+
+                        /* First header row - Students and CO headers */
+                        .print-table thead tr:first-child th {
+                            background-color: #4a7c59 !important;
+                            color: white !important;
+                            font-size: 10px !important;
+                            padding: 8px 4px !important;
+                            text-align: center !important;
+                            font-weight: bold !important;
+                        }
+
+                        /* Second header row - term columns */
+                        .print-table thead tr:nth-child(2) th {
+                            background-color: #4a7c59 !important;
+                            color: white !important;
+                            font-size: 8px !important;
+                            padding: 6px 2px !important;
+                        }
+
+                        /* Total columns in second row */
+                        .print-table thead tr:nth-child(2) th.bg-primary {
+                            background-color: #2d4a35 !important;
+                        }
+
+                        /* Data cells styling */
+                        .print-table tbody td {
+                            background-color: white !important;
+                            font-size: 8px !important;
+                            padding: 4px 2px !important;
+                        }
+
+                        /* Students column */
+                        .print-table tbody td:first-child {
+                            text-align: left !important;
+                            background-color: #f8f9fa !important;
+                            font-weight: normal !important;
+                            padding-left: 6px !important;
+                        }
+
+                        /* Summary row styling */
+                        .print-table tbody tr:first-child td {
+                            background-color: #e8f5e8 !important;
+                            font-weight: bold !important;
+                        }
+
+                        /* Score values */
+                        .print-table .score-value {
+                            font-weight: bold !important;
+                            color: #000 !important;
+                        }
+
+                        /* Light background cells */
+                        .print-table .bg-light {
+                            background-color: #f8f9fa !important;
                         }
 
                         .print-table tr:nth-child(even) {
@@ -1528,7 +1225,7 @@
         
         tableHTML += `<table class="print-table">`;
         
-        // Copy table content
+        // Copy table content with proper attributes
         const rows = table.querySelectorAll('tr');
         rows.forEach((row, index) => {
             const isHeader = row.closest('thead') !== null;
@@ -1539,17 +1236,51 @@
             cells.forEach(cell => {
                 let cellContent = cell.textContent.trim();
                 let cellClass = '';
+                let cellAttrs = '';
+                
+                // Preserve colspan and rowspan attributes
+                if (cell.hasAttribute('colspan')) {
+                    cellAttrs += ` colspan="${cell.getAttribute('colspan')}"`;
+                }
+                if (cell.hasAttribute('rowspan')) {
+                    cellAttrs += ` rowspan="${cell.getAttribute('rowspan')}"`;
+                }
+                
+                // Preserve important CSS classes
+                if (cell.classList.contains('bg-primary') || cell.classList.contains('text-white')) {
+                    cellClass += ' bg-primary text-white';
+                }
+                if (cell.classList.contains('table-success')) {
+                    cellClass += ' table-success';
+                }
+                if (cell.classList.contains('align-middle')) {
+                    cellClass += ' align-middle';
+                }
+                if (cell.classList.contains('text-center')) {
+                    cellClass += ' text-center';
+                }
+                if (cell.classList.contains('fw-bold')) {
+                    cellClass += ' fw-bold';
+                }
+                if (cell.classList.contains('bg-light')) {
+                    cellClass += ' bg-light';
+                }
                 
                 // Add special styling for different cell types
                 if (cell.classList.contains('score-value') || cellContent.match(/^\d+$/)) {
-                    cellClass = 'score-value';
+                    cellClass += ' score-value';
                 } else if (cellContent.includes('%')) {
-                    cellClass = 'percentage-value';
+                    cellClass += ' percentage-value';
                 } else if (cell.textContent.includes('Average') || cell.classList.contains('average-cell')) {
-                    cellClass = 'average-cell';
+                    cellClass += ' average-cell';
                 }
                 
-                tableHTML += `<${tag} class="${cellClass}">${cellContent}</${tag}>`;
+                // Check for inline styles (like the bg-primary style)
+                if (cell.style && cell.style.cssText) {
+                    cellAttrs += ` style="${cell.style.cssText}"`;
+                }
+                
+                tableHTML += `<${tag}${cellAttrs} class="${cellClass.trim()}">${cellContent}</${tag}>`;
             });
             tableHTML += '</tr>';
         });
@@ -1616,5 +1347,97 @@
             }, 1000);
         }
     }
+    
+    // Function to close the print modal
+    function closePrintModal() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('printOptionsModal'));
+        if (modal) {
+            modal.hide();
+        }
+    }
 </script>
+
+{{-- Print Options Modal --}}
+<div class="modal fade" id="printOptionsModal" tabindex="-1" aria-labelledby="printOptionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="printOptionsModalLabel">
+                    <i class="bi bi-printer me-2"></i>Print Options
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-success mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Individual Terms</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-success" onclick="printSpecificTable('prelim'); closePrintModal();">
+                                        <i class="bi bi-printer me-2"></i>Print Prelim Only
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="printSpecificTable('midterm'); closePrintModal();">
+                                        <i class="bi bi-printer me-2"></i>Print Midterm Only
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="printSpecificTable('prefinal'); closePrintModal();">
+                                        <i class="bi bi-printer me-2"></i>Print Prefinal Only
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="printSpecificTable('final'); closePrintModal();">
+                                        <i class="bi bi-printer me-2"></i>Print Final Only
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-success mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-collection me-2"></i>Complete Reports</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-success" onclick="printSpecificTable('combined'); closePrintModal();">
+                                        <i class="bi bi-table me-2"></i>Print Combined Table
+                                    </button>
+                                    <button class="btn btn-success" onclick="printSpecificTable('all'); closePrintModal();">
+                                        <i class="bi bi-grid-3x3 me-2"></i>Print Everything
+                                    </button>
+                                </div>
+                                <hr>
+                                <div class="text-muted small">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Combined Table:</strong> Shows all terms in one view<br>
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Print Everything:</strong> Includes summary dashboard
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info border-0 bg-light">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-printer text-info" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="alert-heading mb-1">Print Settings</h6>
+                            <p class="mb-1">All printouts are optimized for <strong>A4 portrait</strong> format with professional styling.</p>
+                            <small class="text-muted">Make sure your printer is set to A4 paper size for best results.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endpush

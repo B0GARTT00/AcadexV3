@@ -85,11 +85,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if(!is_null($co->percent))
-                                                {{ $co->percent }}%
-                                            @else
-                                                <span class="text-muted">Not set</span>
-                                            @endif
+                                            <span class="text-success">75%</span>
                                         </td>
                                         <td class="text-end">
                                             <a href="{{ route('instructor.course_outcomes.edit', $co->id) }}" class="btn btn-success btn-sm">
@@ -135,11 +131,11 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label class="form-label">CO Code <span class="text-danger">*</span></label>
-                        <input type="text" name="co_code" class="form-control" required>
+                        <input type="text" name="co_code" id="co_code" class="form-control" readonly style="background-color: #f8f9fa;" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Identifier <span class="text-danger">*</span></label>
-                        <input type="text" name="co_identifier" class="form-control" required>
+                        <input type="text" name="co_identifier" id="co_identifier" class="form-control" readonly style="background-color: #f8f9fa;" required>
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Description <span class="text-danger">*</span></label>
@@ -153,10 +149,6 @@
                                 <option value="{{ $period->id }}">{{ $period->academic_year }} - {{ $period->semester }}</option>
                             @endforeach
                         </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Percentage <span class="text-danger">*</span></label>
-                        <input type="number" name="percent" class="form-control" min="0" max="100" step="0.01" required placeholder="Enter percentage">
                     </div>
                     <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
                 </div>
@@ -173,11 +165,71 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Subject card click handlers
     document.querySelectorAll('.subject-card[data-url]').forEach(card => {
         card.addEventListener('click', function() {
             window.location.href = this.dataset.url;
         });
     });
+
+    // Auto-generate CO Code and Identifier when modal is shown
+    const modal = document.getElementById('addCourseOutcomeModal');
+    if (modal) {
+        modal.addEventListener('show.bs.modal', function(e) {
+            generateNextCOCode();
+        });
+    }
+
+    function generateNextCOCode() {
+        // Get subject code from the current subject selection
+        @if(request('subject_id') && isset($subjects))
+            @php
+                $selectedSubject = $subjects->firstWhere('id', request('subject_id'));
+            @endphp
+            @if($selectedSubject)
+                const subjectCode = '{{ $selectedSubject->subject_code }}';
+            @else
+                const subjectCode = '';
+            @endif
+        @else
+            const subjectCode = '';
+        @endif
+        
+        // Get existing course outcomes from the table
+        const existingCOs = [];
+        const coRows = document.querySelectorAll('tbody tr');
+        
+        coRows.forEach(row => {
+            const coCodeCell = row.querySelector('td:first-child');
+            if (coCodeCell) {
+                const coCode = coCodeCell.textContent.trim();
+                // Extract number from CO code (e.g., "CO1" -> 1)
+                const match = coCode.match(/CO(\d+)/i);
+                if (match) {
+                    existingCOs.push(parseInt(match[1]));
+                }
+            }
+        });
+
+        // Determine next CO number
+        let nextCONumber = 1;
+        if (existingCOs.length > 0) {
+            const maxCO = Math.max(...existingCOs);
+            nextCONumber = maxCO + 1;
+        }
+
+        // Set the auto-generated values
+        const coCodeInput = document.getElementById('co_code');
+        const coIdentifierInput = document.getElementById('co_identifier');
+        
+        if (coCodeInput && coIdentifierInput) {
+            const newCOCode = `CO${nextCONumber}`;
+            const newIdentifier = subjectCode ? `${subjectCode}.${nextCONumber}` : `CO${nextCONumber}`;
+            
+            coCodeInput.value = newCOCode;
+            coIdentifierInput.value = newIdentifier;
+        }
+    }
 });
 </script>
 @endpush

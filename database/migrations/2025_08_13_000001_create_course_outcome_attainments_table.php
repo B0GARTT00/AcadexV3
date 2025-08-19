@@ -14,7 +14,6 @@ return new class extends Migration {
             $table->unsignedBigInteger('co_id');
             $table->integer('score')->default(0);
             $table->integer('max')->default(0);
-            $table->float('percent')->default(0);
             $table->float('semester_total')->default(0);
             $table->timestamps();
 
