@@ -242,6 +242,8 @@ Route::prefix('vpaa')
         
         // Instructors
         Route::get('/instructors', [VPAAController::class, 'viewInstructors'])->name('instructors');
+        Route::get('/instructors/{instructor}/edit', [VPAAController::class, 'editInstructor'])->name('instructors.edit');
+        Route::put('/instructors/{instructor}', [VPAAController::class, 'updateInstructor'])->name('instructors.update');
         Route::get('/instructors/{departmentId}', [VPAAController::class, 'viewInstructors'])->name('instructors.department');
         
         // Students

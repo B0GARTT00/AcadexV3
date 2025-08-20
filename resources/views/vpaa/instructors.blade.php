@@ -25,7 +25,7 @@
                         <label for="department_id" class="block text-sm font-medium text-gray-700 mb-1">Filter by Department</label>
                         <div class="relative">
                             <select name="department_id" id="department_id" 
-                                class="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
+                                class="block w-full pl-3 pr-8 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm appearance-none"
                                 onchange="this.form.submit()">
                                 <option value="">All Departments</option>
                                 @foreach($departments as $dept)
@@ -34,9 +34,6 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
-                                <i class="bi bi-chevron-down"></i>
-                            </div>
                         </div>
                     </div>
                     <div>
@@ -67,9 +64,6 @@
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                             Status
                         </th>
-                        <th scope="col" class="relative px-6 py-3">
-                            <span class="sr-only">Actions</span>
-                        </th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
@@ -77,7 +71,7 @@
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600">
+                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
                                         <i class="bi bi-person-fill"></i>
                                     </div>
                                     <div class="ml-4">
@@ -95,14 +89,6 @@
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $instructor->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
                                     {{ $instructor->is_active ? 'Active' : 'Inactive' }}
                                 </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <a href="#" class="text-blue-600 hover:text-blue-900 mr-4">
-                                    <i class="bi bi-eye me-1"></i> View
-                                </a>
-                                <a href="#" class="text-indigo-600 hover:text-indigo-900">
-                                    <i class="bi bi-pencil-square me-1"></i> Edit
-                                </a>
                             </td>
                         </tr>
                     @empty

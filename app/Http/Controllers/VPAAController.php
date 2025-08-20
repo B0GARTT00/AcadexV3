@@ -318,6 +318,55 @@ class VPAAController extends Controller
 
         return view('vpaa.instructors', compact('instructors', 'departments', 'selectedDepartment'));
     }
+    
+    /**
+     * Show the form for editing the specified instructor.
+     *
+     * @param  int  $id
+     * @return \Illuminate\View\View
+     */
+    public function editInstructor($id)
+    {
+        $instructor = User::findOrFail($id);
+        $departments = Department::where('is_deleted', false)
+            ->select('id', 'department_code', 'department_description')
+            ->orderBy('department_description')
+            ->get();
+            
+        return view('vpaa.edit-instructor', compact('instructor', 'departments'));
+    }
+    
+    /**
+     * Update the specified instructor in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function updateInstructor(Request $request, $id)
+    {
+        $instructor = User::findOrFail($id);
+        
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $id,
+            'department_id' => 'required|exists:departments,id',
+            'is_active' => 'boolean'
+        ]);
+        
+        // Update the instructor
+        $instructor->update([
+            'first_name' => $validated['first_name'],
+            'last_name' => $validated['last_name'],
+            'email' => $validated['email'],
+            'department_id' => $validated['department_id'],
+            'is_active' => $request->has('is_active') ? 1 : 0,
+        ]);
+        
+        return redirect()->route('vpaa.instructors')
+            ->with('success', 'Instructor updated successfully.');
+    }
 
     // ============================
     // View Students by Department

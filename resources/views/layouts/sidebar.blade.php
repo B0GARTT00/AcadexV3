@@ -306,20 +306,6 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('vpaa.students') }}" 
-                           class="nav-link {{ request()->routeIs('vpaa.students*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-mortarboard me-3"></i>
-                            <span>Manage Students</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('vpaa.grades') }}" 
-                           class="nav-link {{ request()->routeIs('vpaa.grades*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-card-checklist me-3"></i>
-                            <span>View Grades</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a href="{{ route('vpaa.course-outcome-attainment') }}" 
                            class="nav-link {{ request()->routeIs('vpaa.course-outcome-attainment*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-graph-up me-3"></i>
