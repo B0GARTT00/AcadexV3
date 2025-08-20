@@ -68,7 +68,9 @@ class CourseOutcomesController extends Controller
             }
         }
 
-        $periods = AcademicPeriod::all();
+        $periods = AcademicPeriod::all()->filter(function($period) {
+            return $period && isset($period->id) && isset($period->academic_year) && isset($period->semester);
+        });
 
         // Only show subjects in the selected academic year and semester
         $subjectsQuery = Subject::query()
@@ -195,6 +197,26 @@ class CourseOutcomesController extends Controller
 
         return redirect()->route('instructor.course_outcomes.index', ['subject_id' => $courseOutcome->subject_id])
             ->with('success', 'Course Outcome updated successfully.');
+    }
+
+    /**
+     * Update only the description via AJAX for inline editing.
+     */
+    public function updateDescription(Request $request, CourseOutcomes $courseOutcome)
+    {
+        $validated = $request->validate([
+            'description' => 'required|string|max:1000',
+        ]);
+
+        $validated['updated_by'] = $request->user()->id;
+
+        $courseOutcome->update($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Description updated successfully.',
+            'description' => $courseOutcome->description
+        ]);
     }
 
     /**

@@ -1,5 +1,19 @@
 @extends('layouts.app')
 
+@push('styles')
+<link rel="stylesheet" href="{{ asset('css/course-outcomes-table.css') }}">
+@endpush
+
+@push('scripts')
+<script>
+// Pass Laravel data to JavaScript
+window.courseOutcomesData = {
+    subjectCode: '{{ $selectedSubject->subject_code ?? "" }}'
+};
+</script>
+<script src="{{ asset('js/course-outcomes-table.js') }}"></script>
+@endpush
+
 @section('content')
 <div aria-live="polite" aria-atomic="true" class="position-fixed top-0 end-0 p-3" style="z-index: 1080; min-width: 350px;">
     @if(session('success'))
@@ -14,15 +28,6 @@
                 <div class="progress-bar bg-dark" id="toast-success-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
             </div>
         </div>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.bootstrap && window.bootstrap.Toast) {
-                var toastEl = document.getElementById('toast-success');
-                var toastObj = bootstrap.Toast.getOrCreateInstance(toastEl);
-                toastObj.show();
-            }
-        });
-        </script>
     @endif
     @if(session('error'))
         <div class="toast align-items-center text-bg-danger border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000" id="toast-error">
@@ -36,15 +41,6 @@
                 <div class="progress-bar bg-dark" id="toast-error-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
             </div>
         </div>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.bootstrap && window.bootstrap.Toast) {
-                var toastEl = document.getElementById('toast-error');
-                var toastObj = bootstrap.Toast.getOrCreateInstance(toastEl);
-                toastObj.show();
-            }
-        });
-        </script>
     @endif
     @if(session('info'))
         <div class="toast align-items-center text-bg-info border-0 show mb-2" role="alert" aria-live="assertive" aria-atomic="true" data-bs-autohide="true" data-bs-delay="5000" id="toast-info">
@@ -58,15 +54,6 @@
                 <div class="progress-bar bg-dark" id="toast-info-bar" role="progressbar" style="width: 100%; transition: width 5s linear;"></div>
             </div>
         </div>
-        <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            if (window.bootstrap && window.bootstrap.Toast) {
-                var toastEl = document.getElementById('toast-info');
-                var toastObj = bootstrap.Toast.getOrCreateInstance(toastEl);
-                toastObj.show();
-            }
-        });
-        </script>
     @endif
 </div>
 <div class="container-fluid px-4 py-4">
@@ -90,58 +77,93 @@
         </div>
     @endif
 
-    {{-- Add Course Outcome Button --}}
-    <div class="mb-3 text-end">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
-            + Add Course Outcome
-        </button>
+    {{-- Header Section --}}
+    <div class="header-section">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h1 class="header-title">📋 Course Outcomes Management</h1>
+                <p class="header-subtitle">
+                    Subject: <strong>{{ $selectedSubject->subject_code ?? 'N/A' }} - {{ $selectedSubject->subject_description ?? 'N/A' }}</strong>
+                    @if($currentPeriod)
+                        | {{ $currentPeriod->academic_year }} - {{ $currentPeriod->semester }}
+                    @endif
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-3 no-print">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
+                    ➕ Add Course Outcome
+                </button>
+            </div>
+        </div>
     </div>
 
     {{-- Course Outcomes Table Section --}}
-    <div class="mt-4">
+    <div class="main-results-container">
         @if($cos && $cos->count())
-            <div class="card shadow-sm">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-hover align-middle mb-0">
-                        <thead class="table-light">
+            <div class="results-card">
+                <div class="card-header-custom">
+                    <i class="bi bi-table me-2"></i>Course Outcomes Overview
+                </div>
+                <div class="table-responsive p-3">
+                    <table class="table co-table table-bordered table-hover align-middle mb-0 course-outcomes-table table-striped">
+                        <thead class="table-success">
                             <tr>
-                                <th>CO Code</th>
-                                <th>Identifier</th>
-                                <th>Description</th>
-                                <th>Academic Period</th>
-                                <th class="text-end">Actions</th>
+                                <th class="co-code-col">
+                                    <i class="bi bi-hash"></i> CO Code
+                                </th>
+                                <th class="co-identifier-col">
+                                    <i class="bi bi-tag"></i> Identifier
+                                </th>
+                                </th>
+                                <th class="co-description-col">
+                                    <i class="bi bi-pencil-square"></i> Description 
+                                    <small class="text-white opacity-100">(Double-click to edit)</small>
+                                </th>
+                                <th class="co-period-col">
+                                    <i class="bi bi-calendar-range"></i> Academic Period
+                                </th>
+                                <th class="co-actions-col text-end">
+                                    <i class="bi bi-gear"></i> Actions
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($cos as $co)
                                 <tr>
-                                    <td class="fw-semibold">{{ $co->co_code }}</td>
-                                    <td>{{ $co->co_identifier }}</td>
-                                    <td>{{ $co->description }}</td>
-                                    <td>
+                                    <td class="fw-semibold co-code-cell">{{ $co->co_code }}</td>
+                                    <td class="co-identifier-cell">{{ $co->co_identifier }}</td>
+                                    <td class="co-description-cell" data-co-id="{{ $co->id }}">
+                                        <div class="description-wrapper">
+                                            <div class="description-text editable-description" 
+                                                 title="Double-click to edit: {{ $co->description }}"
+                                                 data-original-text="{{ $co->description }}">
+                                                {{ $co->description }}
+                                            </div>
+                                            <input type="text" 
+                                                   class="form-control description-input d-none" 
+                                                   value="{{ $co->description }}"
+                                                   maxlength="1000">
+                                            @if(strlen($co->description) > 100)
+                                                <button class="btn btn-link btn-sm p-0 mt-1 expand-btn" type="button">
+                                                    <small>Show more</small>
+                                                </button>
+                                            @endif
+                                        </div>
+                                    </td>
+                                    <td class="co-period-cell">
                                         @if($co->academicPeriod)
-                                            {{ $co->academicPeriod->academic_year }} - {{ $co->academicPeriod->semester }}
+                                            <span class="text-nowrap">{{ $co->academicPeriod->academic_year }} - {{ $co->academicPeriod->semester }}</span>
                                         @else
                                             -
                                         @endif
                                     </td>
-                                    <td class="text-end">
-                                        <button type="button" class="btn btn-success btn-sm" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#editCourseOutcomeModal"
-                                            data-id="{{ $co->id }}"
-                                            data-co_code="{{ $co->co_code }}"
-                                            data-co_identifier="{{ $co->co_identifier }}"
-                                            data-description="{{ $co->description }}"
-                                            data-academic_period_id="{{ $co->academic_period_id }}"
-                                        >
-                                            <i class="bi bi-pencil-square"></i> Edit
-                                        </button>
-                                        <form action="{{ route('instructor.course_outcomes.destroy', $co->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Are you sure you want to delete this course outcome?');">
+                                    <td class="text-end co-actions-cell">
+                                        <form action="{{ route('instructor.course_outcomes.destroy', $co->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Are you sure you want to delete this course outcome? This action cannot be undone.');">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-danger btn-sm">
-                                                <i class="bi bi-trash"></i> Delete
+                                            <button type="submit" class="btn btn-outline-danger btn-sm delete-btn" title="Delete Course Outcome">
+                                                <i class="bi bi-trash"></i>
+                                                <span class="btn-text">Delete</span>
                                             </button>
                                         </form>
                                     </td>
@@ -152,8 +174,20 @@
                 </div>
             </div>
         @else
-            <div class="alert alert-warning bg-warning-subtle text-dark border-0 text-center">
-                No course outcomes found for this subject.
+            <div class="results-card">
+                <div class="card-header-custom">
+                    <i class="bi bi-info-circle me-2"></i>No Course Outcomes Found
+                </div>
+                <div class="p-4 text-center">
+                    <div class="empty-state">
+                        <i class="bi bi-clipboard-x display-1 text-muted mb-3"></i>
+                        <h5 class="text-muted mb-3">No course outcomes found for this subject</h5>
+                        <p class="text-muted mb-4">Get started by adding your first course outcome.</p>
+                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
+                            <i class="bi bi-plus-circle me-2"></i>Add First Course Outcome
+                        </button>
+                    </div>
+                </div>
             </div>
         @endif
     </div>
@@ -162,41 +196,62 @@
 
 {{-- Add Course Outcome Modal --}}
 <div class="modal fade" id="addCourseOutcomeModal" tabindex="-1" aria-labelledby="addCourseOutcomeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <form method="POST" action="{{ route('instructor.course_outcomes.store') }}">
             @csrf
-            <div class="modal-content shadow-sm border-0 rounded-3">
-                <div class="modal-header bg-success">
-                    <h5 class="modal-title" id="addCourseOutcomeModalLabel">➕ Add Course Outcome</h5>
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title d-flex align-items-center" id="addCourseOutcomeModalLabel">
+                        <i class="bi bi-plus-circle me-2"></i>Add New Course Outcome
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">CO Code <span class="text-danger">*</span></label>
-                        <input type="text" name="co_code" id="co_code" class="form-control" readonly style="background-color: #f8f9fa;" required>
+                <div class="modal-body p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-hash me-1"></i>CO Code <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="co_code" id="co_code" class="form-control form-control-lg" readonly style="background-color: #f8f9fa;" required>
+                            <small class="form-text text-muted">Auto-generated based on existing course outcomes</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">
+                                <i class="bi bi-tag me-1"></i>Identifier <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" name="co_identifier" id="co_identifier" class="form-control form-control-lg" readonly style="background-color: #f8f9fa;" required>
+                            <small class="form-text text-muted">Follows subject code pattern</small>
+                        </div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Identifier <span class="text-danger">*</span></label>
-                        <input type="text" name="co_identifier" id="co_identifier" class="form-control" readonly style="background-color: #f8f9fa;" required>
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-pencil-square me-1"></i>Description <span class="text-danger">*</span>
+                        </label>
+                        <textarea name="description" class="form-control" rows="4" placeholder="Enter a clear and specific course outcome description..." required></textarea>
+                        <small class="form-text text-muted">Describe what students should be able to demonstrate or achieve</small>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Description <span class="text-danger">*</span></label>
-                        <textarea name="description" class="form-control" rows="3" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Academic Period <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">
+                            <i class="bi bi-calendar-range me-1"></i>Academic Period <span class="text-danger">*</span>
+                        </label>
                         <input type="hidden" name="academic_period_id" value="{{ $currentPeriod->id ?? '' }}">
-                        <select class="form-select" disabled>
-                            <option value="{{ $currentPeriod->id ?? '' }}">
-                                {{ $currentPeriod->academic_year ?? '' }} - {{ $currentPeriod->semester ?? '' }}
-                            </option>
-                        </select>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-calendar-check"></i></span>
+                            <input type="text" class="form-control form-control-lg" value="{{ $currentPeriod->academic_year ?? '' }} - {{ $currentPeriod->semester ?? '' }}" readonly style="background-color: #f8f9fa;">
+                        </div>
+                        <small class="form-text text-muted">Course outcome will be created for the current academic period</small>
                     </div>
                     <input type="hidden" name="subject_id" value="{{ $selectedSubject->id ?? '' }}">
                 </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Add Outcome</button>
+                <div class="modal-footer bg-light border-0 p-4">
+                    <div class="d-flex justify-content-between w-100">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="bi bi-x-circle me-2"></i>Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle me-2"></i>Create Course Outcome
+                        </button>
+                    </div>
                 </div>
             </div>
         </form>
@@ -204,157 +259,4 @@
 </div>
 
 
-{{-- Edit Course Outcome Modal (not nested, only once at the bottom) --}}
-<div class="modal fade" id="editCourseOutcomeModal" tabindex="-1" aria-labelledby="editCourseOutcomeModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <form method="POST" id="editCourseOutcomeForm">
-            @csrf
-            @method('PUT')
-            <div class="modal-content shadow-sm border-0 rounded-3">
-                <div class="modal-header bg-success">
-                    <h5 class="modal-title" id="editCourseOutcomeModalLabel">✏️ Edit Course Outcome</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">CO Code <span class="text-danger">*</span></label>
-                        <input type="text" name="co_code" id="edit_co_code" class="form-control" required readonly style="background-color: #f8f9fa;">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Identifier <span class="text-danger">*</span></label>
-                        <input type="text" name="co_identifier" id="edit_co_identifier" class="form-control" required readonly style="background-color: #f8f9fa;">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Description <span class="text-danger">*</span></label>
-                        <textarea name="description" id="edit_description" class="form-control" rows="3" required></textarea>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Academic Period <span class="text-danger">*</span></label>
-                        <input type="hidden" name="academic_period_id" id="edit_academic_period_id" value="{{ $currentPeriod->id ?? '' }}">
-                        <select class="form-select" disabled>
-                            <option value="{{ $currentPeriod->id ?? '' }}">
-                                {{ $currentPeriod->academic_year ?? '' }} - {{ $currentPeriod->semester ?? '' }}
-                            </option>
-                        </select>
-                    </div>
-                    <input type="hidden" name="subject_id" value="{{ $selectedSubject->id ?? '' }}">
-                </div>
-                <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Update Outcome</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function () {
-    // Sync toast progress bar with Bootstrap toast timer   
-    function syncToastBar(toastId, barId, duration = 5000) {
-        var toastEl = document.getElementById(toastId);
-        var barEl = document.getElementById(barId);
-        if (toastEl && barEl) {
-            barEl.style.width = '100%';
-            barEl.style.background = '#343a40'; // Bootstrap dark
-            barEl.style.opacity = '1';
-            var barDuration = 4000; // 4 seconds, faster than toast
-            var start = Date.now();
-        var interval = setInterval(function() {
-            var elapsed = Date.now() - start;
-            var percent = Math.max(0, 100 - (elapsed / barDuration) * 100);
-            barEl.style.width = percent + '%';
-            if (elapsed >= barDuration) {
-                barEl.style.width = '0%';
-                barEl.style.opacity = '0.5';
-                clearInterval(interval);
-            }
-        }, 16); // ~60fps
-            // Listen for toast hidden event to clear bar immediately if closed early
-            toastEl.addEventListener('hidden.bs.toast', function() {
-                barEl.style.width = '0%';
-                barEl.style.opacity = '0.5';
-                clearInterval(interval);
-            });
-            // Use Bootstrap Toast API for auto-hide
-            if (window.bootstrap && window.bootstrap.Toast) {
-                var toastObj = bootstrap.Toast.getOrCreateInstance(toastEl);
-                toastObj.show();
-            }
-        }
-    }
-    syncToastBar('toast-success', 'toast-success-bar');
-    syncToastBar('toast-error', 'toast-error-bar');
-    syncToastBar('toast-info', 'toast-info-bar');
-
-    // Existing edit modal logic
-    var editModal = document.getElementById('editCourseOutcomeModal');
-    editModal.addEventListener('show.bs.modal', function (event) {
-        var button = event.relatedTarget;
-        var id = button.getAttribute('data-id');
-        var co_code = button.getAttribute('data-co_code');
-        var co_identifier = button.getAttribute('data-co_identifier');
-        var description = button.getAttribute('data-description');
-        var academic_period_id = button.getAttribute('data-academic_period_id');
-
-        document.getElementById('edit_co_code').value = co_code;
-        document.getElementById('edit_co_identifier').value = co_identifier;
-        document.getElementById('edit_description').value = description;
-        document.getElementById('edit_academic_period_id').value = academic_period_id;
-
-        // Set the form action dynamically
-        var form = document.getElementById('editCourseOutcomeForm');
-        form.action = '/instructor/course_outcomes/' + id;
-    });
-
-    // Auto-generate CO Code and Identifier when add modal is shown
-    const addModal = document.getElementById('addCourseOutcomeModal');
-    if (addModal) {
-        addModal.addEventListener('show.bs.modal', function(e) {
-            generateNextCOCode();
-        });
-    }
-
-    function generateNextCOCode() {
-        // Get subject code from the page
-        const subjectCode = '{{ $selectedSubject->subject_code ?? "" }}';
-        
-        // Get existing course outcomes from the table
-        const existingCOs = [];
-        const coRows = document.querySelectorAll('tbody tr');
-        
-        coRows.forEach(row => {
-            const coCodeCell = row.querySelector('td:first-child');
-            if (coCodeCell) {
-                const coCode = coCodeCell.textContent.trim();
-                // Extract number from CO code (e.g., "CO1" -> 1)
-                const match = coCode.match(/CO(\d+)/i);
-                if (match) {
-                    existingCOs.push(parseInt(match[1]));
-                }
-            }
-        });
-
-        // Determine next CO number
-        let nextCONumber = 1;
-        if (existingCOs.length > 0) {
-            const maxCO = Math.max(...existingCOs);
-            nextCONumber = maxCO + 1;
-        }
-
-        // Set the auto-generated values
-        const coCodeInput = document.getElementById('co_code');
-        const coIdentifierInput = document.getElementById('co_identifier');
-        
-        if (coCodeInput && coIdentifierInput) {
-            const newCOCode = `CO${nextCONumber}`;
-            const newIdentifier = subjectCode ? `${subjectCode}.${nextCONumber}` : `CO${nextCONumber}`;
-            
-            coCodeInput.value = newCOCode;
-            coIdentifierInput.value = newIdentifier;
-        }
-    }
-});
-</script>
-@endpush
 @endsection

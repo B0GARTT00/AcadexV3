@@ -1,0 +1,362 @@
+/* Course Outcomes Table Styling */
+
+/* Import matching styles from course-outcome-results.css */
+
+/* Header Section */
+.header-section {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    color: white;
+    box-shadow: 0 8px 25px rgba(40, 167, 69, 0.15);
+}
+
+.header-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.header-subtitle {
+    font-size: 1.1rem;
+    margin: 0.5rem 0 0 0;
+    opacity: 0.95;
+}
+
+/* Main Results Container */
+.main-results-container {
+    margin-top: 2rem;
+}
+
+/* Results Card */
+.results-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    margin-bottom: 2rem;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Card Header */
+.card-header-custom {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    border: none;
+    display: flex;
+    align-items: center;
+}
+
+/* CO Table Styling */
+.co-table {
+    margin: 0;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.co-table thead th {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    font-weight: 600;
+    padding: 1rem 0.75rem;
+    border: none;
+    font-size: 0.9rem;
+    text-align: center;
+    vertical-align: middle;
+}
+
+.co-table tbody tr {
+    transition: all 0.2s ease;
+}
+
+.co-table tbody tr:hover {
+    background-color: rgba(40, 167, 69, 0.05);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.co-table tbody td {
+    padding: 1rem 0.75rem;
+    border-color: rgba(0, 0, 0, 0.08);
+    vertical-align: middle;
+}
+
+/* Course Outcomes Table Styling */
+.course-outcomes-table {
+    table-layout: fixed;
+    width: 100%;
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.co-code-cell {
+    font-weight: 600;
+    color: #495057;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.co-identifier-cell {
+    font-family: 'Courier New', monospace;
+    background-color: rgba(108, 117, 125, 0.05);
+    font-weight: 500;
+}
+
+/* Column widths for responsive design */
+.co-code-col, .co-code-cell {
+    width: 10%;
+    min-width: 80px;
+}
+
+.co-identifier-col, .co-identifier-cell {
+    width: 15%;
+    min-width: 100px;
+}
+
+.co-description-col, .co-description-cell {
+    width: 50%;
+    min-width: 200px;
+}
+
+.co-period-col, .co-period-cell {
+    width: 15%;
+    min-width: 120px;
+}
+
+.co-actions-col, .co-actions-cell {
+    width: 10%;
+    min-width: 100px;
+}
+
+/* Description text handling */
+.description-wrapper {
+    position: relative;
+}
+
+.description-text {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    hyphens: auto;
+    max-height: 4.5em;
+    overflow: hidden;
+    line-height: 1.5em;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 6px;
+    min-height: 2.5em;
+    border: 2px solid transparent;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    position: relative;
+}
+
+.description-text::before {
+    content: '✏️';
+    position: absolute;
+    top: 4px;
+    right: 6px;
+    font-size: 0.7rem;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.description-text:hover {
+    background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(40, 167, 69, 0.05) 100%);
+    border: 2px solid rgba(40, 167, 69, 0.3);
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);
+}
+
+.description-text:hover::before {
+    opacity: 1;
+}
+
+.description-text.expanded {
+    max-height: none;
+    overflow: visible;
+}
+
+.description-input {
+    width: 100%;
+    border: 2px solid #28a745;
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-size: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    min-height: 2.5em;
+    background: linear-gradient(135deg, #ffffff 0%, #f0f8ff 100%);
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+}
+
+.description-input:focus {
+    outline: none;
+    border-color: #20c997;
+    box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.25);
+    background: #ffffff;
+}
+
+/* Actions column styling */
+.co-actions-cell .btn {
+    font-size: 0.85rem;
+    white-space: nowrap;
+    min-width: 80px;
+    border-radius: 0.375rem;
+    transition: all 0.2s ease;
+}
+
+.delete-btn {
+    border: 2px solid #dc3545;
+    color: #dc3545;
+    background: transparent;
+    font-weight: 500;
+}
+
+.delete-btn:hover {
+    background-color: #dc3545;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Empty State */
+.empty-state {
+    padding: 3rem 2rem;
+}
+
+.empty-state i.display-1 {
+    font-size: 4rem;
+    opacity: 0.3;
+}
+
+/* No Print Class - Hidden in print mode */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .course-outcomes-table {
+        font-size: 0.9rem;
+    }
+    
+    .co-description-col, .co-description-cell {
+        width: 45%;
+    }
+    
+    .co-actions-col, .co-actions-cell {
+        width: 15%;
+    }
+    
+    .header-title {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .course-outcomes-table {
+        font-size: 0.85rem;
+    }
+    
+    .co-code-col, .co-code-cell {
+        width: 12%;
+    }
+    
+    .co-identifier-col, .co-identifier-cell {
+        width: 18%;
+    }
+    
+    .co-description-col, .co-description-cell {
+        width: 40%;
+    }
+    
+    .co-period-col, .co-period-cell {
+        width: 15%;
+    }
+    
+    .co-actions-col, .co-actions-cell {
+        width: 15%;
+    }
+    
+    .co-actions-cell .btn {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        min-width: 70px;
+    }
+    
+    .co-actions-cell .btn i {
+        font-size: 0.8rem;
+    }
+    
+    .co-actions-cell .btn-text {
+        display: none;
+    }
+    
+    .header-section {
+        padding: 1.5rem;
+    }
+    
+    .header-title {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .co-actions-cell .btn {
+        width: 100%;
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+        min-width: 60px;
+    }
+    
+    .co-actions-cell .btn-text {
+        display: none;
+    }
+    
+    /* Further reduce font size */
+    .course-outcomes-table {
+        font-size: 0.8rem;
+    }
+    
+    .header-section {
+        padding: 1rem;
+    }
+    
+    .header-title {
+        font-size: 1.5rem;
+    }
+    
+    .header-subtitle {
+        font-size: 1rem;
+    }
+}
+
+/* Enhanced table responsive container */
+.table-responsive {
+    border-radius: 0.5rem;
+}
+
+/* Custom scrollbar for horizontal scroll */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

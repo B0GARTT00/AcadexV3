@@ -146,7 +146,9 @@
                         <select name="academic_period_id" class="form-select" required>
                             <option value="">-- Select Academic Period --</option>
                             @foreach($periods ?? [] as $period)
-                                <option value="{{ $period->id }}">{{ $period->academic_year }} - {{ $period->semester }}</option>
+                                @if($period && is_object($period) && isset($period->id))
+                                    <option value="{{ $period->id }}">{{ $period->academic_year ?? 'N/A' }} - {{ $period->semester ?? 'N/A' }}</option>
+                                @endif
                             @endforeach
                         </select>
                     </div>
