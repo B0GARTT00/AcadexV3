@@ -300,6 +300,13 @@
                             <span>View Grades</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('vpaa.course-outcome-attainment') }}" 
+                           class="nav-link {{ request()->routeIs('vpaa.course-outcome-attainment*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-graph-up me-3"></i>
+                            <span>Course Outcome Attainment</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
         @endif

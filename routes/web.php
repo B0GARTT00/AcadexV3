@@ -226,6 +226,9 @@ Route::prefix('vpaa')
     ->middleware(['auth', 'academic.period.set'])
     ->name('vpaa.')
     ->group(function () {
+        // Course Outcome Attainment
+        Route::get('/course-outcome-attainment', [VPAAController::class, 'viewCourseOutcomeAttainment'])
+            ->name('course-outcome-attainment');
         // Dashboard
         Route::get('/dashboard', [VPAAController::class, 'index'])->name('dashboard');
         

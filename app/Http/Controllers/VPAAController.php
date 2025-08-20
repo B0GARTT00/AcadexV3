@@ -8,6 +8,7 @@ use App\Models\FinalGrade;
 use App\Models\Student;
 use App\Models\User;
 use App\Models\Department;
+use App\Models\CourseOutcomeAttainment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -28,6 +29,139 @@ class VPAAController extends Controller
             return redirect()->route('dashboard')
                 ->with('error', 'You are not authorized to access this page.');
         });
+    }
+    
+    /**
+     * Show course outcome attainment reports
+     *
+     * @param Request $request
+     * @return \Illuminate\View\View
+     */
+    public function viewCourseOutcomeAttainment(Request $request)
+    {
+        // Get filter parameters
+        $selectedDepartmentId = $request->input('department_id');
+        $selectedCourseId = $request->input('course_id');
+        
+        // Get all departments for the filter dropdown
+        $departments = Department::where('is_deleted', false)
+            ->select('id', 'department_code', 'department_description')
+            ->orderBy('department_description')
+            ->get();
+            
+        // Get courses based on selected department
+        $courses = collect();
+        if ($selectedDepartmentId) {
+            $courses = Course::where('department_id', $selectedDepartmentId)
+                ->where('is_deleted', false)
+                ->orderBy('course_code')
+                ->get();
+        }
+        
+        // Get base query for course outcome attainment data
+        $query = CourseOutcomeAttainment::select([
+                'course_outcome_attainments.*',
+                'students.id as student_id',
+                'students.first_name',
+                'students.last_name',
+                'students.course_id',
+                'courses.id as course_id',
+                'courses.course_code',
+                'courses.course_description',
+                'departments.department_code',
+                'departments.department_description',
+                'course_outcomes.id as co_id',
+                'course_outcomes.co_code',
+                'course_outcomes.description as co_description'
+            ])
+            ->leftJoin('students', 'course_outcome_attainments.student_id', '=', 'students.id')
+            ->leftJoin('courses', 'students.course_id', '=', 'courses.id')
+            ->leftJoin('departments', 'courses.department_id', '=', 'departments.id')
+            ->leftJoin('course_outcomes', 'course_outcome_attainments.co_id', '=', 'course_outcomes.id');
+            
+        // Apply filters
+        if ($selectedDepartmentId) {
+            $query->where('courses.department_id', $selectedDepartmentId);
+        }
+        
+        if ($selectedCourseId) {
+            $query->where('students.course_id', $selectedCourseId);
+        }
+        
+        // Get the data
+        $attainmentData = $query->get();
+        
+        // Organize data by course, then student, then outcomes
+        $organizedData = [];
+        $courseOutcomes = [];
+        
+        // First pass: collect all unique course outcomes across all courses
+        foreach ($attainmentData as $item) {
+            $courseKey = $item->course_code ?? 'Unknown';
+            $outcomeKey = $item->co_id;
+            
+            if (!isset($courseOutcomes[$courseKey][$outcomeKey])) {
+                $courseOutcomes[$courseKey][$outcomeKey] = (object)[
+                    'id' => $item->co_id,
+                    'co_code' => $item->co_code,
+                    'description' => $item->co_description
+                ];
+            }
+        }
+        
+        // Second pass: organize data by course and student
+        foreach ($attainmentData as $item) {
+            $courseKey = $item->course_code ?? 'Unknown';
+            $studentId = $item->student_id;
+            
+            if (!isset($organizedData[$courseKey])) {
+                $organizedData[$courseKey] = [
+                    'course_code' => $item->course_code,
+                    'course_description' => $item->course_description,
+                    'department_code' => $item->department_code,
+                    'students' => [],
+                    'outcomes' => $courseOutcomes[$courseKey] ?? []
+                ];
+            }
+            
+            if (!isset($organizedData[$courseKey]['students'][$studentId])) {
+                $organizedData[$courseKey]['students'][$studentId] = [
+                    'first_name' => $item->first_name,
+                    'last_name' => $item->last_name,
+                    'outcomes' => []
+                ];
+            }
+            
+            // Add the outcome data for this student
+            $organizedData[$courseKey]['students'][$studentId]['outcomes'][$item->co_id] = (object)[
+                'id' => $item->id,
+                'score' => $item->score,
+                'max' => $item->max,
+                'co_code' => $item->co_code,
+                'co_description' => $item->co_description
+            ];
+        }
+        
+        // Sort outcomes by co_code for consistent display
+        foreach ($organizedData as &$courseData) {
+            if (isset($courseData['outcomes'])) {
+                // Convert to array, sort by co_code, then convert back to object
+                $outcomesArray = (array)$courseData['outcomes'];
+                usort($outcomesArray, function($a, $b) {
+                    return strcmp($a->co_code, $b->co_code);
+                });
+                $courseData['outcomes'] = $outcomesArray;
+            }
+        }
+        
+        return view('vpaa.course-outcome-attainment', [
+            'departments' => $departments,
+            'courses' => $courses,
+            'selectedDepartmentId' => $selectedDepartmentId,
+            'selectedCourseId' => $selectedCourseId,
+            'attainmentData' => $organizedData,
+            'hasData' => !empty($organizedData)
+        ]);
     }
     
     /**
