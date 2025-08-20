@@ -1,110 +1,111 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+<div class="container-fluid px-4 py-4">
     <!-- Page Header -->
-    <div class="flex justify-between items-center mb-8">
-        <h1 class="text-3xl font-bold text-gray-800 flex items-center">
-            <i class="bi bi-people-fill text-primary me-3"></i>
-            Instructor Management
-            @if($selectedDepartment)
-                <span class="text-gray-500 font-normal text-xl ms-2">• {{ $selectedDepartment->department_description }}</span>
-            @endif
-        </h1>
-        <a href="{{ route('vpaa.departments') }}" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-            <i class="bi bi-arrow-left me-2"></i> Back to Departments
-        </a>
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="h3 fw-semibold text-gray-800 mb-0">
+                <i class="bi bi-people-fill me-2"></i>
+                Instructor Management
+                @if($selectedDepartment)
+                    <span class="text-muted">• {{ $selectedDepartment->department_description }}</span>
+                @endif
+            </h1>
+            <nav aria-label="breadcrumb" class="mt-2">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('vpaa.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('vpaa.departments') }}">Departments</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Instructors</li>
+                </ol>
+            </nav>
+        </div>
+        <div>
+            <a href="{{ route('vpaa.departments') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Departments
+            </a>
+        </div>
     </div>
 
     <!-- Filter Card -->
-    <div class="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-        <div class="p-6">
-            <form action="{{ route('vpaa.instructors') }}" method="GET" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-                    <div class="md:col-span-3">
-                        <label for="department_id" class="block text-sm font-medium text-gray-700 mb-1">Filter by Department</label>
-                        <div class="relative">
-                            <select name="department_id" id="department_id" 
-                                class="block w-full pl-3 pr-8 py-2 text-base border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm appearance-none"
-                                onchange="this.form.submit()">
-                                <option value="">All Departments</option>
-                                @foreach($departments as $dept)
-                                    <option value="{{ $dept->id }}" {{ request('department_id') == $dept->id ? 'selected' : '' }}>
-                                        {{ $dept->department_code }} - {{ $dept->department_description }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md text-sm font-medium flex items-center justify-center">
-                            <i class="bi bi-funnel me-2"></i> Apply Filter
-                        </button>
-                    </div>
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form action="{{ route('vpaa.instructors') }}" method="GET" class="row g-3">
+                <div class="col-md-10">
+                    <label for="department_id" class="form-label fw-semibold">Filter by Department</label>
+                    <select name="department_id" id="department_id" 
+                        class="form-select"
+                        onchange="this.form.submit()">
+                        <option value="">All Departments</option>
+                        @foreach($departments as $dept)
+                            <option value="{{ $dept->id }}" {{ (request('department_id') == $dept->id || ($selectedDepartment && $selectedDepartment->id == $dept->id)) ? 'selected' : '' }}>
+                                {{ $dept->department_code }} - {{ $dept->department_description }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel me-2"></i>Apply Filter
+                    </button>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- Instructors Table -->
-    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Name
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Department
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Email
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                        </th>
+                        <th scope="col" class="px-4 py-3 fw-semibold">Name</th>
+                        <th scope="col" class="px-4 py-3 fw-semibold">Department</th>
+                        <th scope="col" class="px-4 py-3 fw-semibold">Email</th>
+                        <th scope="col" class="px-4 py-3 fw-semibold">Status</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody>
                     @forelse($instructors as $instructor)
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10 rounded-full bg-green-50 flex items-center justify-center text-green-600">
-                                        <i class="bi bi-person-fill"></i>
+                        <tr>
+                            <td class="px-4 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-person-fill text-success"></i>
                                     </div>
-                                    <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">{{ $instructor->name }}</div>
+                                    <div>
+                                        <div class="fw-semibold">{{ $instructor->name }}</div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ $instructor->department->department_description ?? 'N/A' }}</div>
+                            <td class="px-4 py-3">
+                                <span class="text-muted">{{ $instructor->department->department_description ?? 'N/A' }}</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="text-sm text-gray-900">{{ $instructor->email }}</div>
+                            <td class="px-4 py-3">
+                                <span class="text-muted">{{ $instructor->email }}</span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $instructor->is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                            <td class="px-4 py-3">
+                                <span class="badge {{ $instructor->is_active ? 'bg-success' : 'bg-danger' }} px-3 py-2">
                                     {{ $instructor->is_active ? 'Active' : 'Inactive' }}
                                 </span>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="5" class="px-6 py-8 text-center text-gray-500">
-                                <div class="flex flex-col items-center justify-center">
-                                    <i class="bi bi-people-x text-4xl text-gray-300 mb-2"></i>
-                                    <p class="text-lg font-medium text-gray-700">No instructors found</p>
-                                    <p class="text-sm text-gray-500 mt-1">
-                                        @if(request('department_id'))
-                                            Try changing your filter criteria
-                                        @else
-                                            No instructors are currently registered
-                                        @endif
-                                    </p>
+                            <td colspan="4" class="text-center py-5">
+                                <div class="text-muted mb-3">
+                                    <i class="bi bi-people-x fs-1 opacity-50"></i>
                                 </div>
+                                <h6 class="text-muted mb-1">No instructors found</h6>
+                                <p class="text-muted small mb-0">
+                                    @if($selectedDepartment)
+                                        No instructors are assigned to this department.
+                                    @elseif(request('department_id'))
+                                        Try changing your filter criteria.
+                                    @else
+                                        No instructors are currently registered.
+                                    @endif
+                                </p>
                             </td>
                         </tr>
                     @endforelse
@@ -114,28 +115,10 @@
         
         <!-- Pagination -->
         @if($instructors->hasPages())
-            <div class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
+            <div class="card-footer bg-light bg-opacity-25 border-0 py-3 px-4">
                 {{ $instructors->withQueryString()->links() }}
             </div>
         @endif
     </div>
 </div>
-
-@push('styles')
-<style>
-    [x-cloak] { display: none !important; }
-    .dropdown:hover .dropdown-menu {
-        display: block;
-    }
-</style>
-@endpush
-
-@push('scripts')
-<script>
-    // Any additional JavaScript can go here
-    document.addEventListener('DOMContentLoaded', function() {
-        // Initialize any JS components if needed
-    });
-</script>
-@endpush
 @endsection

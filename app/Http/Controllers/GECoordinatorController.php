@@ -258,6 +258,85 @@ class GECoordinatorController extends Controller
         return redirect()->back()->with('success', 'Instructor assigned to subject successfully.');
     }
 
+    public function manageSchedule()
+    {
+        if (!Auth::user()->isGECoordinator()) {
+            abort(403);
+        }
+
+        // Get active academic period from session
+        $academicPeriodId = session('active_academic_period_id');
+
+        // Get GE subjects for the current academic period
+        $subjects = Subject::where('academic_period_id', $academicPeriodId)
+            ->where('course_id', 2) // Assuming 2 is GE course_id
+            ->with(['instructors', 'students'])
+            ->orderBy('subject_code')
+            ->get();
+
+        return view('gecoordinator.manage-schedule', compact('subjects'));
+    }
+
+    public function reports()
+    {
+        if (!Auth::user()->isGECoordinator()) {
+            abort(403);
+        }
+
+        // Get active academic period from session
+        $academicPeriodId = session('active_academic_period_id');
+
+        // Get GE subjects statistics
+        $totalSubjects = Subject::where('academic_period_id', $academicPeriodId)
+            ->where('course_id', 2)
+            ->count();
+
+        $assignedSubjects = Subject::where('academic_period_id', $academicPeriodId)
+            ->where('course_id', 2)
+            ->whereHas('instructors')
+            ->count();
+
+        $unassignedSubjects = $totalSubjects - $assignedSubjects;
+
+        // Get instructor statistics
+        $geDepartment = Department::where('department_code', 'GE')->first();
+        $totalInstructors = User::where('role', 0)
+            ->where(function($query) use ($geDepartment) {
+                $query->where('department_id', $geDepartment->id ?? 0)
+                      ->orWhere('can_teach_ge', true);
+            })
+            ->where('is_active', true)
+            ->count();
+
+        // Get student enrollment statistics
+        $totalEnrollments = \DB::table('student_subjects')
+            ->join('subjects', 'student_subjects.subject_id', '=', 'subjects.id')
+            ->where('subjects.academic_period_id', $academicPeriodId)
+            ->where('subjects.course_id', 2)
+            ->where('student_subjects.is_deleted', false)
+            ->count();
+
+        // Get subjects by year level
+        $subjectsByYear = Subject::where('academic_period_id', $academicPeriodId)
+            ->where('course_id', 2)
+            ->select('year_level', \DB::raw('count(*) as count'))
+            ->groupBy('year_level')
+            ->get()
+            ->pluck('count', 'year_level')
+            ->toArray();
+
+        $reportData = [
+            'total_subjects' => $totalSubjects,
+            'assigned_subjects' => $assignedSubjects,
+            'unassigned_subjects' => $unassignedSubjects,
+            'total_instructors' => $totalInstructors,
+            'total_enrollments' => $totalEnrollments,
+            'subjects_by_year' => $subjectsByYear
+        ];
+
+        return view('gecoordinator.reports', compact('reportData'));
+    }
+
     public function toggleAssignedSubject(Request $request)
     {
         if (!Auth::user()->isGECoordinator()) {

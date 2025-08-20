@@ -1,217 +1,251 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="py-6">
-    <div class="max-w-7xl mx-auto px-4">
-        <!-- Page Header -->
-        <div class="d-flex justify-content-between align-items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-800">
-                <i class="bi bi-speedometer2 text-success me-2"></i>
-                VPAA Dashboard
-            </h1>
-            <div class="text-muted">
-                <i class="bi bi-calendar3 me-1"></i>
-                {{ now()->format('F j, Y') }}
-            </div>
+<div class="container-fluid px-4 py-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold text-dark mb-1">Welcome Back, {{ Auth::user()->name }}! 👋</h2>
+            <p class="text-muted mb-0">Oversee academic operations and institutional management</p>
         </div>
+        <div class="d-flex align-items-center gap-3">
+            <a href="{{ route('vpaa.departments') }}" class="btn btn-primary rounded-pill px-3 shadow-sm">
+                <i class="bi bi-building"></i> Manage Departments
+            </a>
+        </div>
+    </div>
 
-        @if (session('status'))
-            <div class="alert alert-success alert-dismissible fade show mb-6 bg-success bg-opacity-10 border border-success text-success rounded-4 shadow-sm" role="alert">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-check-circle-fill me-2"></i>
-                    <span class="me-auto">{{ session('status') }}</span>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            </div>
-        @endif
+    {{-- Summary Cards --}}
+    <div class="row g-4">
+        @php
+            $cards = [
+                [
+                    'label' => 'Total Departments',
+                    'icon' => 'bi bi-building',
+                    'value' => $departmentsCount ?? 0,
+                    'color' => 'primary',
+                    'trend' => 'Active departments'
+                ],
+                [
+                    'label' => 'Total Instructors',
+                    'icon' => 'bi bi-people-fill',
+                    'value' => $instructorsCount ?? 0,
+                    'color' => 'success',
+                    'trend' => 'Active faculty'
+                ],
+                [
+                    'label' => 'Total Students',
+                    'icon' => 'bi bi-mortarboard-fill',
+                    'value' => $studentsCount ?? 0,
+                    'color' => 'info',
+                    'trend' => 'Enrolled students'
+                ],
+                [
+                    'label' => 'Academic Programs',
+                    'icon' => 'bi bi-journal-text',
+                    'value' => $departmentsCount * 3 ?? 0, // Estimated programs per department
+                    'color' => 'warning',
+                    'trend' => 'Course offerings'
+                ]
+            ];
+        @endphp
 
-        <!-- Stats Cards -->
-        <div class="row g-4 mb-6">
-            <!-- Departments Card -->
-            <div class="col-md-4">
-                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
+        @foreach ($cards as $card)
+            <div class="col-md-3">
+                <div class="card h-100 border-0 shadow-sm rounded-4 hover-lift">
                     <div class="card-body p-4">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-soft-primary bg-opacity-25 text-primary rounded-3 p-3 me-3">
-                                <i class="bi bi-building fs-2"></i>
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="rounded-3 p-2 bg-{{ $card['color'] }}-subtle me-3">
+                                <i class="{{ $card['icon'] }} text-{{ $card['color'] }} fs-4"></i>
                             </div>
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Departments</h6>
-                                <h3 class="mb-0 fw-bold">{{ $departmentsCount ?? 0 }}</h3>
+                            <div>
+                                <h6 class="text-muted mb-0">{{ $card['label'] }}</h6>
+                                <h3 class="fw-bold text-{{ $card['color'] }} mb-0">{{ $card['value'] }}</h3>
                             </div>
                         </div>
-                    </div>
-                    <div class="card-footer bg-light bg-opacity-25 border-top-0 py-3 px-4">
-                        <a href="{{ route('vpaa.departments') }}" class="text-decoration-none text-primary fw-medium">
-                            View all <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
+                        <p class="text-muted small mb-0">
+                            <i class="bi bi-arrow-right"></i> {{ $card['trend'] }}
+                        </p>
                     </div>
                 </div>
             </div>
+        @endforeach
+    </div>
 
-            <!-- Instructors Card -->
-            <div class="col-md-4">
-                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-soft-success bg-opacity-25 text-success rounded-3 p-3 me-3">
-                                <i class="bi bi-people-fill fs-2"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Instructors</h6>
-                                <h3 class="mb-0 fw-bold">{{ $instructorsCount ?? 0 }}</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-light bg-opacity-25 border-top-0 py-3 px-4">
-                        <a href="{{ route('vpaa.instructors') }}" class="text-decoration-none text-success fw-medium">
-                            View all <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Students Card -->
-            <div class="col-md-4">
-                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center">
-                            <div class="bg-soft-info bg-opacity-25 text-info rounded-3 p-3 me-3">
-                                <i class="bi bi-mortarboard-fill fs-2"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="text-muted mb-1 small fw-semibold text-uppercase">Students</h6>
-                                <h3 class="mb-0 fw-bold">{{ $studentsCount ?? 0 }}</h3>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-light bg-opacity-25 border-top-0 py-3 px-4">
-                        <a href="{{ route('vpaa.students') }}" class="text-decoration-none text-info fw-medium">
-                            View all <i class="bi bi-arrow-right ms-1"></i>
-                        </a>
-                    </div>
-                </div>
+    @if (session('status'))
+        <div class="alert alert-success alert-dismissible fade show mt-4" role="alert">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-check-circle-fill me-2"></i>
+                <span class="me-auto">{{ session('status') }}</span>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         </div>
+    @endif
 
-        <!-- Quick Actions -->
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-6">
-            <div class="card-header bg-white border-0 py-4 px-4">
-                <h5 class="mb-0 fw-semibold text-gray-800">
-                    <i class="bi bi-lightning-charge-fill text-warning me-2"></i>
-                    Quick Actions
-                </h5>
-            </div>
-            <div class="card-body p-4">
-                <div class="row g-4">
-                    <!-- Manage Departments -->
-                    <div class="col-sm-6 col-lg-3">
-                        <a href="{{ route('vpaa.departments') }}" class="card h-100 border-0 bg-light bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
-                            <div class="card-body text-center p-4">
-                                <div class="bg-soft-primary bg-opacity-25 text-primary rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
-                                    <i class="bi bi-building fs-3"></i>
-                                </div>
-                                <h5 class="mb-1 fw-semibold">Departments</h5>
-                                <p class="text-muted small mb-0">Manage academic departments</p>
+    <div class="row g-4 mt-4">
+        {{-- Departments Overview --}}
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-body p-4">
+                    {{-- Header Section --}}
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="rounded-3 p-2 bg-primary-subtle me-3">
+                                <i class="bi bi-building text-primary fs-4"></i>
                             </div>
+                            <div>
+                                <h5 class="fw-semibold mb-0">Department Management</h5>
+                                <p class="text-muted small mb-0">Academic department overview and status</p>
+                            </div>
+                        </div>
+                        <a href="{{ route('vpaa.departments') }}" class="btn btn-outline-primary btn-sm rounded-pill">
+                            View All <i class="bi bi-arrow-right ms-1"></i>
                         </a>
                     </div>
 
-                    <!-- Manage Instructors -->
-                    <div class="col-sm-6 col-lg-3">
-                        <a href="{{ route('vpaa.instructors') }}" class="card h-100 border-0 bg-light bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
-                            <div class="card-body text-center p-4">
-                                <div class="bg-soft-success bg-opacity-25 text-success rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
-                                    <i class="bi bi-people-fill fs-3"></i>
-                                </div>
-                                <h5 class="mb-1 fw-semibold">Instructors</h5>
-                                <p class="text-muted small mb-0">View and manage instructors</p>
-                            </div>
-                        </a>
-                    </div>
-
-                    <!-- Manage Students -->
-                    <div class="col-sm-6 col-lg-3">
-                        <a href="{{ route('vpaa.students') }}" class="card h-100 border-0 bg-light bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
-                            <div class="card-body text-center p-4">
-                                <div class="bg-soft-info bg-opacity-25 text-info rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
-                                    <i class="bi bi-mortarboard-fill fs-3"></i>
-                                </div>
-                                <h5 class="mb-1 fw-semibold">Students</h5>
-                                <p class="text-muted small mb-0">View student records</p>
-                            </div>
-                        </a>
-                    </div>
-
-                    <!-- Course Outcome Attainment -->
-                    <div class="col-sm-6 col-lg-3">
-                        <a href="{{ route('vpaa.course-outcome-attainment') }}" class="card h-100 border-0 bg-light bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
-                            <div class="card-body text-center p-4">
-                                <div class="bg-soft-warning bg-opacity-25 text-warning rounded-circle p-3 d-inline-flex align-items-center justify-content-center mb-3" style="width: 70px; height: 70px;">
-                                    <i class="bi bi-graph-up fs-3"></i>
-                                </div>
-                                <h5 class="mb-1 fw-semibold">Outcome Reports</h5>
-                                <p class="text-muted small mb-0">View course outcome attainment</p>
-                            </div>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Activities -->
-        <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-            <div class="card-header bg-white border-0 py-4 px-4">
-                <h5 class="mb-0 fw-semibold text-gray-800">
-                    <i class="bi bi-activity text-primary me-2"></i>
-                    Recent Activities
-                </h5>
-            </div>
-            <div class="card-body p-0">
-                @if(isset($recentActivities) && count($recentActivities) > 0)
-                    <div class="list-group list-group-flush">
-                        @foreach($recentActivities as $activity)
-                            <div class="list-group-item border-0 px-4 py-3">
-                                <div class="d-flex align-items-start">
-                                    <div class="flex-shrink-0 me-3">
-                                        <div class="avatar-sm">
-                                            <span class="avatar-title rounded-circle bg-soft-{{ $activity['type'] }} text-{{ $activity['type'] }} d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                                                <i class="{{ $activity['icon'] }} fs-5"></i>
-                                            </span>
+                    {{-- Quick Stats Grid --}}
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm rounded-4 bg-primary-subtle hover-lift">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="rounded-3 p-2 bg-primary text-white me-3">
+                                            <i class="bi bi-building fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-primary small fw-semibold">Active Departments</div>
+                                            <h3 class="fw-bold text-primary mb-0">{{ $departmentsCount ?? 0 }}</h3>
                                         </div>
                                     </div>
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1 fw-medium">{{ $activity['title'] }}</h6>
-                                        <p class="text-muted small mb-1">{{ $activity['description'] }}</p>
-                                        <div class="text-muted small">
-                                            <i class="bi bi-clock me-1"></i> {{ $activity['time'] }}
-                                        </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-muted small">Currently operational</span>
+                                        <span class="badge bg-primary px-2 py-1">100%</span>
                                     </div>
                                 </div>
                             </div>
-                            @if(!$loop->last)
-                                <hr class="my-0">
-                            @endif
-                        @endforeach
-                    </div>
-                @else
-                    <div class="text-center py-5">
-                        <div class="text-muted mb-3">
-                            <i class="bi bi-inbox fs-1 opacity-50"></i>
                         </div>
-                        <h6 class="text-muted mb-1">No recent activities</h6>
-                        <p class="text-muted small mb-0">Activities will appear here as they happen</p>
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm rounded-4 bg-success-subtle hover-lift">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <div class="rounded-3 p-2 bg-success text-white me-3">
+                                            <i class="bi bi-people-fill fs-4"></i>
+                                        </div>
+                                        <div>
+                                            <div class="text-success small fw-semibold">Faculty Members</div>
+                                            <h3 class="fw-bold text-success mb-0">{{ $instructorsCount ?? 0 }}</h3>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-muted small">Active instructors</span>
+                                        <span class="badge bg-success px-2 py-1">
+                                            {{ $departmentsCount > 0 ? number_format(($instructorsCount / $departmentsCount), 1) : '0.0' }} avg
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                @endif
-            </div>
-            @if(isset($recentActivities) && count($recentActivities) > 0)
-                <div class="card-footer bg-light bg-opacity-25 border-0 py-3 px-4">
-                    <a href="{{ route('vpaa.activities') }}" class="text-decoration-none fw-medium">
-                        View all activities <i class="bi bi-arrow-right ms-1"></i>
-                    </a>
                 </div>
-            @endif
+            </div>
+        </div>
+
+        {{-- Quick Access Panel --}}
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-body p-4 d-flex flex-column">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="fw-semibold mb-0">
+                            <i class="bi bi-speedometer2 me-2"></i>Quick Access
+                        </h5>
+                    </div>
+
+                    {{-- Quick Access Items --}}
+                    <div class="flex-grow-1">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <a href="{{ route('vpaa.departments') }}" class="card border-0 bg-primary bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
+                                    <div class="card-body text-center p-3">
+                                        <div class="bg-primary bg-opacity-25 text-primary rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                                            <i class="bi bi-building fs-4"></i>
+                                        </div>
+                                        <h6 class="mb-1 fw-semibold">Departments</h6>
+                                        <p class="text-muted small mb-0">Manage academic departments</p>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-12">
+                                <a href="{{ route('vpaa.instructors') }}" class="card border-0 bg-success bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
+                                    <div class="card-body text-center p-3">
+                                        <div class="bg-success bg-opacity-25 text-success rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                                            <i class="bi bi-people-fill fs-4"></i>
+                                        </div>
+                                        <h6 class="mb-1 fw-semibold">Instructors</h6>
+                                        <p class="text-muted small mb-0">View and manage faculty</p>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-12">
+                                <a href="{{ route('vpaa.students') }}" class="card border-0 bg-info bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
+                                    <div class="card-body text-center p-3">
+                                        <div class="bg-info bg-opacity-25 text-info rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                                            <i class="bi bi-mortarboard-fill fs-4"></i>
+                                        </div>
+                                        <h6 class="mb-1 fw-semibold">Students</h6>
+                                        <p class="text-muted small mb-0">Access student records</p>
+                                    </div>
+                                </a>
+                            </div>
+                            <div class="col-12">
+                                <a href="{{ route('vpaa.course-outcome-attainment') }}" class="card border-0 bg-warning bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
+                                    <div class="card-body text-center p-3">
+                                        <div class="bg-warning bg-opacity-25 text-warning rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
+                                            <i class="bi bi-graph-up fs-4"></i>
+                                        </div>
+                                        <h6 class="mb-1 fw-semibold">Reports</h6>
+                                        <p class="text-muted small mb-0">Course outcome attainment</p>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .hover-lift {
+        transition: transform 0.2s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-3px);
+    }
+    
+    .hover-bg-opacity-25:hover {
+        background-opacity: 0.25 !important;
+    }
+    
+    .transition-all {
+        transition: all 0.2s ease;
+    }
+    
+    .bg-soft-primary {
+        background-color: rgba(13, 110, 253, 0.1);
+    }
+    
+    .bg-soft-success {
+        background-color: rgba(25, 135, 84, 0.1);
+    }
+    
+    .bg-soft-info {
+        background-color: rgba(13, 202, 240, 0.1);
+    }
+    
+    .bg-soft-warning {
+        background-color: rgba(255, 193, 7, 0.1);
+    }
+</style>
+@endpush

@@ -282,34 +282,34 @@
                             </div>
                         </a>
 
-                        <a href="{{ route('gecoordinator.manage-schedule') }}" 
+                        <a href="{{ route('gecoordinator.studentsByYear') }}" 
                            class="btn btn-light text-start rounded-3 p-3 hover-lift position-relative"
                            data-bs-toggle="tooltip"
                            data-bs-placement="right"
-                           title="View and manage class schedules">
+                           title="View GE students by year level">
                             <div class="d-flex align-items-center">
                                 <div class="rounded-3 p-2 bg-success bg-opacity-10 text-success me-3">
-                                    <i class="bi bi-calendar3 fs-4"></i>
+                                    <i class="bi bi-person-lines-fill fs-4"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0">Class Schedules</h6>
-                                    <p class="small text-muted mb-0">View and manage schedules</p>
+                                    <h6 class="mb-0">GE Students List</h6>
+                                    <p class="small text-muted mb-0">View students by year level</p>
                                 </div>
                             </div>
                         </a>
 
-                        <a href="{{ route('gecoordinator.reports') }}" 
+                        <a href="{{ route('gecoordinator.viewGrades') }}" 
                            class="btn btn-light text-start rounded-3 p-3 hover-lift position-relative"
                            data-bs-toggle="tooltip"
                            data-bs-placement="right"
-                           title="Generate and view reports">
+                           title="View GE grades and performance">
                             <div class="d-flex align-items-center">
                                 <div class="rounded-3 p-2 bg-info bg-opacity-10 text-info me-3">
-                                    <i class="bi bi-file-earmark-bar-graph fs-4"></i>
+                                    <i class="bi bi-clipboard-data fs-4"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-0">Reports</h6>
-                                    <p class="small text-muted mb-0">Generate and view reports</p>
+                                    <h6 class="mb-0">View GE Grades</h6>
+                                    <p class="small text-muted mb-0">Monitor student performance</p>
                                 </div>
                             </div>
                         </a>

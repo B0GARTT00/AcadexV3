@@ -244,7 +244,8 @@ Route::prefix('vpaa')
         Route::get('/instructors', [VPAAController::class, 'viewInstructors'])->name('instructors');
         Route::get('/instructors/{instructor}/edit', [VPAAController::class, 'editInstructor'])->name('instructors.edit');
         Route::put('/instructors/{instructor}', [VPAAController::class, 'updateInstructor'])->name('instructors.update');
-        Route::get('/instructors/{departmentId}', [VPAAController::class, 'viewInstructors'])->name('instructors.department');
+        // Department-specific instructor view - this should come after the edit routes to avoid conflicts
+        Route::get('/instructors/department/{departmentId}', [VPAAController::class, 'viewInstructors'])->name('instructors.department');
         
         // Students
         Route::get('/students', [VPAAController::class, 'viewStudents'])->name('students');

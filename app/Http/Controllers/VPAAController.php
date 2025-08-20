@@ -296,8 +296,11 @@ class VPAAController extends Controller
     // View Instructors by Department
     // ============================
 
-    public function viewInstructors($departmentId = null)
+    public function viewInstructors(Request $request, $departmentId = null)
     {
+        // Check if department_id is passed as a URL parameter or as a request parameter
+        $departmentId = $departmentId ?: $request->input('department_id');
+        
         $query = User::where('role', 0) // Instructor role
             ->where('is_active', true)
             ->with(['department' => function($query) {
@@ -364,7 +367,7 @@ class VPAAController extends Controller
             'is_active' => $request->has('is_active') ? 1 : 0,
         ]);
         
-        return redirect()->route('vpaa.instructors')
+        return redirect()->route('vpaa.instructors', ['department_id' => request('department_id')])
             ->with('success', 'Instructor updated successfully.');
     }
 

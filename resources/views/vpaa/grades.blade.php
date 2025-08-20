@@ -7,7 +7,7 @@
             <i class="bi bi-journal-text me-2"></i>
             Final Grades
             @if($departmentId)
-                <span class="text-muted">- {{ $departments->firstWhere('id', $departmentId)->name ?? '' }}</span>
+                <span class="text-muted">- {{ $departments->firstWhere('id', $departmentId)->department_description ?? '' }}</span>
             @endif
             @if($courseId)
                 <span class="text-muted">- {{ $courses->firstWhere('id', $courseId)->course_code ?? '' }}</span>
@@ -27,7 +27,7 @@
                         <option value="">Select Department</option>
                         @foreach($departments as $dept)
                             <option value="{{ $dept->id }}" {{ $departmentId == $dept->id ? 'selected' : '' }}>
-                                {{ $dept->name }}
+                                {{ $dept->department_description }}
                             </option>
                         @endforeach
                     </select>

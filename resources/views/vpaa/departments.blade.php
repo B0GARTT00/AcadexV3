@@ -16,11 +16,6 @@
                 </ol>
             </nav>
         </div>
-        <div>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addDepartmentModal">
-                <i class="bi bi-plus-lg me-2"></i>Add Department
-            </button>
-        </div>
     </div>
 
     <!-- Status Alert -->
@@ -35,64 +30,64 @@
     @endif
 
     <!-- Departments Grid -->
-    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4 px-3 py-3">
-        @forelse($departments as $department)
-            <div class="col">
-                <div class="card h-100 border-0 shadow-sm rounded-4 overflow-hidden hover-shadow"
-                     onclick="window.location.href='{{ route('vpaa.instructors', $department->id) }}'"
-                     style="cursor: pointer; transition: transform 0.2s ease, box-shadow 0.2s ease;">
+        {{-- Departments Grid --}}
+    <div class="row g-4">
+        @foreach($departments as $department)
+            <div class="col-xl-3 col-lg-4 col-md-6">
+                <div class="card border-0 shadow-lg rounded-4 overflow-hidden" 
+                     style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;"
+                     onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 8px 25px rgba(0,0,0,0.15)'"
+                     onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 6px rgba(0,0,0,0.1)'"
+                     onclick="window.location.href='{{ route('vpaa.instructors', ['department_id' => $department->id]) }}'">
                     
-                    <!-- Header with Icon -->
-                    <div class="d-flex align-items-center p-4" style="background: linear-gradient(135deg, #4ecd85, #3cb371);">
-                        <div class="bg-white rounded-3 p-3 me-3">
-                            <i class="bi bi-building fs-4" style="color: #4ecd85;"></i>
-                        </div>
-                        <div class="flex-grow-1">
-                            <h5 class="mb-1 fw-bold text-dark">{{ $department->department_code }}</h5>
-                            <p class="text-muted mb-0 small">
-                                {{ $department->department_description ? Str::limit($department->department_description, 25) : 'No description' }}
-                            </p>
+                    {{-- Green Header Section --}}
+                    <div class="position-relative" style="height: 70px; background: linear-gradient(135deg, #4ecd85, #3ba76a);">
+                        <div class="position-absolute start-50 translate-middle"
+                             style="top: 100%; transform: translate(-50%, -50%); width: 70px; height: 70px; 
+                                    background: linear-gradient(135deg, #4da674, #023336); 
+                                    border-radius: 15%; display: flex; align-items: center; justify-content: center; 
+                                    box-shadow: 0 4px 12px rgba(0,0,0,0.2); transition: all 0.3s ease;">
+                            <i class="bi bi-building-fill text-white" style="font-size: 28px;"></i>
                         </div>
                     </div>
 
-                    <!-- Stats -->
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-around align-items-center mb-4">
-                            <div class="text-center px-2">
-                                <div class="h4 mb-1 fw-bold text-primary">{{ $department->instructor_count ?? 0 }}</div>
-                                <span class="text-muted small">Instructors</span>
+                    {{-- Card Body --}}
+                    <div class="card-body pt-4 text-center px-3 pb-4">
+                        <h6 class="fw-bold mt-3 mb-3 text-dark text-truncate" title="{{ $department->department_description }}" style="font-size: 1rem; line-height: 1.3;">
+                            {{ $department->department_description }}
+                        </h6>
+                        
+                        {{-- Department Badge --}}
+                        <div class="mb-3">
+                            <span class="badge bg-primary text-white px-3 py-1" style="font-size: 0.8rem;">Department</span>
+                        </div>
+                        
+                        {{-- Mini Stats --}}
+                        <div class="row g-2 px-2">
+                            <div class="col-6">
+                                <div class="bg-success-subtle rounded-3 p-2 text-center border border-success border-opacity-25">
+                                    <div class="fw-bold text-success mb-1" style="font-size: 1.4rem;">{{ $department->instructor_count ?? 0 }}</div>
+                                    <div class="small text-success fw-semibold" style="font-size: 0.8rem;">Instructors</div>
+                                </div>
                             </div>
-                            <div class="vr mx-1"></div>
-                            <div class="text-center px-2">
-                                <div class="h4 mb-1 fw-bold text-success">{{ $department->student_count ?? 0 }}</div>
-                                <span class="text-muted small">Students</span>
+                            <div class="col-6">
+                                <div class="bg-info-subtle rounded-3 p-2 text-center border border-info border-opacity-25">
+                                    <div class="fw-bold text-info mb-1" style="font-size: 1.4rem;">{{ $department->student_count ?? 0 }}</div>
+                                    <div class="small text-info fw-semibold" style="font-size: 0.8rem;">Students</div>
+                                </div>
                             </div>
                         </div>
-                        <a href="{{ route('vpaa.instructors', $department->id) }}" 
-                           class="btn btn-outline-primary w-100 rounded-pill px-3">
-                            <i class="bi bi-arrow-right-circle me-1"></i> View Details
-                        </a>
-                    </div>
-                    
-                    <!-- Hidden form for delete action -->
-                    <form id="delete-department-{{ $department->id }}" action="{{ route('vpaa.departments.destroy', $department->id) }}" method="POST" class="d-none">
-                        @csrf
-                        @method('DELETE')
-                    </form>
-                </div>
-            </div>
-        @empty
-            <div class="col-12">
-                <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-body text-center py-5">
-                        <div class="text-muted mb-3">
-                            <i class="bi bi-building fs-1 opacity-25"></i>
+                        
+                        {{-- Click Indicator --}}
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                <i class="bi bi-arrow-right-circle me-1"></i>View Instructors
+                            </small>
                         </div>
-                        <h5 class="text-muted">No departments found</h5>
                     </div>
                 </div>
             </div>
-        @endforelse
+        @endforeach
     </div>
 
     <!-- Add Department Modal -->
@@ -171,5 +166,46 @@
         });
     });
 </script>
+@endpush
+
+@push('styles')
+<style>
+    /* GE Coordinator Style Card Hover Effects */
+    .card:hover .position-absolute {
+        transform: translate(-50%, -50%) scale(1.1) !important;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.3) !important;
+    }
+    
+    .card {
+        transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+    }
+    
+    .mini-stat-card {
+        transition: all 0.2s ease;
+    }
+    
+    .card:hover .mini-stat-card {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .hover-lift {
+        transition: all 0.3s ease-in-out;
+    }
+
+    .hover-lift:hover {
+        transform: translateY(-5px) scale(1.02);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    }
+    
+    /* Green theme colors to match GE Coordinator */
+    .bg-primary-subtle {
+        background-color: rgba(78, 205, 133, 0.1) !important;
+    }
+    
+    .text-primary {
+        color: #4ecd85 !important;
+    }
+</style>
 @endpush
 @endsection

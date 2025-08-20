@@ -5,70 +5,91 @@
 @endpush
 
 @section('content')
-<div class="header-section">
-    <div class="d-flex align-items-center justify-content-between">
+<div class="container-fluid px-4 py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
         <div>
-            <h1 class="header-title">📊 Course Outcome Attainment Results</h1>
-            <p class="header-subtitle text-white">Comprehensive analysis of student performance across all courses and outcomes</p>
+            <h1 class="h3 fw-semibold text-gray-800 mb-0">
+                <i class="bi bi-graph-up me-2"></i>
+                Course Outcome Attainment Results
+            </h1>
+            <nav aria-label="breadcrumb" class="mt-2">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('vpaa.dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Course Outcome Attainment</li>
+                </ol>
+            </nav>
         </div>
         @if(isset($hasData) && $hasData)
-        <div class="no-print">
+        <div>
             <button class="btn btn-success" type="button" onclick="window.print()">
-                <i class="bi bi-printer me-2"></i> Print
+                <i class="bi bi-printer me-2"></i>Print Report
             </button>
         </div>
         @endif
     </div>
-</div>
 
-{{-- Controls Panel --}}
-<div class="controls-panel no-print">
-    <form action="{{ route('vpaa.course-outcome-attainment') }}" method="GET" class="row g-3">
-        <div class="col-md-4">
-            <label for="department_id" class="form-label">Department</label>
-            <select name="department_id" id="department_id" class="form-select" onchange="this.form.submit()">
-                <option value="">All Departments</option>
-                @foreach($departments as $department)
-                    <option value="{{ $department->id }}" {{ $selectedDepartmentId == $department->id ? 'selected' : '' }}>
-                        {{ $department->department_description }} ({{ $department->department_code }})
-                    </option>
-                @endforeach
-            </select>
+    {{-- Filter Controls Card --}}
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-body p-4">
+            <form action="{{ route('vpaa.course-outcome-attainment') }}" method="GET" class="row g-3">
+                <div class="col-md-5">
+                    <label for="department_id" class="form-label fw-semibold">Department</label>
+                    <select name="department_id" id="department_id" class="form-select" onchange="this.form.submit()">
+                        <option value="">All Departments</option>
+                        @foreach($departments as $department)
+                            <option value="{{ $department->id }}" {{ $selectedDepartmentId == $department->id ? 'selected' : '' }}>
+                                {{ $department->department_description }} ({{ $department->department_code }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <label for="course_id" class="form-label fw-semibold">Course</label>
+                    <select name="course_id" id="course_id" class="form-select" {{ empty($courses) ? 'disabled' : '' }} onchange="this.form.submit()">
+                        <option value="">All Courses</option>
+                        @if($courses->isNotEmpty())
+                            @foreach($courses as $course)
+                                <option value="{{ $course->id }}" {{ $selectedCourseId == $course->id ? 'selected' : '' }}>
+                                    {{ $course->course_code }} - {{ $course->course_description }}
+                                </option>
+                            @endforeach
+                        @endif
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="bi bi-funnel me-1"></i>Apply Filters
+                    </button>
+                </div>
+            </form>
         </div>
-        <div class="col-md-4">
-            <label for="course_id" class="form-label">Course</label>
-            <select name="course_id" id="course_id" class="form-select" {{ empty($courses) ? 'disabled' : '' }} onchange="this.form.submit()">
-                <option value="">All Courses</option>
-                @if($courses->isNotEmpty())
-                    @foreach($courses as $course)
-                        <option value="{{ $course->id }}" {{ $selectedCourseId == $course->id ? 'selected' : '' }}>
-                            {{ $course->course_code }} - {{ $course->course_description }}
-                        </option>
-                    @endforeach
-                @endif
-            </select>
-        </div>
-        <div class="col-md-2 d-flex align-items-end">
-            <button type="submit" class="btn btn-primary w-100">
-                <i class="bi bi-funnel me-1"></i> Apply Filters
-            </button>
-        </div>
-    </form>
-</div>
+    </div>
 
-<div class="main-results-container">
     @if(!$hasData)
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle me-2"></i> No course outcome attainment data found for the selected filters. 
-            @if(!$selectedDepartmentId)
-                Please try selecting a department to filter the results.
-            @elseif(!$selectedCourseId)
-                Please try selecting a course to filter the results.
-            @endif
+        <!-- No Data Message -->
+        <div class="card border-0 shadow-sm rounded-4">
+            <div class="card-body p-5 text-center">
+                <div class="text-muted mb-3">
+                    <i class="bi bi-graph-up fs-1 opacity-50"></i>
+                </div>
+                <h5 class="text-muted mb-2">No Course Outcome Data Found</h5>
+                <p class="text-muted mb-0">
+                    @if(!$selectedDepartmentId)
+                        Please select a department to view course outcome attainment results.
+                    @elseif(!$selectedCourseId)
+                        Please select a course to view specific outcome data.
+                    @else
+                        No data available for the selected filters.
+                    @endif
+                </p>
+            </div>
         </div>
     @else
-        <div id="print-area">
-            @foreach($attainmentData as $courseCode => $courseData)
+        <!-- Results Container -->
+        <div class="card border-0 shadow-sm rounded-4" id="print-area">
+            <div class="card-body p-4">
+                @foreach($attainmentData as $courseCode => $courseData)
                 <div class="results-card mb-4">
                     <div class="card-header-custom">
                         <i class="bi bi-table me-2"></i>{{ $courseCode }} - Course Outcome Attainment
@@ -179,9 +200,11 @@
                     </div>
                 </div>
             @endforeach
+            </div>
         </div>
     @endif
 </div>
+@endsection
 
 @push('scripts')
 <script>
@@ -314,4 +337,3 @@
     }
 </style>
 @endpush
-@endsection

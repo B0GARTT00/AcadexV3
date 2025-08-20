@@ -7,7 +7,7 @@
             <i class="bi bi-mortarboard me-2"></i>
             Students
             @if($selectedDepartment)
-                <span class="text-muted">- {{ $selectedDepartment->name ?? '' }}</span>
+                <span class="text-muted">- {{ $selectedDepartment->department_description ?? '' }}</span>
                 @if($selectedCourseId)
                     <span class="text-muted">- {{ $courses->firstWhere('id', $selectedCourseId)->course_code ?? '' }}</span>
                 @endif
@@ -68,7 +68,7 @@
                             <td>{{ $student->student_id }}</td>
                             <td>{{ $student->last_name }}, {{ $student->first_name }} {{ $student->middle_name }}</td>
                             <td>{{ $student->course->course_code ?? 'N/A' }}</td>
-                            <td>{{ $student->department->name ?? 'N/A' }}</td>
+                            <td>{{ $student->department->department_description ?? 'N/A' }}</td>
                             <td>{{ $student->year_level }}</td>
                             <td class="text-end">
                                 <a href="#" class="btn btn-sm btn-outline-primary">
