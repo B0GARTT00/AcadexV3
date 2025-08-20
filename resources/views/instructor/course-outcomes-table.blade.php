@@ -174,18 +174,79 @@ window.courseOutcomesData = {
                 </div>
             </div>
         @else
-            <div class="results-card">
-                <div class="card-header-custom">
-                    <i class="bi bi-info-circle me-2"></i>No Course Outcomes Found
-                </div>
-                <div class="p-4 text-center">
-                    <div class="empty-state">
-                        <i class="bi bi-clipboard-x display-1 text-muted mb-3"></i>
-                        <h5 class="text-muted mb-3">No course outcomes found for this subject</h5>
-                        <p class="text-muted mb-4">Get started by adding your first course outcome.</p>
-                        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
-                            <i class="bi bi-plus-circle me-2"></i>Add First Course Outcome
-                        </button>
+            {{-- Enhanced Splash Page for No Course Outcomes --}}
+            <div class="splash-container">
+                <div class="splash-card">
+                    <div class="splash-header">
+                        <div class="splash-icon-container">
+                            <i class="bi bi-clipboard-x splash-icon"></i>
+                        </div>
+                        <h2 class="splash-title">No Course Outcomes Set</h2>
+                        <p class="splash-subtitle">
+                            @if(isset($selectedSubject))
+                                for <strong>{{ $selectedSubject->subject_code }} - {{ $selectedSubject->subject_description }}</strong>
+                            @else
+                                for this subject
+                            @endif
+                        </p>
+                    </div>
+                    
+                    <div class="splash-content">
+                        <div class="splash-info">
+                            <div class="info-section">
+                                <h5 class="info-title">
+                                    <i class="bi bi-question-circle-fill text-primary me-2"></i>
+                                    What are Course Outcomes?
+                                </h5>
+                                <p class="info-text">
+                                    Course outcomes are specific, measurable statements that describe what students should be able to 
+                                    demonstrate, know, or do by the end of the course. They serve as learning objectives that guide 
+                                    instruction and assessment.
+                                </p>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h5 class="info-title">
+                                    <i class="bi bi-lightbulb-fill text-warning me-2"></i>
+                                    Why Set Course Outcomes?
+                                </h5>
+                                <ul class="info-list">
+                                    <li>📊 Track student learning progress and achievement</li>
+                                    <li>🎯 Align assessments with specific learning goals</li>
+                                    <li>📈 Generate meaningful performance reports</li>
+                                    <li>🔍 Identify areas for curriculum improvement</li>
+                                    <li>📋 Meet academic accreditation requirements</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h5 class="info-title">
+                                    <i class="bi bi-gear-fill text-success me-2"></i>
+                                    Getting Started
+                                </h5>
+                                <p class="info-text">
+                                    Click the button below to create your first course outcome. You can define specific learning 
+                                    objectives that students should achieve, and then track their progress throughout the academic period.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="splash-actions">
+                            <button type="button" class="btn btn-success btn-lg splash-cta" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
+                                <i class="bi bi-plus-circle me-2"></i>Create First Course Outcome
+                            </button>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Course outcomes will be created for 
+                                    @if($currentPeriod)
+                                        <strong>{{ $currentPeriod->academic_year }} - {{ $currentPeriod->semester }}</strong>
+                                    @else
+                                        the current academic period
+                                    @endif
+                                </small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
