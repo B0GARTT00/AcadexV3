@@ -174,6 +174,8 @@ Route::prefix('instructor')
 
         // Course Outcomes
         Route::resource('course_outcomes', CourseOutcomesController::class);
+        Route::patch('/course_outcomes/{courseOutcome}/description', [CourseOutcomesController::class, 'updateDescription'])
+            ->name('course_outcomes.update_description');
         // AJAX endpoint for course outcomes by subject and term (use GradeController)
         Route::get('/course-outcomes', [GradeController::class, 'ajaxCourseOutcomes'])  ->name('course-outcomes.ajax');
 

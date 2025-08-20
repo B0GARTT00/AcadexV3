@@ -79,7 +79,8 @@
         }
     @endphp
 
-    {{-- Header Section --}}
+    {{-- Header Section - Only show when course outcomes exist --}}
+    @if(isset($finalCOs) && is_countable($finalCOs) && count($finalCOs))
     <div class="header-section">
         <div class="d-flex align-items-center justify-content-between">
             <div>
@@ -105,8 +106,10 @@
             </div>
         </div>
     </div>
+    @endif
 
-    {{-- Controls Panel --}}
+    {{-- Controls Panel - Only show when course outcomes exist --}}
+    @if(isset($finalCOs) && is_countable($finalCOs) && count($finalCOs))
     <div class="controls-panel no-print">
         <div class="control-group">
             <label class="control-label">Display Type:</label>
@@ -120,7 +123,7 @@
         </div>
     </div>
 
-    {{-- Term Stepper for Raw Score and Percentage views --}}
+    {{-- Term Stepper for Raw Score and Percentage views - Only show when course outcomes exist --}}
     <div id="term-stepper-container" class="stepper-container no-print" style="display:none;">
         <div class="d-flex align-items-center justify-content-between mb-3">
             <h5 class="mb-0 fw-bold text-dark">📅 Navigate by Terms</h5>
@@ -164,6 +167,7 @@
             </small>
         </div>
     </div>
+    @endif
 
     {{-- Fade Overlay for Loading States --}}
     <div id="fadeOverlay" class="fade-overlay">
@@ -172,7 +176,8 @@
 
     {{-- Main Container for Stepper and Results --}}
     <div class="main-results-container">
-        {{-- Term Stepper for Raw Score and Percentage views --}}
+        {{-- Term Stepper for Raw Score and Percentage views - Only show when course outcomes exist --}}
+        @if(isset($finalCOs) && is_countable($finalCOs) && count($finalCOs))
         <div id="term-stepper-container" class="stepper-container no-print" style="display:none;">
             <div class="results-card">
                 <div class="card-header-custom">
@@ -223,6 +228,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         {{-- Course Outcome Pass Summary --}}
         @if(is_countable($finalCOs) && count($finalCOs))
@@ -867,6 +873,83 @@
             </div>
             @endif
         @endforeach
+        @else
+            {{-- Enhanced Splash Page for No Course Outcomes in Results View --}}
+            <div class="splash-container">
+                <div class="splash-card">
+                    <div class="splash-header">
+                        <div class="splash-icon-container">
+                            <i class="bi bi-graph-up-arrow splash-icon"></i>
+                        </div>
+                        <h2 class="splash-title">No Course Outcome Results Available</h2>
+                        <p class="splash-subtitle">
+                            @if(isset($selectedSubject))
+                                for <strong>{{ $selectedSubject->subject_code }} - {{ $selectedSubject->subject_description }}</strong>
+                            @else
+                                for this subject
+                            @endif
+                        </p>
+                    </div>
+                    
+                    <div class="splash-content">
+                        <div class="splash-info">
+                            <div class="info-section">
+                                <h5 class="info-title">
+                                    <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                                    No Course Outcomes Found
+                                </h5>
+                                <p class="info-text">
+                                    Before viewing course outcome results, course outcomes must be created for this subject. 
+                                    Course outcomes define the specific learning objectives and competencies that students 
+                                    should achieve by the end of the course.
+                                </p>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h5 class="info-title">
+                                    <i class="bi bi-list-check text-primary me-2"></i>
+                                    What You Need to Do
+                                </h5>
+                                <ul class="info-list">
+                                    <li>🎯 Define course outcomes that align with learning objectives</li>
+                                    <li>📝 Create assessment activities linked to course outcomes</li>
+                                    <li>👥 Input student scores for each activity</li>
+                                    <li>📊 Then return here to view comprehensive results</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="info-section">
+                                <h5 class="info-title">
+                                    <i class="bi bi-arrow-right-circle-fill text-success me-2"></i>
+                                    Next Steps
+                                </h5>
+                                <p class="info-text">
+                                    Navigate to the Course Outcomes Management page to set up your course outcomes. 
+                                    Once created and populated with student data, detailed performance analytics and 
+                                    attainment reports will be available here.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="splash-actions">
+                            <a href="{{ route('instructor.course_outcomes.index') }}" class="btn btn-success btn-lg splash-cta">
+                                <i class="bi bi-plus-circle me-2"></i>Set Up Course Outcomes
+                            </a>
+                            <div class="mt-3">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Course outcomes can be created for 
+                                    @if(isset($activePeriod))
+                                        <strong>{{ $activePeriod->academic_year }} - {{ $activePeriod->semester }}</strong>
+                                    @else
+                                        the current academic period
+                                    @endif
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         @endif
         </div> {{-- End of print-area --}}
     </div> {{-- End of main-results-container --}}

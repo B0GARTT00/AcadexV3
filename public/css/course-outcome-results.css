@@ -934,3 +934,194 @@
         font-size: 12px;
     }
 }
+
+/* Enhanced Splash Page Styles for Course Outcome Results */
+.splash-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 500px;
+    padding: 2rem 0;
+}
+
+.splash-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0, 0, 0, 0.1);
+    max-width: 800px;
+    width: 100%;
+    overflow: hidden;
+    border: 1px solid rgba(40, 167, 69, 0.1);
+}
+
+.splash-header {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    text-align: center;
+    padding: 3rem 2rem 2rem;
+    position: relative;
+}
+
+.splash-icon-container {
+    margin-bottom: 1.5rem;
+}
+
+.splash-icon {
+    font-size: 4rem;
+    opacity: 0.9;
+    animation: gentlePulse 2s ease-in-out infinite;
+}
+
+@keyframes gentlePulse {
+    0%, 100% { 
+        transform: scale(1);
+        opacity: 0.9;
+    }
+    50% { 
+        transform: scale(1.05);
+        opacity: 1;
+    }
+}
+
+.splash-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 0.5rem 0;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.splash-subtitle {
+    font-size: 1.2rem;
+    margin: 0;
+    opacity: 0.95;
+    font-weight: 300;
+}
+
+.splash-content {
+    padding: 2.5rem;
+}
+
+.splash-info {
+    margin-bottom: 2.5rem;
+}
+
+.info-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+    border-left: 4px solid #28a745;
+}
+
+.info-section:last-child {
+    margin-bottom: 0;
+}
+
+.info-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+}
+
+.info-text {
+    color: #6c757d;
+    line-height: 1.6;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.info-list {
+    margin: 0;
+    padding-left: 0;
+    list-style: none;
+    color: #6c757d;
+}
+
+.info-list li {
+    padding: 0.5rem 0;
+    line-height: 1.5;
+    font-size: 1rem;
+}
+
+.splash-actions {
+    text-align: center;
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 12px;
+    border: 2px dashed #28a745;
+}
+
+.splash-cta {
+    font-size: 1.2rem;
+    padding: 1rem 2.5rem;
+    border-radius: 12px;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+    text-transform: none;
+    text-decoration: none;
+}
+
+.splash-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    text-decoration: none;
+}
+
+/* Responsive Design for Splash Page */
+@media (max-width: 768px) {
+    .splash-container {
+        padding: 1rem;
+        min-height: 400px;
+    }
+    
+    .splash-header {
+        padding: 2rem 1.5rem 1.5rem;
+    }
+    
+    .splash-title {
+        font-size: 2rem;
+    }
+    
+    .splash-subtitle {
+        font-size: 1rem;
+    }
+    
+    .splash-content {
+        padding: 1.5rem;
+    }
+    
+    .info-section {
+        padding: 1rem;
+    }
+    
+    .splash-actions {
+        padding: 1.5rem;
+    }
+    
+    .splash-cta {
+        font-size: 1rem;
+        padding: 0.8rem 2rem;
+    }
+    
+    .splash-icon {
+        font-size: 3rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .splash-title {
+        font-size: 1.75rem;
+    }
+    
+    .info-title {
+        font-size: 1.1rem;
+    }
+    
+    .info-text, .info-list li {
+        font-size: 0.95rem;
+    }
+}
