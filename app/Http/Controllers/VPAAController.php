@@ -210,6 +210,87 @@ class VPAAController extends Controller
 
         return view('vpaa.departments', compact('departments'));
     }
+    
+    /**
+     * Store a newly created department in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
+    public function storeDepartment(Request $request)
+    {
+        $validated = $request->validate([
+            'department_code' => 'required|string|max:20|unique:departments,department_code',
+            'department_description' => 'required|string|max:255',
+        ]);
+
+        try {
+            Department::create($validated);
+            return redirect()->route('vpaa.departments')
+                ->with('status', 'Department created successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Error creating department: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Update the specified department in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function updateDepartment(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'department_code' => 'required|string|max:20|unique:departments,department_code,' . $id,
+            'department_description' => 'required|string|max:255',
+        ]);
+
+        try {
+            $department = Department::findOrFail($id);
+            $department->update($validated);
+            
+            return redirect()->route('vpaa.departments')
+                ->with('status', 'Department updated successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Error updating department: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Soft delete the specified department.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroyDepartment($id)
+    {
+        try {
+            $department = Department::findOrFail($id);
+            
+            // Check if department has any users or students
+            $hasUsers = User::where('department_id', $id)->exists();
+            $hasStudents = $department->students()->exists();
+            
+            if ($hasUsers || $hasStudents) {
+                return redirect()->back()
+                    ->with('error', 'Cannot delete department with associated users or students.');
+            }
+            
+            $department->update(['is_deleted' => true]);
+            
+            return redirect()->route('vpaa.departments')
+                ->with('status', 'Department deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error deleting department: ' . $e->getMessage());
+        }
+    }
 
     // ============================
     // View Instructors by Department
