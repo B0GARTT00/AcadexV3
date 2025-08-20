@@ -451,7 +451,7 @@
         {{-- Combined Table for All Terms (shown by default) --}}
         @if(isset($finalCOs) && is_countable(value: $finalCOs) && count($finalCOs))
         <div class="results-card main-table" id="combined-table">
-            <div class="card-header-custom">
+            <div class="card-header-custom" style="background: #198754;">
                 <i class="bi bi-table me-2"></i>Course Outcome Results - All Terms Combined
             </div>
             <div class="table-responsive p-3">
@@ -468,7 +468,7 @@
                                 @foreach($terms as $term)
                                     <th class="text-center" style="font-size:0.85em;">{{ ucfirst($term) }}</th>
                                 @endforeach
-                                <th class="text-center bg-primary text-white" style="font-size:0.85em;">Total</th>
+                                <th class="text-center text-white" style="font-size:0.85em; background: linear-gradient(135deg, #0F4B36 0%, #023336 100%);" style="color: #198754">Total</th>
                             @endforeach
                         </tr>
                     </thead>
@@ -907,7 +907,7 @@
                             
                             <div class="info-section">
                                 <h5 class="info-title">
-                                    <i class="bi bi-list-check text-primary me-2"></i>
+                                    <i class="bi bi-list-check me-2" style="color: #0F4B36;"></i>
                                     What You Need to Do
                                 </h5>
                                 <ul class="info-list">
@@ -920,7 +920,7 @@
                             
                             <div class="info-section">
                                 <h5 class="info-title">
-                                    <i class="bi bi-arrow-right-circle-fill text-success me-2"></i>
+                                    <i class="bi bi-arrow-right-circle-fill me-2" style="color: #0F4B36;"></i>
                                     Next Steps
                                 </h5>
                                 <p class="info-text">

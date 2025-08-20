@@ -49,20 +49,39 @@
                             <span>Manage Activities</span>
                         </a>
                     </li>
+                    
+                    {{-- Course Outcome Collapsible Menu --}}
+                    @php
+                        $isCourseOutcomeActive = request()->routeIs('instructor.course_outcomes.*') || request()->routeIs('instructor.course-outcome-attainments.*');
+                    @endphp
                     <li class="nav-item">
-                        <a href="{{ route('instructor.course_outcomes.index') }}" 
-                           class="nav-link d-flex align-items-center sidebar-link">
-                            <i class="bi bi-book me-3 "></i>
-                            <span>Manage Course Outcome</span>
+                        <a class="nav-link d-flex align-items-center sidebar-link course-outcome-toggle" 
+                           onclick="toggleCourseOutcomeMenu()"
+                           style="cursor: pointer;">
+                            <i class="bi bi-mortarboard me-3"></i>
+                            <span>Course Outcome</span>
+                            <i class="bi bi-chevron-down ms-auto course-outcome-chevron {{ $isCourseOutcomeActive ? 'rotated' : '' }}"></i>
                         </a>
+                        <div class="course-outcome-submenu {{ $isCourseOutcomeActive ? 'show' : '' }}" id="courseOutcomeSubmenu">
+                            <ul class="nav nav-pills flex-column ms-3">
+                                <li class="nav-item">
+                                    <a href="{{ route('instructor.course_outcomes.index') }}" 
+                                       class="nav-link {{ request()->routeIs('instructor.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-book me-3"></i>
+                                        <span>Manage Course Outcome</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('instructor.course-outcome-attainments.index') }}"
+                                       class="nav-link {{ request()->routeIs('instructor.course-outcome-attainments.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-award me-3"></i>
+                                        <span>Course Outcome Attainment</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
-                    <li class="nav-item">
-                        <a href="{{ route('instructor.course-outcome-attainments.index') }}"
-                           class="nav-link {{ request()->routeIs('instructor.course-outcome-attainments.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-award me-3"></i>
-                            <span>Course Outcome Attainment</span>
-                        </a>
-                    </li>
+                    
                     <li class="nav-item">
                         <a href="{{ route('instructor.final-grades.index') }}" 
                            class="nav-link {{ request()->routeIs('instructor.final-grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">

@@ -90,7 +90,7 @@ window.courseOutcomesData = {
                 </p>
             </div>
             <div class="d-flex align-items-center gap-3 no-print">
-                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
+                <button type="button" class="btn btn-custom-primary" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
                     ➕ Add Course Outcome
                 </button>
             </div>
@@ -106,30 +106,29 @@ window.courseOutcomesData = {
                 </div>
                 <div class="table-responsive p-3">
                     <table class="table co-table table-bordered table-hover align-middle mb-0 course-outcomes-table table-striped">
-                        <thead class="table-success">
+                        <thead style="background-color: #28a745;">
                             <tr>
-                                <th class="co-code-col">
+                                <th class="co-code-col text-white">
                                     <i class="bi bi-hash"></i> CO Code
                                 </th>
-                                <th class="co-identifier-col">
+                                <th class="co-identifier-col text-white">
                                     <i class="bi bi-tag"></i> Identifier
                                 </th>
-                                </th>
-                                <th class="co-description-col">
+                                <th class="co-description-col text-white">
                                     <i class="bi bi-pencil-square"></i> Description 
                                     <small class="text-white opacity-100">(Double-click to edit)</small>
                                 </th>
-                                <th class="co-period-col">
+                                <th class="co-period-col text-white">
                                     <i class="bi bi-calendar-range"></i> Academic Period
                                 </th>
-                                <th class="co-actions-col text-end">
+                                <th class="co-actions-col text-end text-white">
                                     <i class="bi bi-gear"></i> Actions
                                 </th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach ($cos as $co)
-                                <tr>
+                                <tr style="background-color: #E8F5E8;">
                                     <td class="fw-semibold co-code-cell">{{ $co->co_code }}</td>
                                     <td class="co-identifier-cell">{{ $co->co_identifier }}</td>
                                     <td class="co-description-cell" data-co-id="{{ $co->id }}">
@@ -195,7 +194,7 @@ window.courseOutcomesData = {
                         <div class="splash-info">
                             <div class="info-section">
                                 <h5 class="info-title">
-                                    <i class="bi bi-question-circle-fill text-primary me-2"></i>
+                                    <i class="bi bi-question-circle-fill me-2" style="color: #198754;"></i>
                                     What are Course Outcomes?
                                 </h5>
                                 <p class="info-text">
@@ -221,7 +220,7 @@ window.courseOutcomesData = {
                             
                             <div class="info-section">
                                 <h5 class="info-title">
-                                    <i class="bi bi-gear-fill text-success me-2"></i>
+                                    <i class="bi bi-gear-fill me-2" style="color: #0F4B36;"></i>
                                     Getting Started
                                 </h5>
                                 <p class="info-text">

@@ -10,12 +10,6 @@
         </ol>
     </nav>
 
-    {{-- Debug Info --}}
-    <div class="alert alert-info mb-3">
-        <strong>Current Semester:</strong> {{ $semester ?? session('active_semester') ?? 'Not set' }}<br>
-        <strong>Current Academic Year:</strong> {{ $academicYear ?? 'Not set' }}
-    </div>
-
     {{-- Subject Wild Cards --}}
     @if(isset($subjects) && count($subjects))
         <div class="row g-4 px-4 py-4" id="subject-selection">

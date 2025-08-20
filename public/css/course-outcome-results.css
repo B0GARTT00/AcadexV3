@@ -499,7 +499,7 @@
 }
 
 .co-table .badge.bg-success {
-    background: linear-gradient(135deg, #198754 0%, #20c997 100%) !important;
+    background: linear-gradient(135deg, #0F4B36 0%, #023336 100%) !important;
     border: none;
 }
 
@@ -545,7 +545,7 @@
 }
 
 .card-header-custom {
-    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+    background: linear-gradient(135deg, #0F4B36 0%, #023336 100%);
     color: white;
     font-weight: 700;
     font-size: 1.3rem;
@@ -574,11 +574,11 @@
 }
 
 .card-header-primary {
-    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+    background: linear-gradient(135deg, #0F4B36 0%, #023336 100%);
 }
 
 .card-header-info {
-    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+    background: linear-gradient(135deg, #0F4B36 0%, #023336 100%);
 }
 
 /* Term Stepper - Modern Clean Design like Manage Grades */
@@ -630,15 +630,15 @@
     left: calc(50% + 50px);
     width: calc(100% - 100px);
     height: 3px;
-    background: linear-gradient(90deg, rgba(25, 135, 84, 0.2) 0%, rgba(25, 135, 84, 0.1) 100%);
+    background: linear-gradient(90deg, rgba(15, 75, 54, 0.2) 0%, rgba(15, 75, 54, 0.1) 100%);
     z-index: 0;
     transition: all 0.3s ease;
     border-radius: 2px;
 }
 
 .step.highlight-line:not(:last-child)::after {
-    background: linear-gradient(90deg, #198754 0%, #20c997 100%);
-    box-shadow: 0 2px 8px rgba(25, 135, 84, 0.3);
+    background: linear-gradient(90deg, #0F4B36 0%, #023336 100%);
+    box-shadow: 0 2px 8px rgba(15, 75, 54, 0.3);
 }
 
 .circle-wrapper {
@@ -672,11 +672,11 @@
 }
 
 .completed .circle {
-    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+    background: linear-gradient(135deg, #0F4B36 0%, #023336 100%);
 }
 
 .active .circle {
-    background: linear-gradient(135deg, #157347 0%, #198754 100%);
+    background: linear-gradient(135deg, #0a3a2b 0%, #0F4B36 100%);
     animation: pulse-modern 2s infinite;
 }
 
@@ -895,13 +895,13 @@
 .view-indicator {
     display: inline-block;
     padding: 0.5rem 1rem;
-    background: linear-gradient(135deg, #198754 0%, #20c997 100%);
+    background: linear-gradient(135deg, #0F4B36 0%, #023336 100%);
     color: white;
     border-radius: 20px;
     font-size: 0.85rem;
     font-weight: 600;
     margin-left: 1rem;
-    box-shadow: 0 2px 8px rgba(25,135,84,0.2);
+    box-shadow: 0 2px 8px rgba(15, 75, 54, 0.2);
 }
 
 /* Responsive adjustments */
@@ -951,11 +951,11 @@
     max-width: 800px;
     width: 100%;
     overflow: hidden;
-    border: 1px solid rgba(40, 167, 69, 0.1);
+    border: 1px solid rgba(15, 75, 54, 0.1);
 }
 
 .splash-header {
-    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    background: linear-gradient(135deg, #0F4B36 0%, #023336 100%);
     color: white;
     text-align: center;
     padding: 3rem 2rem 2rem;
@@ -1008,9 +1008,9 @@
 .info-section {
     margin-bottom: 2rem;
     padding: 1.5rem;
-    background: #f8f9fa;
+    background: #EAF8E7;
     border-radius: 12px;
-    border-left: 4px solid #28a745;
+    border-left: 4px solid #0F4B36;
 }
 
 .info-section:last-child {
@@ -1049,9 +1049,9 @@
 .splash-actions {
     text-align: center;
     padding: 2rem;
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    background: linear-gradient(135deg, #EAF8E7 0%, #f0f9ed 100%);
     border-radius: 12px;
-    border: 2px dashed #28a745;
+    border: 2px dashed #0F4B36;
 }
 
 .splash-cta {
@@ -1059,7 +1059,7 @@
     padding: 1rem 2.5rem;
     border-radius: 12px;
     font-weight: 600;
-    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 15px rgba(15, 75, 54, 0.3);
     transition: all 0.3s ease;
     text-transform: none;
     text-decoration: none;
@@ -1067,7 +1067,7 @@
 
 .splash-cta:hover {
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+    box-shadow: 0 6px 20px rgba(15, 75, 54, 0.4);
     text-decoration: none;
 }
 

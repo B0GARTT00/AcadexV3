@@ -103,6 +103,61 @@
             opacity: 1;
         }
 
+        /* Collapsible Menu Styles */
+        .course-outcome-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+
+        .course-outcome-submenu.show {
+            max-height: 200px;
+            transition: max-height 0.3s ease-in;
+        }
+
+        .course-outcome-chevron {
+            transition: transform 0.3s ease;
+            font-size: 0.8rem;
+        }
+
+        .course-outcome-chevron.rotated {
+            transform: rotate(180deg);
+        }
+
+        /* Submenu Styles */
+        .submenu-link {
+            padding: 0.5rem 1rem;
+            margin: 0.125rem 0;
+            border-radius: 0.375rem;
+            transition: all 0.2s ease-in-out;
+            color: var(--menu-text) !important;
+            font-size: 0.875rem;
+            background-color: transparent;
+        }
+
+        .submenu-link:hover {
+            background-color: var(--hover-green);
+            transform: translateX(3px);
+            color: #ffffff !important;
+        }
+
+        .submenu-link.active {
+            background-color: var(--active-green) !important;
+            color: #ffffff !important;
+            font-weight: 500;
+        }
+
+        .submenu-link i {
+            opacity: 0.8;
+            width: 18px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+
+        .submenu-link:hover i {
+            opacity: 1;
+        }
+
         /* Logo Section */
         .logo-section {
             padding-bottom: 1rem;
@@ -278,6 +333,40 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Course Outcome Submenu Handler -->
+    <script>
+        function toggleCourseOutcomeMenu() {
+            const submenu = document.getElementById('courseOutcomeSubmenu');
+            const chevron = document.querySelector('.course-outcome-chevron');
+            
+            if (submenu && chevron) {
+                if (submenu.classList.contains('show')) {
+                    submenu.classList.remove('show');
+                    chevron.classList.remove('rotated');
+                } else {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
+                }
+            }
+        }
+        
+        // Auto-expand if on Course Outcome pages
+        document.addEventListener('DOMContentLoaded', function() {
+            const isCourseOutcomePage = window.location.pathname.includes('/course_outcomes') || 
+                                      window.location.pathname.includes('/course-outcome-attainments');
+            
+            if (isCourseOutcomePage) {
+                const submenu = document.getElementById('courseOutcomeSubmenu');
+                const chevron = document.querySelector('.course-outcome-chevron');
+                
+                if (submenu && chevron) {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
+                }
+            }
+        });
+    </script>
 
     @stack('scripts')
 </body>
