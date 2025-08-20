@@ -236,6 +236,9 @@ Route::prefix('vpaa')
         
         // Departments
         Route::get('/departments', [VPAAController::class, 'viewDepartments'])->name('departments');
+        Route::post('/departments', [VPAAController::class, 'storeDepartment'])->name('departments.store');
+        Route::put('/departments/{department}', [VPAAController::class, 'updateDepartment'])->name('departments.update');
+        Route::delete('/departments/{department}', [VPAAController::class, 'destroyDepartment'])->name('departments.destroy');
         
         // Instructors
         Route::get('/instructors', [VPAAController::class, 'viewInstructors'])->name('instructors');

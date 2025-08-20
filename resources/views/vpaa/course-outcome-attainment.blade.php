@@ -9,7 +9,7 @@
     <div class="d-flex align-items-center justify-content-between">
         <div>
             <h1 class="header-title">📊 Course Outcome Attainment Results</h1>
-            <p class="header-subtitle">Comprehensive analysis of student performance across all courses and outcomes</p>
+            <p class="header-subtitle text-white">Comprehensive analysis of student performance across all courses and outcomes</p>
         </div>
         @if(isset($hasData) && $hasData)
         <div class="no-print">
