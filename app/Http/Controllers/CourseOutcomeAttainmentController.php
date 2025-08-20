@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\CourseOutcomeAttainment;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Http\Request;
 
 use App\Traits\CourseOutcomeTrait;
@@ -87,11 +88,30 @@ class CourseOutcomeAttainmentController extends Controller
         // Get CO details for columns
         $coDetails = \App\Models\CourseOutcomes::whereIn('id', array_unique(array_merge(...array_values($coColumnsByTerm))))->get()->keyBy('id');
 
+        // Create properly sorted finalCOs for the combined table
+        $finalCOs = array_unique(array_merge(...array_values($coColumnsByTerm)));
+        
+        // Sort finalCOs by co_code numerically (CO1, CO2, CO3, CO4)
+        usort($finalCOs, function($a, $b) use ($coDetails) {
+            $codeA = $coDetails[$a]->co_code ?? '';
+            $codeB = $coDetails[$b]->co_code ?? '';
+            
+            // Extract numeric part from CO codes (CO1 -> 1, CO2 -> 2, etc.)
+            $numA = (int)preg_replace('/[^0-9]/', '', $codeA);
+            $numB = (int)preg_replace('/[^0-9]/', '', $codeB);
+            
+            return $numA <=> $numB; // Numeric comparison
+        });
+
+        // Reindex the array to ensure sequential indices (0, 1, 2, 3...)
+        $finalCOs = array_values($finalCOs);
+
         return view('instructor.scores.course-outcome-results', [
             'students' => $students,
             'coResults' => $coResults,
             'coColumnsByTerm' => $coColumnsByTerm,
             'coDetails' => $coDetails,
+            'finalCOs' => $finalCOs,
             'terms' => $terms,
             'subjectId' => $subjectId,
             'selectedSubject' => $selectedSubject,

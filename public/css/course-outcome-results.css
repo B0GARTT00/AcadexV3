@@ -140,6 +140,14 @@
         font-style: normal !important;
     }
     
+    /* Force all text colors to black in print, including success/danger colors */
+    table.co-table .text-success,
+    table.co-table .text-danger,
+    table.co-table .score-value {
+        color: #000 !important;
+        font-weight: normal !important;
+    }
+    
     /* Student names column */
     table.co-table tbody td:first-child {
         text-align: left !important;
@@ -440,15 +448,15 @@
 }
 
 .co-table .text-success {
-    color: #000 !important;
-    font-weight: normal;
+    color: #198754 !important;
+    font-weight: 600 !important;
     text-decoration: none;
     font-style: normal;
 }
 
 .co-table .text-danger {
-    color: #000 !important;
-    font-weight: normal;
+    color: #dc3545 !important;
+    font-weight: 600 !important;
     text-decoration: none;
     font-style: normal;
 }

@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\CourseOutcomes;
-use App\Models\Subject;
+use App\Models\
+{
+    CourseOutcomes,
+    Subject
+};
 use App\Models\AcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
