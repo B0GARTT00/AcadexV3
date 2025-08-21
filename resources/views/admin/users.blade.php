@@ -64,7 +64,7 @@
                         <tr>
                             <td>{{ $user->name }}</td>
                             <td>
-                                {{ $user->role == 1 ? 'Chairperson' : ($user->role == 2 ? 'Dean' : ($user->role == 3 ? 'Admin' : 'Unknown')) }}
+                                {{ $user->role == 1 ? 'Chairperson' : ($user->role == 2 ? 'Dean' : ($user->role == 3 ? 'Admin' : ($user->role == 5 ? 'VPAA' : 'Unknown'))) }}
                             </td>
                         </tr>
                     @empty
@@ -126,6 +126,7 @@
                             <option value="1">Chairperson</option>
                             <option value="2">Dean</option>
                             <option value="3">Admin</option>
+                            <option value="5">VPAA</option>
                         </select>
                     </div>
 
@@ -270,8 +271,8 @@
             if (!email) missingFields.push('Email Username');
             if (!role) missingFields.push('User Role');
             
-            // Only validate department and course if not Admin
-            if (role !== "3") {
+            // Only validate department and course if not Admin or VPAA
+            if (role !== "3" && role !== "5") {
                 if (!departmentId) missingFields.push('Department');
                 // Only require course for Chairperson role
                 if (role === "1" && !courseId) missingFields.push('Course');
@@ -486,7 +487,7 @@
 
             // Role change handler
             roleInput.addEventListener('change', function () {
-                if (roleInput.value == "3") {  // Admin role
+                if (roleInput.value == "3" || roleInput.value == "5") {  // Admin or VPAA role
                     // Clear and hide department and course selections
                     departmentInput.value = "";
                     courseInput.value = "";
@@ -524,10 +525,10 @@
                 const deptId = this.value;
                 const courseSelect = courseInput;
                 
-                // If role is Admin or Dean, keep course wrapper hidden
-                if (roleInput.value == "3" || roleInput.value == "2") {
+                // If role is Admin, VPAA, or Dean, keep course wrapper hidden
+                if (roleInput.value == "3" || roleInput.value == "5" || roleInput.value == "2") {
                     courseWrapper.classList.add('d-none');
-                    if (roleInput.value == "3") {
+                    if (roleInput.value == "3" || roleInput.value == "5") {
                         departmentWrapper.classList.add('d-none');
                     }
                     return;

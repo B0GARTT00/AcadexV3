@@ -56,7 +56,7 @@
             <div class="position-relative">
                 <img src="https://ui-avatars.com/api/?name={{ urlencode($displayName) }}&background=259c59&color=fff"
                      alt="avatar"
-                     class="rounded-circle me-2 border border-2 border-success"
+                     class="rounded-circle me-2 border-2 border-success"
                      width="38"
                      height="38">
                 <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width: 10px; height: 10px;"></span>

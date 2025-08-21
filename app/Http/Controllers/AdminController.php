@@ -214,7 +214,7 @@ class AdminController extends Controller
     {
         Gate::authorize('admin');
 
-        $users = User::whereIn('role', [1, 2, 3])
+        $users = User::whereIn('role', [1, 2, 3, 5])
             ->orderBy('role', 'asc')
             ->get();
 
@@ -254,7 +254,7 @@ class AdminController extends Controller
             'middle_name'   => ['nullable', 'string', 'max:255'],
             'last_name'     => ['required', 'string', 'max:255'],
             'email'         => ['required', 'string', 'regex:/^[^@]+$/', 'max:255', 'unique:users,email'],
-            'role'          => ['required', 'in:1,2,3'],
+            'role'          => ['required', 'in:1,2,3,5'],
             'password'      => [
                 'required',
                 'confirmed',
@@ -262,8 +262,8 @@ class AdminController extends Controller
             ],
         ];
 
-        // Add department validation for non-admin roles
-        if ($request->role != 3) {
+        // Add department validation for non-admin and non-VPAA roles
+        if ($request->role != 3 && $request->role != 5) {
             $validationRules['department_id'] = ['required', 'exists:departments,id'];
             
             // Course validation based on role
@@ -288,8 +288,8 @@ class AdminController extends Controller
             'is_active'     => true,
         ];
 
-        // Add department for non-admin roles
-        if ($request->role != 3) {
+        // Add department for non-admin and non-VPAA roles
+        if ($request->role != 3 && $request->role != 5) {
             $userData['department_id'] = $request->department_id;
             
             // Add course_id only if it's provided (for Dean) or required (for Chairperson)
