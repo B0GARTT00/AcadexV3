@@ -86,6 +86,7 @@
 @endsection
 
 @push('styles')
+<link rel="stylesheet" href="{{ asset('css/grade-table.css') }}">
 <style>
 .fade-overlay {
     position: fixed;
@@ -134,6 +135,9 @@
 @include('instructor.partials.grade-script')
 
 <script>
+// Make function globally available
+window.initializeCourseOutcomeModal = initializeCourseOutcomeModal;
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     const overlay = document.getElementById('fadeOverlay');
@@ -162,6 +166,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     currentSection.replaceWith(newGradeSection);
                     if (typeof bindGradeInputEvents === 'function') {
                         bindGradeInputEvents();
+                    }
+                    if (typeof initializeCourseOutcomeModal === 'function') {
+                        initializeCourseOutcomeModal();
+                    }
+                    if (typeof initializeStudentSearch === 'function') {
+                        initializeStudentSearch();
                     }
                 }
                 
@@ -203,6 +213,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentSection.replaceWith(newGradeSection);
                 if (typeof bindGradeInputEvents === 'function') {
                     bindGradeInputEvents();
+                }
+                if (typeof initializeCourseOutcomeModal === 'function') {
+                    initializeCourseOutcomeModal();
+                }
+                if (typeof initializeStudentSearch === 'function') {
+                    initializeStudentSearch();
                 }
             }
             
