@@ -17,214 +17,6 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/course-outcome-results.css') }}">
-<style>
-/* Enhanced Table Styling */
-.student-row:hover {
-    background-color: #f8f9fa !important;
-    transition: background-color 0.2s ease;
-}
-
-.co-table th {
-    border-top: 2px solid #198754;
-    vertical-align: middle;
-}
-
-.co-table .small {
-    font-size: 0.75rem;
-    line-height: 1.2;
-}
-
-.score-value {
-    font-weight: 500;
-    padding: 2px 6px;
-    border-radius: 4px;
-    display: inline-block;
-    min-width: 30px;
-    text-align: center;
-}
-
-.score-value[data-percentage]:not([data-percentage=""]):not([data-percentage="-"]) {
-    background-color: #e8f5e8;
-    border: 1px solid #c3e6cb;
-}
-
-.table-success th {
-    background-color: #d1e7dd !important;
-    border-color: #a3cfbb !important;
-}
-
-/* Compact Circular Term Navigation Styles */
-.compact-stepper {
-    display: flex;
-    align-items: flex-start;
-    gap: 12px;
-    position: relative;
-    padding: 4px 0;
-}
-
-.compact-step {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: none;
-    border: none;
-    padding: 2px;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    text-decoration: none;
-    color: #6c757d;
-    position: relative;
-    z-index: 2;
-}
-
-.compact-step:not(:last-child)::after {
-    content: '';
-    position: absolute;
-    top: 16px;
-    left: 100%;
-    transform: translateY(-50%);
-    width: 12px;
-    height: 2px;
-    background: #dee2e6;
-    z-index: 1;
-    transition: all 0.3s ease;
-}
-
-.compact-step.active:not(:last-child)::after {
-    background: #198754;
-}
-
-.compact-step.completed:not(:last-child)::after {
-    background: #28a745;
-}
-
-/* Ensure All Terms (when completed) always has green line to next step */
-.compact-step.completed:first-child:not(:last-child)::after {
-    background: #28a745 !important;
-}
-
-/* Special case: when All Terms is upcoming but next term is completed, make the line green */
-.compact-step.upcoming:not(:last-child)::after {
-    background: #dee2e6;
-}
-
-.compact-step.upcoming + .compact-step.completed::before {
-    content: '';
-    position: absolute;
-    top: 16px;
-    right: 100%;
-    transform: translateY(-50%);
-    width: 12px;
-    height: 2px;
-    background: #28a745;
-    z-index: 1;
-    transition: all 0.3s ease;
-}
-
-.compact-step:hover {
-    transform: translateY(-2px);
-}
-
-.compact-step.active {
-    color: #198754;
-}
-
-.compact-step.active .compact-circle {
-    background: linear-gradient(135deg, #198754, #0f5132);
-    border-color: #198754;
-    color: white;
-    box-shadow: 0 4px 12px rgba(25, 135, 84, 0.3);
-}
-
-.compact-step.completed .compact-circle {
-    background: linear-gradient(135deg, #28a745, #1e7e34);
-    border-color: #28a745;
-    color: white;
-    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.2);
-}
-
-.compact-step.completed {
-    color: #28a745;
-}
-
-.compact-step.upcoming .compact-circle {
-    background: #f8f9fa;
-    border: 2px solid #dee2e6;
-    color: #6c757d;
-}
-
-.compact-circle {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-weight: 600;
-    font-size: 0.875rem;
-    margin-bottom: 4px;
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    position: relative;
-    z-index: 3;
-}
-
-.compact-label {
-    font-size: 0.7rem;
-    font-weight: 500;
-    text-align: center;
-    line-height: 1;
-    min-width: 60px;
-    white-space: nowrap;
-    overflow: visible;
-}
-
-.compact-all-btn {
-    margin-left: 8px;
-    height: 32px;
-    width: 32px;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 50%;
-}
-
-/* Compact Form Controls */
-.form-select-sm {
-    font-size: 0.875rem !important;
-    padding: 0.25rem 0.5rem !important;
-    height: auto !important;
-}
-
-/* Responsive adjustments */
-@media (max-width: 768px) {
-    .compact-stepper {
-        gap: 10px !important;
-    }
-    
-    .compact-circle {
-        width: 28px !important;
-        height: 28px !important;
-        font-size: 0.75rem !important;
-    }
-    
-    .compact-label {
-        font-size: 0.65rem !important;
-        min-width: 50px !important;
-    }
-    
-    .compact-step:not(:last-child)::after {
-        width: 10px !important;
-        top: 14px !important;
-    }
-    
-    .compact-all-btn {
-        width: 28px !important;
-        height: 28px !important;
-    }
-}
-</style>
 @endpush
 
 @section('content')
@@ -249,7 +41,7 @@
         $missingScoreCounts = [];
         
         // Check for incomplete records across all terms and COs by examining the scores table
-        if(isset($terms) && is_array($terms) && isset($coColumnsByTerm) && isset($students)) {
+        if(isset($terms) && is_array($terms) && isset($coColumnsByTerm) && isset($students) && isset($subjectId)) {
             foreach($terms as $term) {
                 if(!empty($coColumnsByTerm[$term])) {
                     foreach($coColumnsByTerm[$term] as $coId) {
@@ -294,10 +86,10 @@
                             'percentage_incomplete' => $totalStudents > 0 && count($activities) > 0 ? round(($totalMissingScores / ($totalStudents * count($activities))) * 100, 1) : 0
                         ];
                     }
+                    }
                 }
             }
         }
-    }
     @endphp
 
     {{-- Course Outcome Attainment Results Management Section --}}
@@ -341,88 +133,39 @@
                             @endif
                         </div>
                     </div>
-                    
-                    {{-- Integrated Controls Section --}}
-                    <div class="border-top pt-3 mt-3">
-                        <div class="row align-items-center">
-                            <div class="col-md-6">
-                                <div class="d-flex align-items-center gap-3">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="dropdown">
-                                            <button class="btn btn-outline-success btn-sm dropdown-toggle d-flex align-items-center gap-2" type="button" id="displayTypeDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="min-width: 150px;">
-                                                <span id="currentIcon">📊</span>
-                                                <span id="currentText">Percentage</span>
-                                            </button>
-                                            <ul class="dropdown-menu shadow-sm" aria-labelledby="displayTypeDropdown" style="min-width: 200px;">
-                                                <li>
-                                                    <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#" onclick="setDisplayType('score', '📝', 'Scores'); return false;">
-                                                        <span>📝</span>
-                                                        <span>Raw Scores</span>
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item d-flex align-items-center gap-2 py-2 active" href="#" onclick="setDisplayType('percentage', '📊', 'Percentage'); return false;">
-                                                        <span>📊</span>
-                                                        <span>Percentage View</span>
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#" onclick="setDisplayType('passfail', '✅', 'Pass/Fail'); return false;">
-                                                        <span>✅</span>
-                                                        <span>Pass/Fail Analysis</span>
-                                                    </a>
-                                                </li>
-                                                <li>
-                                                    <a class="dropdown-item d-flex align-items-center gap-2 py-2" href="#" onclick="setDisplayType('copasssummary', '📈', 'Summary'); return false;">
-                                                        <span>📈</span>
-                                                        <span>Summary Dashboard</span>
-                                                    </a>
-                                                </li>
-                                            </ul>
-                                        </div>
-                                        <!-- Hidden select for functionality -->
-                                        <select id="scoreType" class="d-none" onchange="toggleScoreType()">
-                                            <option value="score">Scores</option>
-                                            <option value="percentage" selected>Percentage</option>
-                                            <option value="passfail">Pass/Fail</option>
-                                            <option value="copasssummary">Summary</option>
-                                        </select>
-                                    </div>
-                                    <span id="current-view" class="badge bg-success">All Terms</span>
-                                </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Controls Panel - Only show when course outcomes exist --}}
+    @if(isset($finalCOs) && is_countable($finalCOs) && count($finalCOs))
+    <div class="row mb-4 no-print">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi bi-gear-fill text-success fs-5"></i>
                             </div>
-                            <div class="col-md-6 text-end">
-                                <div class="d-flex align-items-center justify-content-end gap-2 flex-nowrap">
-                                    <small class="text-muted text-nowrap">Term Navigation:</small>
-                                    <div class="compact-stepper">
-                                        {{-- All Terms Button First --}}
-                                        <button type="button"
-                                                class="compact-step active"
-                                                onclick="showAllTerms()" 
-                                                title="Show All Terms Combined">
-                                            <div class="compact-circle">
-                                                <i class="bi bi-grid-3x3-gap"></i>
-                                            </div>
-                                            <div class="compact-label">All</div>
-                                        </button>
-                                        
-                                        {{-- Individual Terms --}}
-                                        @foreach($terms as $index => $termSlug)
-                                            @php
-                                                $step = $index + 1;
-                                            @endphp
-                                            <button type="button"
-                                                    class="compact-step upcoming"
-                                                    data-term="{{ $termSlug }}"
-                                                    onclick="switchTerm('{{ $termSlug }}', {{ $index }})"
-                                                    title="{{ ucfirst($termSlug) }} Term">
-                                                <div class="compact-circle">{{ $step }}</div>
-                                                <div class="compact-label">{{ ucfirst($termSlug) }}</div>
-                                            </button>
-                                        @endforeach
-                                    </div>
-                                </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Display Options</h6>
+                                <p class="text-muted mb-0">Configure how the results are displayed</p>
                             </div>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center gap-2">
+                                <label class="form-label mb-0 fw-semibold">Display Type:</label>
+                                <select id="scoreType" class="form-select" style="width: auto;" onchange="toggleScoreType()">
+                                    <option value="score">📝 Scores</option>
+                                    <option value="percentage" selected>📊 Percentage</option>
+                                    <option value="passfail">✅ Pass/Fail Analysis</option>
+                                    <option value="copasssummary">📈 Course Outcome Summary</option>
+                                </select>
+                            </div>
+                            <span id="current-view" class="badge bg-success">All Terms View</span>
                         </div>
                     </div>
                 </div>
@@ -431,9 +174,65 @@
     </div>
     @endif
 
-
-
-
+    {{-- Term Stepper for Raw Score and Percentage views - Only show when course outcomes exist --}}
+    <div id="term-stepper-container" class="row mb-4 no-print" style="display:none;">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm rounded-3">
+                <div class="card-body p-4">
+                    <div class="d-flex align-items-center justify-content-between mb-3">
+                        <div class="d-flex align-items-center">
+                            <div class="me-3">
+                                <i class="bi bi-calendar-event text-success fs-5"></i>
+                            </div>
+                            <div>
+                                <h6 class="fw-bold mb-1">Navigate by Terms</h6>
+                                <p class="text-muted mb-0">Click on any term to view specific results</p>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="showAllTerms()">
+                            <i class="bi bi-grid-3x3-gap me-1"></i>Show All Terms
+                        </button>
+                    </div>
+        <div class="stepper">
+            @foreach($terms as $index => $termSlug)
+                @php
+                    $step = $index + 1;
+                    $isActive = $index === 0; // Default to first term
+                    $class = $isActive ? 'active' : 'upcoming';
+                    $highlightLine = false; // Will be managed by JavaScript
+                    
+                    // Progress ring calculations
+                    $radius = 36;
+                    $circumference = 2 * pi() * $radius;
+                @endphp
+                <button type="button"
+                        class="step term-step {{ $class }}"
+                        data-term="{{ $termSlug }}"
+                        onclick="switchTerm('{{ $termSlug }}', {{ $index }})">
+                    <div class="circle-wrapper">
+                        <svg class="progress-ring" width="80" height="80">
+                            <circle class="progress-ring-bg" cx="40" cy="40" r="{{ $radius }}" />
+                            <circle class="progress-ring-bar" cx="40" cy="40" r="{{ $radius }}"
+                                    stroke-dasharray="{{ $circumference }}"
+                                    stroke-dashoffset="{{ $isActive ? 0 : $circumference }}" />
+                        </svg>
+                        <div class="circle">{{ $step }}</div>
+                    </div>
+                    <div class="step-label">{{ ucfirst($termSlug) }}</div>
+                </button>
+            @endforeach
+        </div>
+                    <div class="stepper-hint text-center mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Click on any term above to view specific results, or use the "Show All Terms" button to view the combined view
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
 
     {{-- Fade Overlay for Loading States --}}
     <div id="fadeOverlay" class="fade-overlay">
@@ -664,40 +463,30 @@
         {{-- Combined Table for All Terms (shown by default) --}}
         @if(isset($finalCOs) && is_countable($finalCOs) && count($finalCOs))
         <div class="results-card main-table" id="combined-table">
-            <div class="card-header-custom card-header-primary">
+            <div class="card-header-custom" style="background: #198754;">
                 <i class="bi bi-table me-2"></i>Course Outcome Results - All Terms Combined
             </div>
             <div class="table-responsive p-3">
                 <table class="table co-table table-bordered align-middle mb-0">
                     <thead class="table-success">
                         <tr>
-                            <th rowspan="2" class="align-middle fw-semibold" style="font-size: 0.9rem;">
-                                <i class="bi bi-person-fill me-1"></i>Students
-                            </th>
+                            <th rowspan="2" class="align-middle">Students</th>
                             @foreach($finalCOs as $coId)
-                                <th colspan="{{ count($terms) + 1 }}" class="text-center fw-semibold" style="font-size: 0.9rem;">
-                                    <i class="bi bi-mortarboard me-1"></i>{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}
-                                </th>
+                                <th colspan="{{ count($terms) + 1 }}" class="text-center">{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}</th>
                             @endforeach
                         </tr>
                         <tr>
                             @foreach($finalCOs as $coId)
                                 @foreach($terms as $term)
-                                    <th class="text-center fw-semibold" style="font-size: 0.8rem;">
-                                        <i class="bi bi-calendar-event me-1"></i>{{ ucfirst($term) }}
-                                    </th>
+                                    <th class="text-center" style="font-size:0.85em;">{{ ucfirst($term) }}</th>
                                 @endforeach
-                                <th class="text-center text-white fw-bold" style="font-size: 0.8rem; background: linear-gradient(135deg, #198754 0%, #0f5132 100%);">
-                                    <i class="bi bi-calculator me-1"></i>Total
-                                </th>
+                                <th class="text-center text-white" style="font-size:0.85em; background: linear-gradient(135deg, #0F4B36 0%, #023336 100%);" style="color: #198754">Total</th>
                             @endforeach
                         </tr>
                     </thead>
                     <tbody>
                         <tr style="background:#e8f5e8;">
-                            <td id="summaryLabel" class="fw-bold text-dark text-start">
-                                <i class="bi bi-list-ol me-2"></i>Total number of items
-                            </td>
+                            <td id="summaryLabel" class="fw-bold text-dark text-start">Total number of items</td>
                             @foreach($finalCOs as $coId)
                                 @foreach($terms as $term)
                                     @php
@@ -740,10 +529,8 @@
                             @endforeach
                         </tr>
                         @foreach($students as $student)
-                            <tr class="student-row">
-                                <td class="fw-semibold">
-                                    <i class="bi bi-person-circle me-2 text-success"></i>{{ $student->getFullNameAttribute() }}
-                                </td>
+                            <tr>
+                                <td>{{ $student->getFullNameAttribute() }}</td>
                                 @foreach($finalCOs as $coId)
                                     @foreach($terms as $term)
                                         @php
@@ -797,88 +584,74 @@
         
         {{-- Individual Term Tables (shown when stepper is used) --}}
         @foreach($terms as $term)
+            @if(!empty($coColumnsByTerm[$term]))
             <div class="results-card term-table" id="term-{{ $term }}" style="display:none;">
                 <div class="card-header-custom card-header-primary">
                     <i class="bi bi-calendar-event me-2"></i>{{ strtoupper($term) }} Term Results
                 </div>
                 <div class="table-responsive p-3">
-                    @if(!empty($coColumnsByTerm[$term]))
-                        <table class="table co-table table-bordered align-middle mb-0">
-                            <thead class="table-success">
-                                <tr>
-                                    <th class="fw-semibold" style="font-size: 0.9rem;">
-                                        <i class="bi bi-person-fill me-1"></i>Students
-                                    </th>
-                                    @foreach($coColumnsByTerm[$term] as $coId)
-                                        <th class="text-center fw-semibold" style="font-size: 0.9rem;">
-                                            <i class="bi bi-mortarboard me-1"></i>{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}
-                                        </th>
-                                    @endforeach
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr style="background:#e8f5e8;">
-                                    <td class="fw-bold text-dark text-start term-summary-label">
-                                        <i class="bi bi-list-ol me-2"></i>Total number of items
+                    <table class="table co-table table-bordered align-middle mb-0">
+                        <thead class="table-success">
+                            <tr>
+                                <th>Students</th>
+                                @foreach($coColumnsByTerm[$term] as $coId)
+                                    <th class="text-center">{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background:#e8f5e8;">
+                                <td class="fw-bold text-dark text-start term-summary-label">Total number of items</td>
+                                @foreach($coColumnsByTerm[$term] as $coId)
+                                    @php
+                                        $max = 0;
+                                        foreach(\App\Models\Activity::where('term', $term)
+                                            ->where('course_outcome_id', $coId)
+                                            ->where('subject_id', $subjectId)
+                                            ->get() as $activity) {
+                                            $max += $activity->number_of_items;
+                                        }
+                                    @endphp
+                                    <td>
+                                        <span class="score-value" data-score="{{ $max }}" data-percentage="75">
+                                            {{ $max }}
+                                        </span>
                                     </td>
+                                @endforeach
+                            </tr>
+                            @foreach($students as $student)
+                                <tr>
+                                    <td>{{ $student->getFullNameAttribute() }}</td>
                                     @foreach($coColumnsByTerm[$term] as $coId)
                                         @php
-                                            $max = 0;
+                                            // Calculate raw score for this student, term, CO
+                                            $rawScore = 0;
+                                            $maxScore = 0;
                                             foreach(\App\Models\Activity::where('term', $term)
                                                 ->where('course_outcome_id', $coId)
                                                 ->where('subject_id', $subjectId)
                                                 ->get() as $activity) {
-                                                $max += $activity->number_of_items;
+                                                $score = \App\Models\Score::where('student_id', $student->id)
+                                                    ->where('activity_id', $activity->id)
+                                                    ->first();
+                                                if($score) $rawScore += $score->score;
+                                                $maxScore += $activity->number_of_items;
                                             }
+                                            $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
                                         @endphp
                                         <td>
-                                            <span class="score-value" data-score="{{ $max }}" data-percentage="75">
-                                                {{ $max }}
+                                            <span class="score-value" data-score="{{ $rawScore }}" data-percentage="{{ ceil($percent) }}">
+                                                {{ $rawScore }}
                                             </span>
                                         </td>
                                     @endforeach
                                 </tr>
-                                @foreach($students as $student)
-                                    <tr>
-                                        <td>{{ $student->getFullNameAttribute() }}</td>
-                                        @foreach($coColumnsByTerm[$term] as $coId)
-                                            @php
-                                                // Calculate raw score for this student, term, CO
-                                                $rawScore = 0;
-                                                $maxScore = 0;
-                                                foreach(\App\Models\Activity::where('term', $term)
-                                                    ->where('course_outcome_id', $coId)
-                                                    ->where('subject_id', $subjectId)
-                                                    ->get() as $activity) {
-                                                    $score = \App\Models\Score::where('student_id', $student->id)
-                                                        ->where('activity_id', $activity->id)
-                                                        ->first();
-                                                    if($score) $rawScore += $score->score;
-                                                    $maxScore += $activity->number_of_items;
-                                                }
-                                                $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
-                                            @endphp
-                                            <td>
-                                                <span class="score-value" data-score="{{ $rawScore }}" data-percentage="{{ ceil($percent) }}">
-                                                    {{ $rawScore }}
-                                                </span>
-                                            </td>
-                                        @endforeach
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    @else
-                        <div class="text-center py-5">
-                            <div class="mb-3">
-                                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
-                            </div>
-                            <h5 class="text-muted mb-2">No Data Available</h5>
-                            <p class="text-muted mb-0">No course outcomes or activities have been set up for the {{ strtoupper($term) }} term yet.</p>
-                        </div>
-                    @endif
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
+            @endif
         @endforeach
         @endif
 
@@ -924,210 +697,195 @@
         
         {{-- Individual Term Pass/Fail Tables --}}
         @foreach($terms as $term)
+            @if(!empty($coColumnsByTerm[$term]))
             <div class="results-card passfail-term-table" id="passfail-term-{{ $term }}" style="display:none;">
                 <div class="card-header-custom">
                     <i class="bi bi-check-circle me-2"></i>{{ strtoupper($term) }} Term - Pass/Fail Analysis
                 </div>
                 <div class="table-responsive p-3">
-                    @if(!empty($coColumnsByTerm[$term]))
-                        <table class="table co-table table-bordered align-middle mb-0">
-                            <thead>
+                    <table class="table co-table table-bordered align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="text-start">👤 Students</th>
+                                @foreach($coColumnsByTerm[$term] as $coId)
+                                    <th class="text-center">{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($students as $student)
                                 <tr>
-                                    <th class="text-start">👤 Students</th>
+                                    <td>{{ $student->getFullNameAttribute() }}</td>
                                     @foreach($coColumnsByTerm[$term] as $coId)
-                                        <th class="text-center">{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}</th>
+                                        @php
+                                            // Calculate score for this specific term
+                                            $rawScore = 0;
+                                            $maxScore = 0;
+                                            foreach(\App\Models\Activity::where('term', $term)
+                                                ->where('course_outcome_id', $coId)
+                                                ->where('subject_id', $subjectId)
+                                                ->get() as $activity) {
+                                                $score = \App\Models\Score::where('student_id', $student->id)
+                                                    ->where('activity_id', $activity->id)
+                                                    ->first();
+                                                $rawScore += $score ? $score->score : 0;
+                                                $maxScore += $activity->number_of_items;
+                                            }
+                                            $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
+                                            $threshold = 75;
+                                        @endphp
+                                        <td class="fw-bold text-{{ $percent >= $threshold ? 'success' : 'danger' }}">
+                                            {{ $percent >= $threshold ? 'Passed' : 'Failed' }}
+                                            <br>
+                                            <small>({{ ceil($percent) }}%)</small>
+                                        </td>
                                     @endforeach
                                 </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($students as $student)
-                                    <tr>
-                                        <td>{{ $student->getFullNameAttribute() }}</td>
-                                        @foreach($coColumnsByTerm[$term] as $coId)
-                                            @php
-                                                // Calculate score for this specific term
-                                                $rawScore = 0;
-                                                $maxScore = 0;
-                                                foreach(\App\Models\Activity::where('term', $term)
-                                                    ->where('course_outcome_id', $coId)
-                                                    ->where('subject_id', $subjectId)
-                                                    ->get() as $activity) {
-                                                    $score = \App\Models\Score::where('student_id', $student->id)
-                                                        ->where('activity_id', $activity->id)
-                                                        ->first();
-                                                    $rawScore += $score ? $score->score : 0;
-                                                    $maxScore += $activity->number_of_items;
-                                                }
-                                                $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
-                                                $threshold = 75;
-                                            @endphp
-                                            <td class="fw-bold text-{{ $percent >= $threshold ? 'success' : 'danger' }}">
-                                                {{ $percent >= $threshold ? 'Passed' : 'Failed' }}
-                                                <br>
-                                                <small>({{ ceil($percent) }}%)</small>
-                                            </td>
-                                        @endforeach
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    @else
-                        <div class="text-center py-5">
-                            <div class="mb-3">
-                                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
-                            </div>
-                            <h5 class="text-muted mb-2">No Data Available</h5>
-                            <p class="text-muted mb-0">No course outcomes or activities have been set up for the {{ strtoupper($term) }} term yet.</p>
-                        </div>
-                    @endif
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
+            @endif
         @endforeach
         
         {{-- Individual Term Course Outcome Summary Tables --}}
         @foreach($terms as $term)
+            @if(!empty($coColumnsByTerm[$term]))
             <div class="results-card summary-term-table" id="summary-term-{{ $term }}" style="display:none;">
                 <div class="card-header-custom card-header-info">
                     <i class="bi bi-graph-up me-2"></i>{{ strtoupper($term) }} Term - Course Outcome Summary
                 </div>
                 <div class="table-responsive p-3">
-                    @if(!empty($coColumnsByTerm[$term]))
-                        <table class="table co-table table-bordered align-middle mb-0 text-center">
-                            <thead>
-                                <tr>
-                                    <th class="text-start">📋 Analysis Metrics</th>
-                                    @foreach($coColumnsByTerm[$term] as $coId)
-                                        <th>{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}</th>
-                                    @endforeach
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr style="background:#f8f9fa;">
-                                    <td class="fw-bold text-dark text-start">👥 Students Attempted</td>
-                                    @foreach($coColumnsByTerm[$term] as $coId)
-                                        @php
-                                            $attempted = 0;
-                                            foreach($students as $student) {
-                                                $rawScore = 0;
-                                                $maxScore = 0;
-                                                foreach(\App\Models\Activity::where('term', $term)
-                                                    ->where('course_outcome_id', $coId)
-                                                    ->where('subject_id', $subjectId)
-                                                    ->get() as $activity) {
-                                                    $score = \App\Models\Score::where('student_id', $student->id)
-                                                        ->where('activity_id', $activity->id)
-                                                        ->first();
-                                                    $rawScore += $score ? $score->score : 0;
-                                                    $maxScore += $activity->number_of_items;
-                                                }
-                                                if($maxScore > 0) $attempted++;
+                    <table class="table co-table table-bordered align-middle mb-0 text-center">
+                        <thead>
+                            <tr>
+                                <th class="text-start">📋 Analysis Metrics</th>
+                                @foreach($coColumnsByTerm[$term] as $coId)
+                                    <th>{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}</th>
+                                @endforeach
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr style="background:#f8f9fa;">
+                                <td class="fw-bold text-dark text-start">👥 Students Attempted</td>
+                                @foreach($coColumnsByTerm[$term] as $coId)
+                                    @php
+                                        $attempted = 0;
+                                        foreach($students as $student) {
+                                            $rawScore = 0;
+                                            $maxScore = 0;
+                                            foreach(\App\Models\Activity::where('term', $term)
+                                                ->where('course_outcome_id', $coId)
+                                                ->where('subject_id', $subjectId)
+                                                ->get() as $activity) {
+                                                $score = \App\Models\Score::where('student_id', $student->id)
+                                                    ->where('activity_id', $activity->id)
+                                                    ->first();
+                                                $rawScore += $score ? $score->score : 0;
+                                                $maxScore += $activity->number_of_items;
                                             }
-                                        @endphp
-                                        <td class="fw-bold text-success">{{ $attempted }}</td>
-                                    @endforeach
-                                </tr>
-                                <tr style="background:#fff;">
-                                    <td class="fw-bold text-dark text-start">✅ Students Passed</td>
-                                    @foreach($coColumnsByTerm[$term] as $coId)
-                                        @php
-                                            $threshold = 75;
-                                            $passed = 0;
-                                            foreach($students as $student) {
-                                                $rawScore = 0;
-                                                $maxScore = 0;
-                                                foreach(\App\Models\Activity::where('term', $term)
-                                                    ->where('course_outcome_id', $coId)
-                                                    ->where('subject_id', $subjectId)
-                                                    ->get() as $activity) {
-                                                    $score = \App\Models\Score::where('student_id', $student->id)
-                                                        ->where('activity_id', $activity->id)
-                                                        ->first();
-                                                    $rawScore += $score ? $score->score : 0;
-                                                    $maxScore += $activity->number_of_items;
-                                                }
-                                                $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
-                                                if($percent >= $threshold) $passed++;
+                                            if($maxScore > 0) $attempted++;
+                                        }
+                                    @endphp
+                                    <td class="fw-bold text-success">{{ $attempted }}</td>
+                                @endforeach
+                            </tr>
+                            <tr style="background:#fff;">
+                                <td class="fw-bold text-dark text-start">✅ Students Passed</td>
+                                @foreach($coColumnsByTerm[$term] as $coId)
+                                    @php
+                                        $threshold = 75;
+                                        $passed = 0;
+                                        foreach($students as $student) {
+                                            $rawScore = 0;
+                                            $maxScore = 0;
+                                            foreach(\App\Models\Activity::where('term', $term)
+                                                ->where('course_outcome_id', $coId)
+                                                ->where('subject_id', $subjectId)
+                                                ->get() as $activity) {
+                                                $score = \App\Models\Score::where('student_id', $student->id)
+                                                    ->where('activity_id', $activity->id)
+                                                    ->first();
+                                                $rawScore += $score ? $score->score : 0;
+                                                $maxScore += $activity->number_of_items;
                                             }
-                                        @endphp
-                                        <td class="fw-bold text-success">{{ $passed }}</td>
-                                    @endforeach
-                                </tr>
-                                <tr style="background:#f8f9fa;">
-                                    <td class="fw-bold text-dark text-start">📊 Pass Percentage</td>
-                                    @foreach($coColumnsByTerm[$term] as $coId)
-                                        @php
-                                            $attempted = 0;
-                                            $passed = 0;
-                                            foreach($students as $student) {
-                                                $rawScore = 0;
-                                                $maxScore = 0;
-                                                foreach(\App\Models\Activity::where('term', $term)
-                                                    ->where('course_outcome_id', $coId)
-                                                    ->where('subject_id', $subjectId)
-                                                    ->get() as $activity) {
-                                                    $score = \App\Models\Score::where('student_id', $student->id)
-                                                        ->where('activity_id', $activity->id)
-                                                        ->first();
-                                                    $rawScore += $score ? $score->score : 0;
-                                                    $maxScore += $activity->number_of_items;
-                                                }
-                                                if($maxScore > 0) {
-                                                    $attempted++;
-                                                    $percent = ($rawScore / $maxScore) * 100;
-                                                    if($percent >= 75) $passed++;
-                                                }
+                                            $percent = $maxScore > 0 ? ($rawScore / $maxScore) * 100 : 0;
+                                            if($percent >= $threshold) $passed++;
+                                        }
+                                    @endphp
+                                    <td class="fw-bold text-success">{{ $passed }}</td>
+                                @endforeach
+                            </tr>
+                            <tr style="background:#f8f9fa;">
+                                <td class="fw-bold text-dark text-start">📊 Pass Percentage</td>
+                                @foreach($coColumnsByTerm[$term] as $coId)
+                                    @php
+                                        $attempted = 0;
+                                        $passed = 0;
+                                        foreach($students as $student) {
+                                            $rawScore = 0;
+                                            $maxScore = 0;
+                                            foreach(\App\Models\Activity::where('term', $term)
+                                                ->where('course_outcome_id', $coId)
+                                                ->where('subject_id', $subjectId)
+                                                ->get() as $activity) {
+                                                $score = \App\Models\Score::where('student_id', $student->id)
+                                                    ->where('activity_id', $activity->id)
+                                                    ->first();
+                                                $rawScore += $score ? $score->score : 0;
+                                                $maxScore += $activity->number_of_items;
                                             }
-                                            $percentPassed = $attempted > 0 ? round(($passed / $attempted) * 100, 1) : 0;
-                                            $textClass = $percentPassed >= 75 ? 'text-success' : 'text-danger';
-                                        @endphp
-                                        <td class="fw-bold {{ $textClass }}">{{ $percentPassed }}%</td>
-                                    @endforeach
-                                </tr>
-                                <tr style="background:#fff;">
-                                    <td class="fw-bold text-dark text-start">❌ Failed Percentage</td>
-                                    @foreach($coColumnsByTerm[$term] as $coId)
-                                        @php
-                                            $attempted = 0;
-                                            $failed = 0;
-                                            foreach($students as $student) {
-                                                $rawScore = 0;
-                                                $maxScore = 0;
-                                                foreach(\App\Models\Activity::where('term', $term)
-                                                    ->where('course_outcome_id', $coId)
-                                                    ->where('subject_id', $subjectId)
-                                                    ->get() as $activity) {
-                                                    $score = \App\Models\Score::where('student_id', $student->id)
-                                                        ->where('activity_id', $activity->id)
-                                                        ->first();
-                                                    $rawScore += $score ? $score->score : 0;
-                                                    $maxScore += $activity->number_of_items;
-                                                }
-                                                if($maxScore > 0) {
-                                                    $attempted++;
-                                                    $percent = ($rawScore / $maxScore) * 100;
-                                                    if($percent < 75) $failed++;
-                                                }
+                                            if($maxScore > 0) {
+                                                $attempted++;
+                                                $percent = ($rawScore / $maxScore) * 100;
+                                                if($percent >= 75) $passed++;
                                             }
-                                            $failedPercentage = $attempted > 0 ? round(($failed / $attempted) * 100, 1) : 0;
-                                            $textClass = $failedPercentage >= 75 ? 'text-danger' : 'text-success';
-                                        @endphp
-                                        <td class="fw-bold {{ $textClass }}">{{ $failedPercentage }}%</td>
-                                    @endforeach
-                                </tr>
-                            </tbody>
-                        </table>
-                    @else
-                        <div class="text-center py-5">
-                            <div class="mb-3">
-                                <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
-                            </div>
-                            <h5 class="text-muted mb-2">No Data Available</h5>
-                            <p class="text-muted mb-0">No course outcomes or activities have been set up for the {{ strtoupper($term) }} term yet.</p>
-                        </div>
-                    @endif
+                                        }
+                                        $percentPassed = $attempted > 0 ? round(($passed / $attempted) * 100, 1) : 0;
+                                        $textClass = $percentPassed >= 75 ? 'text-success' : 'text-danger';
+                                    @endphp
+                                    <td class="fw-bold {{ $textClass }}">{{ $percentPassed }}%</td>
+                                @endforeach
+                            </tr>
+                            <tr style="background:#fff;">
+                                <td class="fw-bold text-dark text-start">❌ Failed Percentage</td>
+                                @foreach($coColumnsByTerm[$term] as $coId)
+                                    @php
+                                        $attempted = 0;
+                                        $failed = 0;
+                                        foreach($students as $student) {
+                                            $rawScore = 0;
+                                            $maxScore = 0;
+                                            foreach(\App\Models\Activity::where('term', $term)
+                                                ->where('course_outcome_id', $coId)
+                                                ->where('subject_id', $subjectId)
+                                                ->get() as $activity) {
+                                                $score = \App\Models\Score::where('student_id', $student->id)
+                                                    ->where('activity_id', $activity->id)
+                                                    ->first();
+                                                $rawScore += $score ? $score->score : 0;
+                                                $maxScore += $activity->number_of_items;
+                                            }
+                                            if($maxScore > 0) {
+                                                $attempted++;
+                                                $percent = ($rawScore / $maxScore) * 100;
+                                                if($percent < 75) $failed++;
+                                            }
+                                        }
+                                        $failedPercentage = $attempted > 0 ? round(($failed / $attempted) * 100, 1) : 0;
+                                        $textClass = $failedPercentage >= 75 ? 'text-danger' : 'text-success';
+                                    @endphp
+                                    <td class="fw-bold {{ $textClass }}">{{ $failedPercentage }}%</td>
+                                @endforeach
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
+            @endif
         @endforeach
+        @endif
         @else
             {{-- Enhanced Splash Page for No Course Outcomes in Results View --}}
             <div class="card border-0 shadow-sm rounded-4">
@@ -1228,34 +986,6 @@
     window.subjectDescription = "{{ isset($selectedSubject) ? $selectedSubject->subject_description : 'N/A' }}";
     window.units = "{{ isset($selectedSubject) && $selectedSubject->units ? $selectedSubject->units : 'N/A' }}";
     window.courseSection = "{{ isset($selectedSubject) && $selectedSubject->course ? $selectedSubject->course->course_code : 'N/A' }}";
-    
-    // Display type dropdown functionality
-    function setDisplayType(value, icon, text) {
-        // Update the dropdown button display
-        document.getElementById('currentIcon').textContent = icon;
-        document.getElementById('currentText').textContent = text;
-        
-        // Update the hidden select element
-        document.getElementById('scoreType').value = value;
-        
-        // Remove active class from all dropdown items
-        document.querySelectorAll('#displayTypeDropdown + .dropdown-menu .dropdown-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        
-        // Add active class to the clicked item
-        event.target.closest('.dropdown-item').classList.add('active');
-        
-        // Trigger the original toggle function
-        toggleScoreType();
-        
-        // Close the dropdown
-        const dropdownElement = document.getElementById('displayTypeDropdown');
-        const dropdown = bootstrap.Dropdown.getInstance(dropdownElement);
-        if (dropdown) {
-            dropdown.hide();
-        }
-    }
 </script>
 
 {{-- Print Options Modal --}}

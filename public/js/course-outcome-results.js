@@ -138,33 +138,28 @@ function switchTerm(term, index) {
         if (activeTable) activeTable.style.display = 'block';
     }
     
-    // Update stepper appearance with progress ring animations
-    var steps = document.querySelectorAll('.term-step');
-    var radius = 36;
-    var circumference = 2 * Math.PI * radius;
+    // Update compact stepper appearance
+    var allSteps = document.querySelectorAll('.compact-step');
     
-    steps.forEach(function(step, i) {
-        var progressBar = step.querySelector('.progress-ring-bar');
+    allSteps.forEach(function(step, i) {
+        step.classList.remove('active', 'completed', 'upcoming');
         
-        step.classList.remove('active', 'completed', 'upcoming', 'highlight-line');
-        
-        if (i < index) {
-            // Completed terms - 100% progress
-            step.classList.add('completed', 'highlight-line');
-            if (progressBar) {
-                progressBar.style.strokeDashoffset = '0'; // 100% completion
-            }
-        } else if (i === index) {
-            // Active term (clicked) - 100% progress
-            step.classList.add('active');
-            if (progressBar) {
-                progressBar.style.strokeDashoffset = '0'; // 100% completion when clicked
-            }
+        if (i === 0) {
+            // All Terms button - keep it completed when individual term is selected
+            step.classList.add('completed');
         } else {
-            // Upcoming terms - no progress
-            step.classList.add('upcoming');
-            if (progressBar) {
-                progressBar.style.strokeDashoffset = circumference; // 0% completion
+            // Individual term buttons (index 1-4)
+            var termIndex = i - 1; // Adjust for All Terms button
+            
+            if (termIndex < index) {
+                // Completed terms
+                step.classList.add('completed');
+            } else if (termIndex === index) {
+                // Active term (clicked)
+                step.classList.add('active');
+            } else {
+                // Upcoming terms
+                step.classList.add('upcoming');
             }
         }
     });
@@ -207,13 +202,15 @@ function showAllTerms() {
         if (combinedTable) combinedTable.style.display = 'block';
     }
     
-    // Reset stepper to default state
-    var steps = document.querySelectorAll('.term-step');
-    steps.forEach(function(step, i) {
-        step.classList.remove('active', 'completed', 'upcoming', 'highlight-line');
+    // Reset compact stepper to default state
+    var allSteps = document.querySelectorAll('.compact-step');
+    allSteps.forEach(function(step, i) {
+        step.classList.remove('active', 'completed', 'upcoming');
         if (i === 0) {
+            // All Terms button - active
             step.classList.add('active');
         } else {
+            // Individual term buttons - upcoming
             step.classList.add('upcoming');
         }
     });

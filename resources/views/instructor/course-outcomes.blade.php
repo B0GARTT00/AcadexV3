@@ -141,17 +141,6 @@
                         <label class="form-label">Description <span class="text-danger">*</span></label>
                         <textarea name="description" class="form-control" rows="3" required></textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Academic Period <span class="text-danger">*</span></label>
-                        <select name="academic_period_id" class="form-select" required>
-                            <option value="">-- Select Academic Period --</option>
-                            @foreach($periods ?? [] as $period)
-                                @if($period && is_object($period) && isset($period->id))
-                                    <option value="{{ $period->id }}">{{ $period->academic_year ?? 'N/A' }} - {{ $period->semester ?? 'N/A' }}</option>
-                                @endif
-                            @endforeach
-                        </select>
-                    </div>
                     <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
                 </div>
                 <div class="modal-footer bg-light">

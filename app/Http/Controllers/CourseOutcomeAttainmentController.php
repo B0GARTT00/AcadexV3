@@ -120,27 +120,32 @@ class CourseOutcomeAttainmentController extends Controller
 
     public function index(Request $request)
     {
-        // Get academic year and semester from request or session
-        $academicYear = $request->input('academic_year');
-        $semester = $request->input('semester') ?? session('active_semester');
-
-        // If active_academic_period_id is set and active_semester is not, set it from the period
-        $period = null;
-        if (session('active_academic_period_id')) {
-            $period = \App\Models\AcademicPeriod::find(session('active_academic_period_id'));
-            if ($period && !session('active_semester')) {
-                session(['active_semester' => $period->semester]);
-                $semester = $period->semester;
-            }
-            if (!$academicYear && $period) {
-                $academicYear = $period->academic_year;
-            }
+        // Automatically use the active academic period from session
+        $academicPeriodId = session('active_academic_period_id');
+        
+        if (!$academicPeriodId) {
+            // If no active academic period is set, show empty state
+            return view('instructor.scores.course-outcome-results-wildcards', [
+                'subjects' => collect(),
+                'academicYear' => null,
+                'semester' => null,
+            ]);
         }
 
-        $periods = \App\Models\AcademicPeriod::all();
+        // Get the active academic period
+        $period = \App\Models\AcademicPeriod::find($academicPeriodId);
+        
+        if (!$period) {
+            // If period not found, show empty state
+            return view('instructor.scores.course-outcome-results-wildcards', [
+                'subjects' => collect(),
+                'academicYear' => null,
+                'semester' => null,
+            ]);
+        }
 
-        // Only show subjects in the selected academic year and semester
-        $subjectsQuery = \App\Models\Subject::query()
+        // Get subjects for the current instructor in the active academic period
+        $subjects = \App\Models\Subject::query()
             ->join('academic_periods', 'subjects.academic_period_id', '=', 'academic_periods.id')
             ->where(function($query) {
                 $query->where('subjects.instructor_id', Auth::id())
@@ -148,30 +153,15 @@ class CourseOutcomeAttainmentController extends Controller
                           $q->where('instructor_id', Auth::id());
                       });
             })
-            ->where('subjects.is_deleted', false);
-        if ($academicYear) {
-            $subjectsQuery->where('academic_periods.academic_year', $academicYear);
-        }
-        if ($semester) {
-            $subjectsQuery->where('academic_periods.semester', $semester);
-        }
-        // If filtering and no periods match, return empty collection
-        if (($academicYear || $semester) && $subjectsQuery->count() === 0) {
-            $subjects = collect();
-            return view('instructor.scores.course-outcome-results-wildcards', [
-                'subjects' => $subjects,
-                'periods' => $periods,
-                'academicYear' => $academicYear,
-                'semester' => $semester,
-            ]);
-        }
-        $subjects = $subjectsQuery->select('subjects.*', 'academic_periods.academic_year as academic_year', 'academic_periods.semester as semester')->get();
+            ->where('subjects.is_deleted', false)
+            ->where('subjects.academic_period_id', $academicPeriodId)
+            ->select('subjects.*', 'academic_periods.academic_year as academic_year', 'academic_periods.semester as semester')
+            ->get();
 
         return view('instructor.scores.course-outcome-results-wildcards', [
             'subjects' => $subjects,
-            'periods' => $periods,
-            'academicYear' => $academicYear,
-            'semester' => $semester,
+            'academicYear' => $period->academic_year,
+            'semester' => $period->semester,
         ]);
     }
 

@@ -30,11 +30,6 @@
                             <h6 class="fw-semibold mt-4 text-dark text-truncate" title="{{ $subjectItem->subject_description }}">
                                 {{ $subjectItem->subject_description }}
                             </h6>
-                            {{-- Debug: Show academic year and semester for each subject --}}
-                            <div class="mt-2 small text-muted">
-                                <span>Year: {{ $subjectItem->debug_academic_year ?? 'N/A' }}</span> |
-                                <span>Semester: {{ $subjectItem->debug_semester ?? 'N/A' }}</span>
-                            </div>
                         </div>
                     </div>
                 </div>

@@ -103,7 +103,8 @@ class CourseOutcomesController extends Controller
         if ($request->filled('subject_id')) {
             $query = CourseOutcomes::where('is_deleted', false)
                 ->with(['subject', 'academicPeriod'])
-                ->where('subject_id', $request->subject_id);
+                ->where('subject_id', $request->subject_id)
+                ->orderBy('created_at', 'asc');
 
             $cos = $query->get();
 
@@ -144,12 +145,18 @@ class CourseOutcomesController extends Controller
     {
         $validated = $request->validate([
             'subject_id' => 'required|exists:subjects,id',
-            'academic_period_id' => 'required|exists:academic_periods,id',
             'co_code' => 'required|string|max:255',
             'co_identifier' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
 
+        // Get the academic period from the subject
+        $subject = Subject::find($validated['subject_id']);
+        if (!$subject || !$subject->academic_period_id) {
+            return redirect()->back()->with('error', 'Subject not found or no academic period assigned.');
+        }
+
+        $validated['academic_period_id'] = $subject->academic_period_id;
         $validated['created_by'] = $request->user()->id;
         $validated['updated_by'] = $request->user()->id;
 
@@ -185,11 +192,16 @@ class CourseOutcomesController extends Controller
     public function update(Request $request, CourseOutcomes $courseOutcome)
     {
         $validated = $request->validate([
-            'academic_period_id' => 'required|exists:academic_periods,id',
             'co_code' => 'required|string|max:255',
             'co_identifier' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
+
+        // Get the academic period from the subject (maintain consistency)
+        $subject = $courseOutcome->subject;
+        if ($subject && $subject->academic_period_id) {
+            $validated['academic_period_id'] = $subject->academic_period_id;
+        }
 
         $validated['updated_by'] = $request->user()->id;
 
