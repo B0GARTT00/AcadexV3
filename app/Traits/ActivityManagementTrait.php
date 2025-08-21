@@ -12,6 +12,7 @@ trait ActivityManagementTrait
         $activities = Activity::where('subject_id', $subjectId)
             ->where('term', $term)
             ->where('is_deleted', false)
+            ->with('courseOutcome') // Eager load course outcomes including soft deleted ones
             ->orderBy('type')
             ->orderBy('created_at')
             ->get();
@@ -36,6 +37,7 @@ trait ActivityManagementTrait
             $activities = Activity::where('subject_id', $subjectId)
                 ->where('term', $term)
                 ->where('is_deleted', false)
+                ->with('courseOutcome') // Eager load course outcomes including soft deleted ones
                 ->orderBy('type')
                 ->orderBy('created_at')
                 ->get();

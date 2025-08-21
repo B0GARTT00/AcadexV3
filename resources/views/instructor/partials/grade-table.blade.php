@@ -77,7 +77,17 @@
                                         </button>
                                         <div class="mt-1 text-muted small course-outcome-description">
                                             @if($activity->courseOutcome)
-                                                <span><strong>{{ $activity->courseOutcome->co_code }}</strong>: {{ $activity->courseOutcome->co_identifier }}</span>
+                                                @if($activity->courseOutcome->is_deleted)
+                                                    <div class="alert alert-warning py-1 px-2 mb-1 d-flex align-items-center" style="font-size: 0.75rem; border-radius: 4px;">
+                                                        <i class="bi bi-exclamation-triangle-fill me-1" style="font-size: 0.8rem;"></i>
+                                                        <div>
+                                                            <div><strong>{{ $activity->courseOutcome->co_code }}</strong>: {{ $activity->courseOutcome->co_identifier }}</div>
+                                                            <div class="text-danger small fw-bold">⚠️ This course outcome has been deleted</div>
+                                                        </div>
+                                                    </div>
+                                                @else
+                                                    <span><strong>{{ $activity->courseOutcome->co_code }}</strong>: {{ $activity->courseOutcome->co_identifier }}</span>
+                                                @endif
                                             @else
                                                 <span>No Course Outcome Selected</span>
                                             @endif

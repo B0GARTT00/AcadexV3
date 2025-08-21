@@ -408,3 +408,20 @@ thead th {
 .course-outcome-item.hidden {
     display: none;
 }
+
+/* Soft deleted course outcome warning styles */
+.course-outcome-description .alert-warning {
+    background-color: #fff3cd;
+    border: 1px solid #ffecb5;
+    color: #664d03;
+    margin-bottom: 0.25rem !important;
+}
+
+.course-outcome-description .alert-warning .text-danger {
+    color: #dc3545 !important;
+    font-weight: 600;
+}
+
+.course-outcome-description .alert-warning i {
+    color: #f57c00;
+}
