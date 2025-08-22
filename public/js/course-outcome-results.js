@@ -1,21 +1,104 @@
 let currentTerm = null;
 
-function toggleScoreType() {
-    var type = document.getElementById('scoreType').value;
+// Function to handle dropdown display type changes
+function setDisplayType(type, icon, text) {
+    // Update the dropdown button text and icon
+    const currentIcon = document.getElementById('currentIcon');
+    const currentText = document.getElementById('currentText');
+    
+    if (currentIcon) currentIcon.textContent = icon;
+    if (currentText) currentText.textContent = text;
+    
+    // Update the hidden select element
+    const scoreTypeSelect = document.getElementById('scoreType');
+    if (scoreTypeSelect) {
+        scoreTypeSelect.value = type;
+    }
+    
+    // Update active state in dropdown
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    // Find and activate the current item
+    document.querySelectorAll('.dropdown-item').forEach(item => {
+        if (item.getAttribute('onclick') && item.getAttribute('onclick').includes(`'${type}'`)) {
+            item.classList.add('active');
+        }
+    });
+    
+    // Close the dropdown
+    const dropdownElement = document.getElementById('displayTypeDropdown');
+    if (dropdownElement) {
+        const dropdown = bootstrap.Dropdown.getInstance(dropdownElement);
+        if (dropdown) {
+            dropdown.hide();
+        }
+    }
+    
+    // Handle term stepper visibility with multiple approaches
+    // Method 1: Target the navigation container
+    const termStepperContainer = document.getElementById('term-navigation-container');
+    
+    // Method 2: Target the compact stepper directly
+    const compactStepper = document.querySelector('.compact-stepper');
+    
+    // Method 3: Target the parent column
+    const stepperColumn = document.querySelector('.col-md-6.text-end');
+    
+    if (type === 'passfail' || type === 'copasssummary') {
+        // Hide using multiple methods to ensure it works
+        if (termStepperContainer) {
+            termStepperContainer.style.display = 'none';
+            termStepperContainer.style.visibility = 'hidden';
+        }
+        if (compactStepper) {
+            compactStepper.style.display = 'none';
+            compactStepper.style.visibility = 'hidden';
+        }
+        if (stepperColumn) {
+            stepperColumn.style.display = 'none';
+        }
+    } else {
+        // Show using multiple methods
+        if (termStepperContainer) {
+            termStepperContainer.style.display = 'flex';
+            termStepperContainer.style.visibility = 'visible';
+        }
+        if (compactStepper) {
+            compactStepper.style.display = 'flex';
+            compactStepper.style.visibility = 'visible';
+        }
+        if (stepperColumn) {
+            stepperColumn.style.display = 'block';
+        }
+    }
+    
+    // Call the existing toggleScoreType function logic with the new type
+    toggleScoreTypeWithValue(type);
+}
+
+// Function to handle score type toggling with a specific value
+function toggleScoreTypeWithValue(type) {
     var passfailTable = document.getElementById('passfail-table');
     var copasssummaryTable = document.getElementById('copasssummary-table');
     var mainTables = document.querySelectorAll('.main-table');
     var termTables = document.querySelectorAll('.term-table');
     var summaryLabel = document.getElementById('summaryLabel');
     var termSummaryLabels = document.querySelectorAll('.term-summary-label');
-    var termStepperContainer = document.getElementById('term-stepper-container');
+    var termStepperContainer = document.getElementById('term-navigation-container');
     
     if(type === 'passfail') {
         passfailTable && (passfailTable.style.display = 'block');
         copasssummaryTable && (copasssummaryTable.style.display = 'none');
         mainTables.forEach(function(tbl) { tbl.style.display = 'none'; });
         termTables.forEach(function(tbl) { tbl.style.display = 'none'; });
-        termStepperContainer && (termStepperContainer.style.display = 'block');
+        
+        // Multiple ways to hide the stepper
+        if (termStepperContainer) {
+            termStepperContainer.style.display = 'none';
+            termStepperContainer.style.visibility = 'hidden';
+        }
         
         // Hide term-specific passfail tables by default
         document.querySelectorAll('.passfail-term-table').forEach(function(tbl) { 
@@ -26,7 +109,12 @@ function toggleScoreType() {
         copasssummaryTable && (copasssummaryTable.style.display = 'block');
         mainTables.forEach(function(tbl) { tbl.style.display = 'none'; });
         termTables.forEach(function(tbl) { tbl.style.display = 'none'; });
-        termStepperContainer && (termStepperContainer.style.display = 'block');
+        
+        // Multiple ways to hide the stepper
+        if (termStepperContainer) {
+            termStepperContainer.style.display = 'none';
+            termStepperContainer.style.visibility = 'hidden';
+        }
         
         // Hide term-specific summary tables by default
         document.querySelectorAll('.summary-term-table').forEach(function(tbl) { 
@@ -35,7 +123,12 @@ function toggleScoreType() {
     } else {
         passfailTable && (passfailTable.style.display = 'none');
         copasssummaryTable && (copasssummaryTable.style.display = 'none');
-        termStepperContainer && (termStepperContainer.style.display = 'block');
+        
+        // Multiple ways to show the stepper
+        if (termStepperContainer) {
+            termStepperContainer.style.display = 'flex';
+            termStepperContainer.style.visibility = 'visible';
+        }
         
         // Hide all term-specific tables when switching to scores/percentage view
         document.querySelectorAll('.passfail-term-table').forEach(function(tbl) { 
@@ -101,6 +194,11 @@ function toggleScoreType() {
             label.textContent = 'Total number of items';
         });
     }
+}
+
+function toggleScoreType() {
+    var type = document.getElementById('scoreType').value;
+    toggleScoreTypeWithValue(type);
 }
 
 function switchTerm(term, index) {
@@ -905,3 +1003,9 @@ function closePrintModal() {
         modal.hide();
     }
 }
+
+// Initialize the page when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Set default display type to percentage
+    setDisplayType('percentage', '📊', 'Percentage');
+});

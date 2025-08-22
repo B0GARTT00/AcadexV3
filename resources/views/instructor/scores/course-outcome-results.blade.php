@@ -392,7 +392,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6 text-end">
-                                <div class="d-flex align-items-center justify-content-end gap-2 flex-nowrap">
+                                <div id="term-navigation-container" class="d-flex align-items-center justify-content-end gap-2 flex-nowrap">
                                     <small class="text-muted text-nowrap">Term Navigation:</small>
                                     <div class="compact-stepper">
                                         {{-- All Terms Button First --}}
@@ -1297,6 +1297,31 @@
 </div>
 
 <!-- Include external JavaScript file -->
+<script>
+    // Set global variables for print header information
+    @if(isset($selectedSubject))
+        window.courseCode = "{{ $selectedSubject->subject_code ?? 'N/A' }}";
+        window.subjectDescription = "{{ $selectedSubject->subject_description ?? 'N/A' }}";
+        window.units = "{{ $selectedSubject->units ?? 'N/A' }}";
+        window.courseSection = "{{ $selectedSubject->course->course_code ?? 'N/A' }}";
+        @if(isset($selectedSubject->academicPeriod))
+            window.semester = "{{ $selectedSubject->academicPeriod->semester ?? 'N/A' }}";
+            window.academicPeriod = "{{ $selectedSubject->academicPeriod->academic_year ?? 'N/A' }}";
+        @else
+            window.semester = 'N/A';
+            window.academicPeriod = 'N/A';
+        @endif
+    @else
+        window.courseCode = 'N/A';
+        window.subjectDescription = 'N/A';
+        window.units = 'N/A';
+        window.courseSection = 'N/A';
+        window.semester = 'N/A';
+        window.academicPeriod = 'N/A';
+    @endif
+    window.subjectInfo = "{{ isset($selectedSubject) ? $selectedSubject->subject_code . ' - ' . $selectedSubject->subject_description : 'Course Outcome Results' }}";
+    window.bannerUrl = "{{ asset('images/banner-header.png') }}";
+</script>
 <script src="{{ asset('js/course-outcome-results.js') }}"></script>
 
 @endpush
