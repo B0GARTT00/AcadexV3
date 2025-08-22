@@ -57,7 +57,6 @@ class ChairpersonController extends Controller
 
         // Get GE requests for each instructor to check status
         $geRequests = \App\Models\GESubjectRequest::whereIn('instructor_id', $instructors->pluck('id'))
-            ->where('status', 'pending')
             ->get()
             ->keyBy('instructor_id');
 

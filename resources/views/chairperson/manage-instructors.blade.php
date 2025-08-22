@@ -76,18 +76,58 @@
                                     <td class="text-center">
                                         <div class="btn-group" role="group">
                                             @php
-                                                $hasRequest = $geRequests->has($instructor->id);
+                                                $geRequest = $geRequests->get($instructor->id);
+                                                $hasRequest = $geRequest !== null;
+                                                $requestStatus = $geRequest?->status ?? null;
+                                                $canTeachGE = $instructor->can_teach_ge ?? false;
                                             @endphp
                                             
-                                            @if($hasRequest)
-                                                <button type="button"
-                                                    class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-1"
-                                                    disabled>
-                                                    <i class="bi bi-check-circle"></i> Requested GE
-                                                </button>
-                                            @else
+                                            @if($hasRequest && $canTeachGE)
+                                                {{-- Instructor has a request AND can currently teach GE --}}
+                                                @if($requestStatus === 'pending')
+                                                    <button type="button"
+                                                        class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1"
+                                                        disabled>
+                                                        <i class="bi bi-clock"></i> Pending
+                                                    </button>
+                                                @elseif($requestStatus === 'approved')
+                                                    <button type="button"
+                                                        class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                                                        disabled>
+                                                        <i class="bi bi-check-circle"></i> Assigned
+                                                    </button>
+                                                @endif
+                                            @elseif($hasRequest && !$canTeachGE && $requestStatus === 'pending')
+                                                {{-- Has pending request but can't teach GE (shouldn't happen, but handle it) --}}
                                                 <button type="button"
                                                     class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1"
+                                                    disabled>
+                                                    <i class="bi bi-clock"></i> Pending
+                                                </button>
+                                            @elseif($hasRequest && !$canTeachGE && in_array($requestStatus, ['rejected', 'revoked']))
+                                                {{-- Request was rejected or revoked, allow new request --}}
+                                                <button type="button"
+                                                    class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#requestGEAssignmentModal"
+                                                    data-instructor-id="{{ $instructor->id }}"
+                                                    data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                                    <i class="bi bi-journal-plus"></i> Request GE
+                                                </button>
+                                            @elseif($hasRequest && !$canTeachGE && $requestStatus === 'approved')
+                                                {{-- Was approved but later removed by GE coordinator, allow new request --}}
+                                                <button type="button"
+                                                    class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#requestGEAssignmentModal"
+                                                    data-instructor-id="{{ $instructor->id }}"
+                                                    data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                                    <i class="bi bi-journal-plus"></i> Request GE Again
+                                                </button>
+                                            @else
+                                                {{-- No request exists, allow new request --}}
+                                                <button type="button"
+                                                    class="btn btn-primary btn-sm d-inline-flex align-items-center gap-1"
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#requestGEAssignmentModal"
                                                     data-instructor-id="{{ $instructor->id }}"

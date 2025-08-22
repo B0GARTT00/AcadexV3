@@ -143,13 +143,21 @@ class GECoordinatorController extends Controller
             abort(403);
         }
         
-        $geDepartment = Department::where('department_code', 'GE')->first();
+        // Find the instructor (don't restrict to GE department since they might be from another department)
         $instructor = User::where('id', $id)
             ->where('role', 0)
-            ->where('department_id', $geDepartment->id)
+            ->where('can_teach_ge', true)
             ->firstOrFail();
-        $instructor->update(['is_active' => false]);
-        return redirect()->back()->with('success', 'Instructor deactivated successfully.');
+            
+        // Only remove GE teaching capability, don't deactivate the entire account
+        $instructor->update(['can_teach_ge' => false]);
+        
+        // Update any existing approved GE requests to "revoked" status
+        \App\Models\GESubjectRequest::where('instructor_id', $id)
+            ->where('status', 'approved')
+            ->update(['status' => 'revoked']);
+        
+        return redirect()->back()->with('success', 'Instructor removed from GE teaching successfully.');
     }
 
     public function activateInstructor($id)
@@ -158,13 +166,16 @@ class GECoordinatorController extends Controller
             abort(403);
         }
         
-        $geDepartment = Department::where('department_code', 'GE')->first();
+        // Find the instructor (don't restrict to GE department since they might be from another department)
         $instructor = User::where('id', $id)
             ->where('role', 0)
-            ->where('department_id', $geDepartment->id)
+            ->where('can_teach_ge', false)
             ->firstOrFail();
-        $instructor->update(['is_active' => true]);
-        return redirect()->back()->with('success', 'Instructor activated successfully.');
+            
+        // Only enable GE teaching capability, don't affect the entire account status
+        $instructor->update(['can_teach_ge' => true]);
+        
+        return redirect()->back()->with('success', 'Instructor enabled for GE teaching successfully.');
     }
 
     // ============================
