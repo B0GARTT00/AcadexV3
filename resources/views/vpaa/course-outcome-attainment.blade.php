@@ -57,11 +57,6 @@
                         @endif
                     </select>
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="bi bi-funnel me-1"></i>Apply Filters
-                    </button>
-                </div>
             </form>
         </div>
     </div>
@@ -146,7 +141,7 @@
                                     </tr>
                                 @endforeach
                                 {{-- Class Average Row --}}
-                                <tr class="table-light">
+                                <tr>
                                     <td class="fw-bold">Class Average</td>
                                     @foreach($courseData['outcomes'] as $outcome)
                                         @php
@@ -195,6 +190,7 @@
                                         </span>
                                     </td>
                                 </tr>
+                                {{-- End student rows --}}
                             </tbody>
                         </table>
                     </div>
@@ -281,13 +277,35 @@
     }
     
     .card-header-custom {
-        background-color: #f8f9fa;
-        padding: 1rem 1.5rem;
+        background: linear-gradient(90deg, #198754 0%, #16a34a 100%);
+        padding: 1.2rem 1.5rem;
         border-bottom: 1px solid #e9ecef;
-        font-weight: 600;
-        color: #2c3e50;
+        font-weight: 700;
+        color: #fff !important;
+        font-size: 1.25rem;
+        letter-spacing: 0.5px;
         border-top-left-radius: 0.5rem;
         border-top-right-radius: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .card-header-custom .bi {
+        font-size: 1.5rem;
+        color: #fff !important;
+        margin-right: 0.5rem;
+    }
+
+    .results-card {
+        /* Ensure logo and header are visible */
+        position: relative;
+    }
+
+    .acadex-logo-header {
+        height: 32px;
+        margin-right: 0.75rem;
+        vertical-align: middle;
     }
     
     .table th {
@@ -301,18 +319,29 @@
     }
     
     .badge-success {
-        background-color: #d1fae5;
-        color: #065f46;
+        background: linear-gradient(135deg, #1bce8f 0%, #023336 100%) !important;
+        color: #fff !important;
+        border: none;
+        font-weight: 700;
+        text-shadow: none;
     }
+        /* Remove global .badge-success override and target only table badges */
+        .co-table .badge.bg-success {
+            background: linear-gradient(135deg, #1bce8f 0%, #023336 100%) !important;
+            color: #fff !important;
+            font-weight: 700;
+            border: none;
+            letter-spacing: 0.5px;
+        }
     
     .badge-warning {
-        background-color: #fef3c7;
-        color: #92400e;
+        background-color: #f59e42 !important;
+        color: #fff !important;
     }
     
     .badge-danger {
-        background-color: #fee2e2;
-        color: #b91c1c;
+        background-color: #dc2626 !important;
+        color: #fff !important;
     }
     
     .badge-secondary {

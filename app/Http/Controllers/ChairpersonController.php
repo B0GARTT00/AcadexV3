@@ -54,7 +54,13 @@ class ChairpersonController extends Controller
         $instructors = $query->orderBy('is_active', 'desc') // Show active instructors first
                            ->orderBy('last_name')
                            ->get();
-        
+
+        // Get GE requests for each instructor to check status
+        $geRequests = \App\Models\GESubjectRequest::whereIn('instructor_id', $instructors->pluck('id'))
+            ->where('status', 'pending')
+            ->get()
+            ->keyBy('instructor_id');
+
         $pendingAccounts = UnverifiedUser::with('department', 'course')
             ->when(Auth::user()->role === 1, function($q) {
                 $q->where('department_id', Auth::user()->department_id)
@@ -63,7 +69,7 @@ class ChairpersonController extends Controller
             ->where('department_id', '!=', $geDepartment->id)
             ->get();
             
-        return view('chairperson.manage-instructors', compact('instructors', 'pendingAccounts'));
+        return view('chairperson.manage-instructors', compact('instructors', 'pendingAccounts', 'geRequests'));
     }
 
     public function storeInstructor(Request $request)

@@ -167,15 +167,19 @@ class CourseOutcomeAttainmentController extends Controller
 
     public function store(Request $request)
     {
+        \Log::info('CourseOutcomeAttainmentController@store called', ['request' => $request->all()]);
         $data = $request->validate([
             'student_id' => 'required|exists:students,id',
             'term' => 'required|string',
-            'co_id' => 'required|exists:course_outcomes,id',
+            'course_outcome_id' => 'required|exists:course_outcomes,id',
+            'subject_id' => 'required|exists:subjects,id',
             'score' => 'required|integer',
             'max' => 'required|integer',
             'semester_total' => 'required|numeric',
         ]);
+        \Log::info('Validated data for CourseOutcomeAttainment', $data);
         $attainment = CourseOutcomeAttainment::create($data);
+        \Log::info('Created CourseOutcomeAttainment', ['attainment' => $attainment]);
         return response()->json(['status' => 'success', 'attainment' => $attainment]);
     }
 

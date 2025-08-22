@@ -190,6 +190,36 @@ class GradeController extends Controller
                 $this->updateTermGrade($studentId, $subject->id, $termId, $subject->academic_period_id, $termGrade);
                 $this->calculateAndUpdateFinalGrade($studentId, $subject->id, $subject->academic_period_id);
             }
+
+            // --- NEW: Save Course Outcome Attainment ---
+            // Group activities by course_outcome_id
+            $coScores = [];
+            foreach ($activities as $activity) {
+                $coId = $activity->course_outcome_id;
+                if (!$coId) continue;
+                $score = isset($request->scores[$studentId][$activity->id]) ? $request->scores[$studentId][$activity->id] : null;
+                if ($score !== null && $score !== '') {
+                    $coScores[$coId]['score'] = ($coScores[$coId]['score'] ?? 0) + $score;
+                    $coScores[$coId]['max'] = ($coScores[$coId]['max'] ?? 0) + $activity->number_of_items;
+                }
+            }
+            foreach ($coScores as $coId => $data) {
+                if (!isset($data['score']) || !isset($data['max'])) continue;
+                \App\Models\CourseOutcomeAttainment::updateOrCreate(
+                    [
+                        'student_id' => $studentId,
+                        'subject_id' => $subject->id,
+                        'course_outcome_id' => $coId,
+                        'term' => $request->term,
+                    ],
+                    [
+                        'score' => $data['score'],
+                        'max' => $data['max'],
+                        'semester_total' => $data['max'],
+                    ]
+                );
+            }
+            // --- END NEW ---
         }
     
         return redirect()->route('instructor.grades.index', [

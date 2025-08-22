@@ -1195,69 +1195,7 @@
 @endsection
 
 @push('scripts')
-<!-- Pass PHP data to JavaScript -->
-<script>
-    @php
-        $activePeriod = \App\Models\AcademicPeriod::find(session('active_academic_period_id'));
-        // Try to get academic period from subject relationship if session doesn't have it
-        if (!$activePeriod && isset($selectedSubject) && $selectedSubject->academicPeriod) {
-            $activePeriod = $selectedSubject->academicPeriod;
-        }
-        $semesterLabel = '';
-        if($activePeriod) {
-            switch ($activePeriod->semester) {
-                case '1st':
-                    $semesterLabel = 'First';
-                    break;
-                case '2nd':
-                    $semesterLabel = 'Second';
-                    break;
-                case 'Summer':
-                    $semesterLabel = 'Summer';
-                    break;
-            }
-        }
-    @endphp
-    
-    // Set global variables for JavaScript to use
-    window.bannerUrl = "{{ asset('images/banner-header.png') }}";
-    window.academicPeriod = "{{ $activePeriod ? $activePeriod->academic_year : 'N/A' }}";
-    window.semester = "{{ $semesterLabel ?: 'N/A' }}";
-    window.subjectInfo = "{{ isset($selectedSubject) ? $selectedSubject->subject_code . ' - ' . $selectedSubject->subject_description : 'Course Outcome Results' }}";
-    window.courseCode = "{{ isset($selectedSubject) ? $selectedSubject->subject_code : 'N/A' }}";
-    window.subjectDescription = "{{ isset($selectedSubject) ? $selectedSubject->subject_description : 'N/A' }}";
-    window.units = "{{ isset($selectedSubject) && $selectedSubject->units ? $selectedSubject->units : 'N/A' }}";
-    window.courseSection = "{{ isset($selectedSubject) && $selectedSubject->course ? $selectedSubject->course->course_code : 'N/A' }}";
-    
-    // Display type dropdown functionality
-    function setDisplayType(value, icon, text) {
-        // Update the dropdown button display
-        document.getElementById('currentIcon').textContent = icon;
-        document.getElementById('currentText').textContent = text;
-        
-        // Update the hidden select element
-        document.getElementById('scoreType').value = value;
-        
-        // Remove active class from all dropdown items
-        document.querySelectorAll('#displayTypeDropdown + .dropdown-menu .dropdown-item').forEach(item => {
-            item.classList.remove('active');
-        });
-        
-        // Add active class to the clicked item
-        event.target.closest('.dropdown-item').classList.add('active');
-        
-        // Trigger the original toggle function
-        toggleScoreType();
-        
-        // Close the dropdown
-        const dropdownElement = document.getElementById('displayTypeDropdown');
-        const dropdown = bootstrap.Dropdown.getInstance(dropdownElement);
-        if (dropdown) {
-            dropdown.hide();
-        }
-    }
 </script>
-
 {{-- Print Options Modal --}}
 <div class="modal fade" id="printOptionsModal" tabindex="-1" aria-labelledby="printOptionsModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">

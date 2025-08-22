@@ -9,13 +9,21 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="d-flex justify-content-between align-items-center mb-6">
-        <h1 class="text-2xl font-bold">
-            <i class="bi bi-person-badge text-success me-2"></i>
-            Assign Subjects to Instructors
-        </h1>
-
+<div class="container-fluid px-4 py-4">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="h3 fw-semibold text-gray-800 mb-0">
+                <i class="bi bi-person-badge me-2"></i>
+                Assign Subjects to Instructors
+            </h1>
+            <nav aria-label="breadcrumb" class="mt-2">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Assign GE Subjects</li>
+                </ol>
+            </nav>
+        </div>
         <!-- View Mode Switcher -->
         <div class="d-flex align-items-center">
             <label for="viewMode" class="me-2 fw-semibold">View Mode:</label>
@@ -27,11 +35,23 @@
     </div>
 
     @if (session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            <div>
+                {{ session('success') }}
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     @endif
 
     @if (session('error'))
-        <div class="alert alert-danger">{{ session('error') }}</div>
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <div>
+                {{ session('error') }}
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
     @endif
 
     <!-- YEAR VIEW (Tabbed) -->
@@ -63,9 +83,11 @@
                      id="level-{{ $level }}"
                      role="tabpanel"
                      aria-labelledby="year-level-{{ $level }}">
-                    <div class="bg-white shadow rounded-4 overflow-x-auto mt-3">
+                    <div class="card border-0 shadow-sm rounded-4 mt-3">
+                        <div class="card-body p-0">
                         @if ($subjectsByYear->isNotEmpty())
-                            <table class="table table-bordered align-middle mb-0">
+                            <div class="table-responsive">
+                                <table class="table table-bordered align-middle mb-0">
                                 <thead class="table-success">
                                     <tr>
                                         <th>Subject Code</th>
@@ -89,7 +111,9 @@
                                             <td class="text-nowrap">
                                                 <div class="d-flex">
                                                     <button class="btn btn-sm btn-success me-2" 
-                                                            onclick="openConfirmAssignModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#confirmAssignModal"
+                                                            onclick="prepareAssignModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')"
                                                             title="Assign new instructor">
                                                         <i class="bi bi-person-plus"></i> Assign
                                                     </button>
@@ -106,11 +130,13 @@
                                     @endforeach
                                 </tbody>
                             </table>
+                            </div>
                         @else
-                        <div class="bg-warning bg-opacity-25 text-warning border border-warning px-4 py-3 rounded-4 shadow-sm">
-                            No subjects available for {{ ordinalSuffix($level) }} Year.
-                        </div>
+                            <div class="alert alert-warning m-3">
+                                No subjects available for {{ ordinalSuffix($level) }} Year.
+                            </div>
                         @endif
+                        </div>
                     </div>
                 </div>
             @endfor
@@ -163,7 +189,9 @@
                                                     <td class="text-center">
                                                         <div class="d-flex gap-2 justify-content-center">
                                                             <button
-                                                                onclick="openConfirmAssignModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}')"
+                                                                data-bs-toggle="modal"
+                                                                data-bs-target="#confirmAssignModal"
+                                                                onclick="prepareAssignModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}')"
                                                                 class="btn btn-success btn-sm" 
                                                                 title="Assign Instructor">
                                                                 <i class="bi bi-person-plus me-1"></i> Assign
@@ -199,128 +227,93 @@
     </div>
 </div>
 
-{{-- Confirm Unassign Modal --}}
-<div id="confirmUnassignModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white w-full max-w-lg rounded-4 shadow-lg overflow-hidden flex flex-col">
-        <div class="bg-danger text-white px-4 py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i> Confirm Unassign
-            </h5>
-            <button onclick="closeConfirmUnassignModal()" class="btn-close btn-close-white" aria-label="Close"></button>
-        </div>
-        <div class="p-4">
-            <p>Are you sure you want to unassign this subject? This action cannot be undone.</p>
-            <form id="unassignForm">
-                @csrf
-                @method('POST')
-                <input type="hidden" name="subject_id" id="unassign_subject_id">
-                <div class="text-end mt-3">
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-x-circle me-1"></i> Unassign
-                    </button>
-                    <button type="button" class="btn btn-secondary" onclick="closeConfirmUnassignModal()">
-                        Cancel
-                    </button>
-                </div>
-            </form>
-            
-            <script>
-                document.getElementById('unassignForm').addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const subjectId = document.getElementById('unassign_subject_id').value;
-                    
-                    fetch('{{ route('gecoordinator.unassignInstructor') }}', {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            subject_id: subjectId,
-                            _token: '{{ csrf_token() }}'
-                        })
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            return response.json().then(err => { throw err; });
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            alert('Error: ' + (data.message || 'Failed to unassign subject'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error: ' + (error.message || 'Failed to unassign subject'));
-                    });
-                });
-            </script>
-        </div>
-    </div>
-</div>
-
 {{-- Instructor List Modal --}}
-<div id="instructorListModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white w-full max-w-lg rounded-4 shadow-lg overflow-hidden flex flex-col">
-        <div class="bg-primary text-white px-4 py-3">
-                <h5 class="mb-0 fw-semibold text-center">
-                    <span id="instructorListModalTitle">
-                        <i class="bi bi-people-fill me-2"></i>
-                        <span id="instructorListSubjectName"></span>
-                    </span>
+<div class="modal fade" id="instructorListModal" tabindex="-1" aria-labelledby="instructorListModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="instructorListModalLabel">
+                    <span id="instructorListModalTitle">Instructors</span>
+                    <span id="instructorListSubjectName" class="text-light opacity-75 ms-2"></span>
                 </h5>
-        </div>
-        <div class="p-4">
-            <p class="mb-3">Subject: <span id="instructorListSubjectName" class="fw-semibold"></span></p>
-            <div id="instructorList" class="mb-3">
-                <!-- Instructor list will be loaded here -->
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="text-end">
-                <button type="button" class="btn btn-secondary" onclick="closeInstructorListModal()">
-                    Close
-                </button>
+            <div class="modal-body">
+                <div id="instructorList">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
         </div>
     </div>
 </div>
 
 {{-- Confirm Assign Modal --}}
-<div id="confirmAssignModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white w-full max-w-lg rounded-4 shadow-lg overflow-hidden flex flex-col">
-        <div class="bg-success text-white px-4 py-3 d-flex justify-content-between align-items-center">
-            <h5 class="mb-0 fw-semibold">
-                <i class="bi bi-check-circle-fill me-2"></i> Assign Instructor
-            </h5>
-            <button type="button" onclick="closeConfirmAssignModal()" class="btn-close btn-close-white" aria-label="Close"></button>
+<div class="modal fade" id="confirmAssignModal" tabindex="-1" aria-labelledby="confirmAssignModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 shadow">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="confirmAssignModalLabel">
+                    <i class="bi bi-check-circle-fill me-2"></i> Assign Instructor
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Assigning instructor to: <span id="assignSubjectName" class="fw-semibold"></span></p>
+                <form id="assignInstructorForm" class="vstack gap-3">
+                    @csrf
+                    <input type="hidden" name="subject_id" id="assign_subject_id">
+                    <div>
+                        <label for="instructor_select" class="form-label">Select Instructor</label>
+                        <select id="instructor_select" name="instructor_id" class="form-select" required>
+                            <option value="">-- Choose Instructor --</option>
+                            @foreach ($instructors as $instructor)
+                                <option value="{{ $instructor->id }}">{{ $instructor->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-check-lg me-1"></i> Assign
+                        </button>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer bg-light d-none">
+                <!-- Buttons moved inside form -->
+            </div>
         </div>
-        <div class="p-4">
-            <p>Assigning instructor to: <span id="assignSubjectName" class="fw-semibold"></span></p>
-            <form id="assignInstructorForm" class="vstack gap-3">
-                @csrf
-                <input type="hidden" name="subject_id" id="assign_subject_id">
-                <div>
-                    <label for="instructor_select" class="form-label">Select Instructor</label>
-                    <select id="instructor_select" name="instructor_id" class="form-select" required>
-                        <option value="">-- Choose Instructor --</option>
-                        @foreach ($instructors as $instructor)
-                            <option value="{{ $instructor->id }}">{{ $instructor->name }}</option>
-                        @endforeach
-                    </select>
+    </div>
+</div>
+
+<!-- Confirm Unassign Modal -->
+<div class="modal fade" id="confirmUnassignModal" tabindex="-1" aria-labelledby="confirmUnassignModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="confirmUnassignModalLabel">
+                    <i class="bi bi-exclamation-triangle me-2"></i> Confirm Unassign
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Are you sure you want to unassign <strong id="unassignInstructorName"></strong>?</p>
+                <div class="alert alert-warning d-flex align-items-center">
+                    <i class="bi bi-info-circle-fill me-2"></i>
+                    <div>This action cannot be undone.</div>
                 </div>
-                <div class="d-flex justify-content-end gap-2 mt-3">
-                    <button type="button" class="btn btn-outline-secondary" onclick="closeConfirmAssignModal()">
-                        Cancel
-                    </button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-lg me-1"></i> Assign
-                    </button>
-                </div>
-            </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-lg me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmUnassignBtn">
+                    <i class="bi bi-person-dash me-1"></i> Yes, unassign
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -329,6 +322,42 @@
 <script>
     let currentSubjectId = null;
     let currentModalMode = 'view'; // 'view' or 'unassign'
+    let currentUnassignInstructorId = null;
+    let currentUnassignInstructorName = null;
+
+    // Function to show Bootstrap notifications
+    function showNotification(type, message) {
+        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+        const iconClass = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+        
+        const alertHtml = `
+            <div class="alert ${alertClass} alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
+                <i class="bi ${iconClass} me-2"></i>
+                <div>${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        `;
+        
+        // Insert the alert at the top of the page content
+        const container = document.querySelector('.container-fluid');
+        if (container) {
+            const pageHeader = container.querySelector('.d-flex.justify-content-between.align-items-center.mb-5');
+            if (pageHeader) {
+                pageHeader.insertAdjacentHTML('afterend', alertHtml);
+            } else {
+                container.insertAdjacentHTML('afterbegin', alertHtml);
+            }
+        }
+        
+        // Auto-dismiss the alert after 5 seconds
+        setTimeout(() => {
+            const alert = document.querySelector(`.alert.${alertClass}`);
+            if (alert) {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }
+        }, 5000);
+    }
 
     function openInstructorListModal(subjectId, subjectName, mode = 'view') {
         currentSubjectId = subjectId;
@@ -353,10 +382,9 @@
                 <p class="mt-2 mb-0">Loading instructors...</p>
             </div>`;
         
-        // Show the modal immediately while loading
-        const modal = document.getElementById('instructorListModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
+        // Show the modal using Bootstrap
+        const modal = new bootstrap.Modal(document.getElementById('instructorListModal'));
+        modal.show();
         
         // Fetch instructors for this subject
         fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
@@ -415,110 +443,127 @@
     }
     
     function closeInstructorListModal() {
-        const modal = document.getElementById('instructorListModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
+        const modal = bootstrap.Modal.getInstance(document.getElementById('instructorListModal'));
+        if (modal) {
+            modal.hide();
+        }
         currentSubjectId = null;
     }
     
     function confirmUnassignInstructor(instructorId, instructorName) {
-        Swal.fire({
-            title: 'Confirm Unassign',
-            text: `Are you sure you want to unassign ${instructorName}?`,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#6c757d',
-            confirmButtonText: 'Yes, unassign',
-            cancelButtonText: 'Cancel',
-            reverseButtons: true,
-            showLoaderOnConfirm: true,
-            preConfirm: () => {
-                return fetch('{{ route("gecoordinator.unassignInstructor") }}', {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        subject_id: currentSubjectId,
-                        instructor_id: instructorId
-                    })
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => {
-                            throw new Error(err.message || 'Failed to unassign instructor');
-                        });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (!data.success) {
-                        throw new Error(data.message || 'Failed to unassign instructor');
-                    }
-                    return data;
-                });
-            },
-            allowOutsideClick: () => !Swal.isLoading()
-        })
-        .then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Success!',
-                    text: 'Instructor has been unassigned successfully.',
-                    icon: 'success',
-                    timer: 2000,
-                    timerProgressBar: true,
-                    showConfirmButton: false
-                }).then(() => {
-                    window.location.reload();
-                });
+        // Store the instructor data
+        currentUnassignInstructorId = instructorId;
+        currentUnassignInstructorName = instructorName;
+        
+        // Update modal content
+        document.getElementById('unassignInstructorName').textContent = instructorName;
+        
+        // Show the confirmation modal
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmUnassignModal'));
+        confirmModal.show();
+    }
+    
+    // Handle the confirm unassign button click
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('confirmUnassignBtn').addEventListener('click', function() {
+            if (!currentUnassignInstructorId || !currentSubjectId) {
+                showNotification('error', 'Missing instructor or subject information');
+                return;
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            Swal.fire({
-                title: 'Error!',
-                text: error.message || 'Failed to unassign instructor',
-                icon: 'error',
-                confirmButtonText: 'OK'
-            }).then(() => {
+            
+            // Disable the button to prevent double clicks
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+            
+            // Hide the confirmation modal
+            const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmUnassignModal'));
+            confirmModal.hide();
+            
+            // Perform the unassign operation
+            fetch('{{ route("gecoordinator.unassignInstructor") }}', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    subject_id: currentSubjectId,
+                    instructor_id: currentUnassignInstructorId
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.message || 'Failed to unassign instructor');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to unassign instructor');
+                }
+                showNotification('success', 'Instructor has been unassigned successfully.');
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('error', error.message || 'Failed to unassign instructor');
                 // Reload the instructor list
-                openInstructorListModal(currentSubjectId, document.getElementById('instructorListSubjectName').textContent);
+                setTimeout(() => {
+                    openInstructorListModal(currentSubjectId, document.getElementById('instructorListSubjectName').textContent);
+                }, 1000);
+            })
+            .finally(() => {
+                // Re-enable the button
+                this.disabled = false;
+                this.innerHTML = '<i class="bi bi-person-dash me-1"></i> Yes, unassign';
             });
         });
-    }
+    });
 
-    function openConfirmAssignModal(subjectId, subjectName) {
+    function prepareAssignModal(subjectId, subjectName) {
+        console.log('prepareAssignModal called with:', subjectId, subjectName);
         currentSubjectId = subjectId;
         document.getElementById('assignSubjectName').textContent = subjectName;
-        const modal = document.getElementById('confirmAssignModal');
-        modal.classList.remove('hidden');
-        modal.classList.add('flex');
-        document.getElementById('assignInstructorForm').action = `/gecoordinator/subjects/${subjectId}/assign`;
+        document.getElementById('assign_subject_id').value = subjectId;
         
         // Reset the select first
         const select = document.getElementById('instructor_select');
+        console.log('Select element found:', select);
         const defaultOption = select.options[0];
         select.innerHTML = '';
         select.appendChild(defaultOption);
         
         // Show loading state
         const submitBtn = document.querySelector('#assignInstructorForm button[type="submit"]');
-        submitBtn.disabled = true;
+        console.log('Submit button found:', submitBtn);
+        if (submitBtn) {
+            submitBtn.disabled = true;
+        }
         select.disabled = true;
         
+        console.log('Fetching instructors...');
         // Fetch all instructors
         fetch('/gecoordinator/available-instructors')
-            .then(response => response.json())
+            .then(response => {
+                console.log('Available instructors response:', response.status);
+                return response.json();
+            })
             .then(instructors => {
+                console.log('Available instructors:', instructors);
                 // Fetch assigned instructors for this subject
                 return fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Assigned instructors response:', response.status);
+                        return response.json();
+                    })
                     .then(assignedInstructors => {
+                        console.log('Assigned instructors:', assignedInstructors);
                         const assignedIds = assignedInstructors.map(i => i.id);
                         
                         // Add available instructors to select
@@ -529,10 +574,14 @@
                             }
                         });
                         
+                        console.log('Final select options count:', select.options.length);
+                        
                         // Enable controls if there are available instructors
                         if (select.options.length > 1) {
                             select.disabled = false;
-                            submitBtn.disabled = false;
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                            }
                         } else {
                             const option = new Option('No available instructors', '');
                             option.disabled = true;
@@ -543,15 +592,9 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Error loading instructors. Please try again.');
-                closeConfirmAssignModal();
+                showNotification('error', 'Error loading instructors. Please try again.');
+                // Bootstrap modal will handle closing automatically
             });
-    }
-
-    function closeConfirmAssignModal() {
-        const modal = document.getElementById('confirmAssignModal');
-        modal.classList.add('hidden');
-        modal.classList.remove('flex');
     }
     
     // Handle form submission for assigning instructors
@@ -560,17 +603,21 @@
         if (form) {
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
+                console.log('Form submission triggered');
                 
+                // Find the submit button inside the form
                 const submitButton = form.querySelector('button[type="submit"]');
-                const originalButtonText = submitButton.innerHTML;
+                const originalButtonText = submitButton ? submitButton.innerHTML : '';
+                console.log('Submit button found:', submitButton);
                 
                 // Show loading state
-                submitButton.disabled = true;
+                if (submitButton) {
+                    submitButton.disabled = true;
+                    submitButton.innerHTML = '<i class="spinner-border spinner-border-sm me-1"></i> Assigning...';
+                }
                 
                 // Get the form data
                 const formData = new FormData(form);
-                // Add the subject_id to the form data
-                formData.append('subject_id', currentSubjectId);
                 
                 // Send the request
                 fetch('{{ route("gecoordinator.assignInstructor") }}', {
@@ -590,44 +637,35 @@
                 })
                 .then(data => {
                     if (data.success) {
-                        // Close the modal
-                        closeConfirmAssignModal();
+                        // Close the modal using Bootstrap
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmAssignModal'));
+                        if (modal) {
+                            modal.hide();
+                        }
                         
-                        // Show success message
-                        return Swal.fire({
-                            title: 'Success!',
-                            text: 'Instructor has been assigned successfully.',
-                            icon: 'success',
-                            timer: 2000,
-                            timerProgressBar: true,
-                            showConfirmButton: false
-                        }).then(() => {
-                            // Refresh the page to update the instructor lists
+                        // Show success message using Bootstrap alert
+                        showNotification('success', data.message || 'Instructor assigned successfully!');
+                        
+                        // Refresh the page after a short delay to update the instructor lists
+                        setTimeout(() => {
                             window.location.reload();
-                        });
+                        }, 1500);
                     } else {
                         throw new Error(data.message || 'Failed to assign instructor');
                     }
                 })
-                .then(() => {
-                    // Reload the page after success
-                    window.location.reload();
-                })
                 .catch(error => {
                     console.error('Error:', error);
                     
-                    // Show error message
-                    Swal.fire({
-                        title: 'Error!',
-                        text: error.message || 'Failed to assign instructor',
-                        icon: 'error',
-                        confirmButtonText: 'OK'
-                    });
+                    // Show error message using Bootstrap alert
+                    showNotification('error', error.message || 'Failed to assign instructor');
                 })
                 .finally(() => {
                     // Restore button state
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = originalButtonText;
+                    if (submitButton) {
+                        submitButton.disabled = false;
+                        submitButton.innerHTML = originalButtonText;
+                    }
                 });
             });
         }
@@ -660,13 +698,6 @@
     .btn-outline-success:hover, .btn-outline-danger:hover {
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    }
-    .table-success {
-        background-color: #198754 !important;
-    }
-    .table-success th {
-        color: white;
-        font-weight: 500;
     }
 </style>
 @endpush

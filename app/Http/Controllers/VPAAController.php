@@ -77,7 +77,7 @@ class VPAAController extends Controller
             ->leftJoin('students', 'course_outcome_attainments.student_id', '=', 'students.id')
             ->leftJoin('courses', 'students.course_id', '=', 'courses.id')
             ->leftJoin('departments', 'courses.department_id', '=', 'departments.id')
-            ->leftJoin('course_outcomes', 'course_outcome_attainments.co_id', '=', 'course_outcomes.id');
+            ->leftJoin('course_outcomes', 'course_outcome_attainments.course_outcome_id', '=', 'course_outcomes.id');
             
         // Apply filters
         if ($selectedDepartmentId) {
@@ -98,11 +98,11 @@ class VPAAController extends Controller
         // First pass: collect all unique course outcomes across all courses
         foreach ($attainmentData as $item) {
             $courseKey = $item->course_code ?? 'Unknown';
-            $outcomeKey = $item->co_id;
-            
+            $outcomeKey = $item->course_outcome_id;
+
             if (!isset($courseOutcomes[$courseKey][$outcomeKey])) {
                 $courseOutcomes[$courseKey][$outcomeKey] = (object)[
-                    'id' => $item->co_id,
+                    'id' => $item->course_outcome_id,
                     'co_code' => $item->co_code,
                     'description' => $item->co_description
                 ];
@@ -133,7 +133,7 @@ class VPAAController extends Controller
             }
             
             // Add the outcome data for this student
-            $organizedData[$courseKey]['students'][$studentId]['outcomes'][$item->co_id] = (object)[
+            $organizedData[$courseKey]['students'][$studentId]['outcomes'][$item->course_outcome_id] = (object)[
                 'id' => $item->id,
                 'score' => $item->score,
                 'max' => $item->max,

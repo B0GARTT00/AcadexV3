@@ -75,14 +75,27 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group" role="group">
-                                            <button type="button"
-                                                class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1"
-                                                data-bs-toggle="modal"
-                                                data-bs-target="#requestGEAssignmentModal"
-                                                data-instructor-id="{{ $instructor->id }}"
-                                                data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
-                                                <i class="bi bi-journal-plus"></i> Request GE
-                                            </button>
+                                            @php
+                                                $hasRequest = $geRequests->has($instructor->id);
+                                            @endphp
+                                            
+                                            @if($hasRequest)
+                                                <button type="button"
+                                                    class="btn btn-secondary btn-sm d-inline-flex align-items-center gap-1"
+                                                    disabled>
+                                                    <i class="bi bi-check-circle"></i> Requested GE
+                                                </button>
+                                            @else
+                                                <button type="button"
+                                                    class="btn btn-warning btn-sm d-inline-flex align-items-center gap-1"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#requestGEAssignmentModal"
+                                                    data-instructor-id="{{ $instructor->id }}"
+                                                    data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                                    <i class="bi bi-journal-plus"></i> Request GE
+                                                </button>
+                                            @endif
+                                            
                                             <button type="button"
                                                 class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1"
                                                 data-bs-toggle="modal"
