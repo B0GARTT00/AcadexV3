@@ -8,20 +8,8 @@ use Illuminate\Support\Facades\DB;
 return new class extends Migration {
     public function up(): void
     {
-        // Drop foreign key constraint on co_id if it exists
-        DB::statement('ALTER TABLE course_outcome_attainments DROP FOREIGN KEY course_outcome_attainments_co_id_foreign');
-        // Drop co_id column if it exists
-        if (Schema::hasColumn('course_outcome_attainments', 'co_id')) {
-            Schema::table('course_outcome_attainments', function (Blueprint $table) {
-                $table->dropColumn('co_id');
-            });
-        }
-        // Add course_outcome_id column if it does not exist
-        if (!Schema::hasColumn('course_outcome_attainments', 'course_outcome_id')) {
-            Schema::table('course_outcome_attainments', function (Blueprint $table) {
-                $table->unsignedBigInteger('course_outcome_id')->after('subject_id');
-            });
-        }
+        // This migration is handled by 2025_08_21_000002_add_subject_id_to_course_outcome_attainments_table
+        // Do nothing to avoid conflicts
     }
 
     public function down(): void

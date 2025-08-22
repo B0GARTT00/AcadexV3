@@ -8,14 +8,20 @@ return new class extends Migration {
     public function up(): void
     {
         Schema::table('course_outcome_attainments', function (Blueprint $table) {
-            $table->string('term')->after('student_id');
+            // Check if the column doesn't already exist before adding it
+            if (!Schema::hasColumn('course_outcome_attainments', 'term')) {
+                $table->string('term')->after('student_id');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::table('course_outcome_attainments', function (Blueprint $table) {
-            $table->dropColumn('term');
+            // Only drop the column if it exists
+            if (Schema::hasColumn('course_outcome_attainments', 'term')) {
+                $table->dropColumn('term');
+            }
         });
     }
 };

@@ -7,15 +7,8 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        Schema::table('course_outcome_attainments', function (Blueprint $table) {
-            if (!Schema::hasColumn('course_outcome_attainments', 'course_outcome_id')) {
-                $table->unsignedBigInteger('course_outcome_id')->after('subject_id');
-            }
-            if (Schema::hasColumn('course_outcome_attainments', 'co_id')) {
-                $table->dropForeign(['co_id']);
-                $table->dropColumn('co_id');
-            }
-        });
+        // This migration is handled by 2025_08_21_000002_add_subject_id_to_course_outcome_attainments_table
+        // Do nothing to avoid conflicts
     }
 
     public function down(): void
