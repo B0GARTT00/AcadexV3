@@ -606,15 +606,22 @@
                                             </td>
                                             <td>
                                                 @php $completion = 100 - $incomplete['percentage_incomplete']; @endphp
-                                                <div class="progress" style="height: 20px; width: 100px;">
-                                                    <div class="progress-bar bg-{{ $completion >= 80 ? 'success' : ($completion >= 50 ? 'warning' : 'danger') }}" 
-                                                         role="progressbar" 
-                                                         style="width: {{ $completion }}%"
-                                                         aria-valuenow="{{ $completion }}" 
-                                                         aria-valuemin="0" 
-                                                         aria-valuemax="100">
-                                                        <small class="fw-bold">{{ $completion }}%</small>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div class="progress" style="height: 20px; width: 80px;">
+                                                        <div class="progress-bar bg-{{ $completion >= 80 ? 'success' : ($completion >= 50 ? 'warning' : 'danger') }}" 
+                                                             role="progressbar" 
+                                                             style="width: {{ max($completion, 5) }}%"
+                                                             aria-valuenow="{{ $completion }}" 
+                                                             aria-valuemin="0" 
+                                                             aria-valuemax="100">
+                                                            @if($completion >= 15)
+                                                                <small class="fw-bold text-white">{{ round($completion, 1) }}%</small>
+                                                            @endif
+                                                        </div>
                                                     </div>
+                                                    @if($completion < 15)
+                                                        <small class="fw-bold text-{{ $completion >= 50 ? 'warning' : 'danger' }}">{{ round($completion, 1) }}%</small>
+                                                    @endif
                                                 </div>
                                             </td>
                                         </tr>

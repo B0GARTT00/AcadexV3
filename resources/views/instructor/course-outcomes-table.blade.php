@@ -78,8 +78,8 @@
         <div class="row mb-5">
             <div class="col-12">
                 <div class="card border-0 shadow-sm rounded-3">
-                    <div class="card-header bg-light border-0 py-3">
-                        <h5 class="fw-bold mb-0">Course Outcomes List</h5>
+                    <div class="card-header-custom card-header-primary">
+                        <i class="bi bi-table me-2"></i>Course Outcomes List
                     </div>
                     <div class="card-body p-0 course-outcomes-table-container">
                         @if($cos->count() > 0)
@@ -94,7 +94,8 @@
                                                 <i class="bi bi-tag me-2"></i>Identifier
                                             </th>
                                             <th class="border-0 py-3 fw-semibold">
-                                                <i class="bi bi-file-text me-2"></i>Description
+                                                <i class="bi bi-file-text me-2"></i>Description 
+                                                <small class="text-muted fw-normal">(Double-click to edit)</small>
                                             </th>
                                             <th class="border-0 py-3 fw-semibold text-center">
                                                 <i class="bi bi-calendar-event me-2"></i>Academic Period
@@ -117,9 +118,25 @@
                                                     </div>
                                                 </td>
                                                 <td class="fw-semibold">{{ $co->co_identifier }}</td>
-                                                <td>
-                                                    <div class="text-truncate" style="max-width: 300px;" title="{{ $co->description }}">
-                                                        {{ $co->description }}
+                                                <td class="editable-cell" 
+                                                     data-co-id="{{ $co->id }}" 
+                                                     data-original-text="{{ $co->description }}"
+                                                     title="Double-click to edit description"
+                                                     ondblclick="makeEditable(this)">
+                                                    <div class="description-container">
+                                                        <div class="position-relative">
+                                                            @if(strlen($co->description) > 100)
+                                                                <span class="description-truncated">{{ substr($co->description, 0, 100) }}...</span>
+                                                                <span class="description-full" style="display: none;">{{ $co->description }}</span>
+                                                                <button type="button" class="expand-toggle" onclick="toggleDescription(this)">Show more</button>
+                                                            @else
+                                                                {{ $co->description }}
+                                                            @endif
+                                                            <div class="edit-indicator">
+                                                                <i class="bi bi-pencil-square"></i>
+                                                                <span class="edit-tooltip">Double-click to edit</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </td>
                                                 <td class="text-center">
@@ -384,65 +401,23 @@
 @endsection
 
 @push('scripts')
+<!-- Include external course outcomes table JavaScript -->
+<script src="{{ asset('js/course-outcomes-table.js') }}"></script>
+
+<!-- Pass PHP data to JavaScript -->
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Auto-generate CO Code and Identifier when modal is shown
-    const modal = document.getElementById('addCourseOutcomeModal');
-    if (modal) {
-        modal.addEventListener('show.bs.modal', function(e) {
-            generateNextCOCode();
-        });
-    }
+// Set subject code for JavaScript functions
+@if(isset($selectedSubject))
+    window.courseOutcomesData = {
+        subjectCode: '{{ $selectedSubject->subject_code }}'
+    };
+@endif
 
-    function generateNextCOCode() {
-        // Get subject code from the current subject selection
-        @if(isset($selectedSubject))
-            const subjectCode = '{{ $selectedSubject->subject_code }}';
-        @else
-            const subjectCode = '';
-        @endif
-        
-        // Get existing course outcomes from the table
-        const existingCOs = [];
-        const coRows = document.querySelectorAll('tbody tr');
-        
-        coRows.forEach(row => {
-            const coCodeCell = row.querySelector('td:first-child');
-            if (coCodeCell) {
-                const coCode = coCodeCell.textContent.trim();
-                // Extract number from CO code (e.g., "CO1" -> 1)
-                const match = coCode.match(/CO(\d+)/i);
-                if (match) {
-                    existingCOs.push(parseInt(match[1]));
-                }
-            }
-        });
-
-        // Determine next CO number
-        let nextCONumber = 1;
-        if (existingCOs.length > 0) {
-            const maxCO = Math.max(...existingCOs);
-            nextCONumber = maxCO + 1;
-        }
-
-        // Set the auto-generated values
-        const coCodeInput = document.getElementById('co_code');
-        const coIdentifierInput = document.getElementById('co_identifier');
-        
-        if (coCodeInput && coIdentifierInput) {
-            const newCOCode = `CO${nextCONumber}`;
-            const newIdentifier = subjectCode ? `${subjectCode}.${nextCONumber}` : `CO${nextCONumber}`;
-            
-            coCodeInput.value = newCOCode;
-            coIdentifierInput.value = newIdentifier;
-        }
-    }
-});
-
-// Edit Modal Functions
-function openEditModal(id, coCode, coIdentifier, description) {
+// Modal Functions (kept inline as they need Blade syntax)
+function openEditModal(id, coCode, identifier, description) {
+    // Populate the form fields
     document.getElementById('edit_co_code').value = coCode;
-    document.getElementById('edit_co_identifier').value = coIdentifier;
+    document.getElementById('edit_co_identifier').value = identifier;
     document.getElementById('edit_description').value = description;
     
     // Set the form action URL
@@ -453,7 +428,6 @@ function openEditModal(id, coCode, coIdentifier, description) {
     editModal.show();
 }
 
-// Delete Modal Functions
 function openDeleteModal(id, coCode) {
     document.getElementById('delete_co_code').textContent = coCode;
     
@@ -469,32 +443,170 @@ function openDeleteModal(id, coCode) {
 
 @push('styles')
 <style>
-.breadcrumb-item + .breadcrumb-item::before {
-    content: ">";
-    color: #6c757d;
-}
-
-.card {
-    transition: all 0.3s ease;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
-}
-
-.btn {
-    transition: all 0.3s ease;
-}
-
-.btn:hover {
-    transform: translateY(-1px);
-}
+/* Course Outcomes Table Styles */
 
 .table th {
     font-weight: 600;
     color: #495057;
 }
+
+/* Card Header Styling to match course outcome results */
+.card-header-custom {
+    background: linear-gradient(135deg, #198754, #0f5132);
+    color: white;
+    padding: 1rem 1.5rem;
+    border: none;
+    font-weight: 600;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    border-top-left-radius: 0.5rem;
+    border-top-right-radius: 0.5rem;
+}
+
+.card-header-primary {
+    background: linear-gradient(135deg, #198754, #0f5132);
+}
+
+.card-header-custom i {
+    font-size: 1.2rem;
+}
+
+.expand-toggle {
+    background: none;
+    border: none;
+    color: #198754;
+    font-size: 0.875rem;
+    padding: 0;
+    margin-left: 0.5rem;
+    text-decoration: underline;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.expand-toggle:hover {
+    color: #0f5132;
+}
+
+.description-text {
+    transition: all 0.3s ease;
+    word-wrap: break-word;
+    word-break: break-word;
+}
+
+.description-container {
+    line-height: 1.4;
+    position: relative;
+    cursor: pointer;
+    min-height: auto; /* Let it scale with content */
+}
+
+.description-container:hover {
+    background-color: rgba(25, 135, 84, 0.05);
+    border-radius: 4px;
+    padding: 2px 4px;
+    margin: -2px -4px;
+}
+
+.description-container:hover .edit-indicator {
+    opacity: 1;
+}
+
+.edit-indicator {
+    position: absolute;
+    top: 0;
+    right: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    background: rgba(25, 135, 84, 0.9);
+    color: white;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    pointer-events: none;
+    z-index: 10;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.edit-indicator i {
+    font-size: 0.7rem;
+}
+
+.edit-tooltip {
+    font-size: 0.7rem;
+    white-space: nowrap;
+}
+
+/* Validation styling for empty textarea */
+.textarea-error {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+    animation: shake 0.5s ease-in-out;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Enhanced toast styling */
+.toast-container .toast {
+    min-width: 300px;
+}
+
+.text-bg-warning {
+    background-color: #fff3cd !important;
+    color: #664d03 !important;
+    border: 1px solid #ffecb5 !important;
+}
+
+.text-warning-emphasis {
+    color: #997404 !important;
+}
+
+.table {
+    table-layout: fixed; /* Prevent column width changes */
+    /* Remove fixed min-height to prevent huge gaps */
+}
+
+.table td {
+    vertical-align: top;
+    word-wrap: break-word;
+    padding: 1rem 0.75rem; /* Consistent padding for uniform row height */
+    min-height: 80px; /* Ensure minimum row height consistency */
+}
+
+.table th {
+    padding: 1.25rem 1rem; /* Header padding */
+}
+
+.table tbody tr {
+    height: 80px; /* Fixed row height for consistency */
+}
+
+.course-outcomes-table-container {
+    /* Height will be set dynamically by JavaScript */
+    max-height: 600px; /* Maximum height limit */
+    height: auto; /* Allow natural scaling */
+}
+
+.course-outcomes-table-scroll {
+    /* Height will be set dynamically by JavaScript */
+    max-height: 550px; /* Maximum scroll area */
+    height: auto; /* Allow natural scaling */
+    overflow-y: auto; /* Enable scrolling when needed */
+}
+
+.table th:nth-child(1), .table td:nth-child(1) { width: 15%; } /* CO Code */
+.table th:nth-child(2), .table td:nth-child(2) { width: 12%; } /* Identifier */
+.table th:nth-child(3), .table td:nth-child(3) { width: 35%; } /* Description */
+.table th:nth-child(4), .table td:nth-child(4) { width: 15%; } /* Academic Period */
+.table th:nth-child(5), .table td:nth-child(5) { width: 10%; } /* Target % */
+.table th:nth-child(6), .table td:nth-child(6) { width: 13%; } /* Actions */
 
 .badge {
     font-size: 0.75rem;
@@ -579,6 +691,57 @@ function openDeleteModal(id, coCode) {
     .table-responsive {
         font-size: 0.875rem;
     }
+}
+
+/* Editable description styles */
+.editable-description {
+    transition: background-color 0.2s ease;
+    position: relative;
+}
+
+.editable-description:hover {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+.editable-description:hover::before {
+    content: "Double-click to edit";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    animation: fadeInTooltip 0.3s ease forwards;
+}
+
+.editable-description:hover::after {
+    content: "";
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(100%);
+    border: 4px solid transparent;
+    border-top-color: #333;
+    z-index: 1000;
+}
+
+@keyframes fadeInTooltip {
+    to {
+        opacity: 1;
+    }
+}
+
+/* Toast container positioning */
+.toast-container {
+    z-index: 1055 !important;
 }
 </style>
 @endpush
