@@ -466,10 +466,15 @@ class GECoordinatorController extends Controller
             abort(403);
         }
 
-        // GE Coordinator: students enrolled in General Education subjects
-        $students = Student::with(['course', 'department'])
+        // GE Coordinator: students enrolled in GE, PE, RS, NSTP subjects
+        $students = Student::with(['course', 'department', 'subjects.instructors'])
             ->whereHas('subjects', function($query) {
-                $query->where('course_id', 1);
+                $query->where(function($subQuery) {
+                    $subQuery->where('subject_code', 'LIKE', 'GE%')
+                             ->orWhere('subject_code', 'LIKE', 'PE%')
+                             ->orWhere('subject_code', 'LIKE', 'RS%')
+                             ->orWhere('subject_code', 'LIKE', 'NSTP%');
+                });
             })
             ->orderBy('last_name')
             ->orderBy('first_name')

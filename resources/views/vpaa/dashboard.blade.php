@@ -8,7 +8,7 @@
             <p class="text-muted mb-0">Oversee academic operations and institutional management</p>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <a href="{{ route('vpaa.departments') }}" class="btn btn-primary rounded-pill px-3 shadow-sm">
+            <a href="{{ route('vpaa.departments') }}" class="btn btn-success rounded-pill px-3 shadow-sm">
                 <i class="bi bi-building"></i> Manage Departments
             </a>
         </div>
