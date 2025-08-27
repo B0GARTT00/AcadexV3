@@ -27,7 +27,7 @@
                 <div class="col-md-4">
                     <div
                         class="subject-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden transform transition hover:scale-105 hover:shadow-xl"
-                        data-url="{{ route('instructor.course_outcomes.index', ['subject_id' => $subjectItem->id]) }}"
+                        data-url="{{ route($routePrefix . '.course_outcomes.index', ['subject_id' => $subjectItem->id]) }}"
                         style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;"
                     >
                         <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
@@ -88,10 +88,10 @@
                                             <span class="text-success">75%</span>
                                         </td>
                                         <td class="text-end">
-                                            <a href="{{ route('instructor.course_outcomes.edit', $co->id) }}" class="btn btn-success btn-sm">
+                                            <a href="{{ route($routePrefix . '.course_outcomes.edit', $co->id) }}" class="btn btn-success btn-sm">
                                                 <i class="bi bi-pencil-square"></i> Edit
                                             </a>
-                                            <form action="{{ route('instructor.course_outcomes.destroy', $co->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Are you sure you want to delete this course outcome?');">
+                                            <form action="{{ route($routePrefix . '.course_outcomes.destroy', $co->id) }}" method="POST" class="d-inline-block" onsubmit="return confirm('Are you sure you want to delete this course outcome?');">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-danger btn-sm">
@@ -121,7 +121,7 @@
 {{-- Add Course Outcome Modal --}}
 <div class="modal fade" id="addCourseOutcomeModal" tabindex="-1" aria-labelledby="addCourseOutcomeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form method="POST" action="{{ route('instructor.course_outcomes.store') }}">
+        <form method="POST" action="{{ route($routePrefix . '.course_outcomes.store') }}">
             @csrf
             <div class="modal-content shadow-sm border-0 rounded-3">
                 <div class="modal-header bg-success">

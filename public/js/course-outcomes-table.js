@@ -33,11 +33,35 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Determine next CO number
-        let nextCONumber = 1;
-        if (existingCOs.length > 0) {
-            const maxCO = Math.max(...existingCOs);
-            nextCONumber = maxCO + 1;
+        // Check if we've reached the 6 CO limit
+        if (existingCOs.length >= 6) {
+            alert('⚠️ Maximum Limit Reached\n\nThis subject already has 6 course outcomes, which is the maximum allowed.\n\nPlease delete an existing CO before adding a new one.');
+            
+            // Close the modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCourseOutcomeModal'));
+            if (modal) {
+                modal.hide();
+            }
+            return;
+        }
+
+        // Find the first missing CO number (1-6)
+        let nextCONumber = null;
+        for (let i = 1; i <= 6; i++) {
+            if (!existingCOs.includes(i)) {
+                nextCONumber = i;
+                break;
+            }
+        }
+
+        // If no missing number found (shouldn't happen due to limit check above)
+        if (nextCONumber === null) {
+            alert('⚠️ No Available CO Numbers\n\nAll CO positions (1-6) are occupied.');
+            const modal = bootstrap.Modal.getInstance(document.getElementById('addCourseOutcomeModal'));
+            if (modal) {
+                modal.hide();
+            }
+            return;
         }
 
         // Set the auto-generated values
@@ -50,6 +74,31 @@ document.addEventListener('DOMContentLoaded', function() {
             
             coCodeInput.value = newCOCode;
             coIdentifierInput.value = newIdentifier;
+            
+            // Show helpful message about CO assignment
+            const modalBody = document.querySelector('#addCourseOutcomeModal .modal-body');
+            let infoAlert = modalBody.querySelector('.co-info-alert');
+            
+            if (!infoAlert) {
+                infoAlert = document.createElement('div');
+                infoAlert.className = 'alert alert-info border-0 mb-3 co-info-alert';
+                infoAlert.style.background = 'rgba(13, 202, 240, 0.1)';
+                modalBody.insertBefore(infoAlert, modalBody.firstChild);
+            }
+            
+            const remainingSlots = 6 - existingCOs.length - 1; // -1 for the one being added
+            infoAlert.innerHTML = `
+                <div class="d-flex align-items-start">
+                    <i class="bi bi-info-circle text-info me-3 mt-1"></i>
+                    <div>
+                        <h6 class="text-info fw-bold mb-1">Course Outcome Assignment</h6>
+                        <p class="mb-0 small">
+                            <strong>Assigned:</strong> ${newCOCode} (${newIdentifier})<br>
+                            <strong>Available slots:</strong> ${remainingSlots} of 6 remaining
+                        </p>
+                    </div>
+                </div>
+            `;
         }
     }
 
@@ -87,13 +136,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Add double-click event listeners to editable descriptions
-        const editableDescriptions = document.querySelectorAll('.editable-description');
-        editableDescriptions.forEach(function(element) {
-            element.addEventListener('dblclick', function() {
-                makeEditable(element);
+        // Add double-click event listeners to editable descriptions (only for authorized users)
+        const userCanEdit = window.courseOutcomesData ? window.courseOutcomesData.userCanEdit : false;
+        
+        if (userCanEdit) {
+            const editableDescriptions = document.querySelectorAll('.editable-description');
+            editableDescriptions.forEach(function(element) {
+                element.addEventListener('dblclick', function() {
+                    makeEditable(element);
+                });
             });
-        });
+        }
     }
 });
 
@@ -133,6 +186,15 @@ function toggleDescription(button) {
 
 // Make description editable
 function makeEditable(element) {
+    // Check if user has permission to edit
+    const userCanEdit = window.courseOutcomesData ? window.courseOutcomesData.userCanEdit : false;
+    
+    if (!userCanEdit) {
+        // Show a toast message for unauthorized users
+        showWarningToast('Access Denied', 'Only Chairperson and GE Coordinator can edit course outcome descriptions.');
+        return;
+    }
+    
     const originalText = element.dataset.originalText;
     const coId = element.dataset.coId;
     const container = element.querySelector('.description-container');

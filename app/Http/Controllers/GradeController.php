@@ -37,17 +37,22 @@ class GradeController extends Controller
         // Get course outcomes for this subject
         $outcomes = \App\Models\CourseOutcomes::where('subject_id', $subjectId)
             ->where('is_deleted', false)
-            ->get();
+            ->get()
+            ->sortBy(function($co) {
+                // Extract the numeric part after the last space or dot for proper sorting
+                preg_match('/([\d\.]+)$/', $co->co_identifier, $matches);
+                return isset($matches[1]) ? floatval($matches[1]) : $co->co_identifier;
+            });
 
         $result = $outcomes->map(function($co) {
             return [
                 'id' => $co->id,
                 'code' => $co->co_code,
-                'name' => $co->co_identifier,
+                'identifier' => $co->co_identifier,
             ];
         });
         
-        return response()->json($result);
+        return response()->json($result->values());
     }
     use GradeCalculationTrait, ActivityManagementTrait;
 
@@ -119,7 +124,12 @@ class GradeController extends Controller
             // Get all course outcomes for this subject and term's academic period
             $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
                 ->where('is_deleted', false)
-                ->get();
+                ->get()
+                ->sortBy(function($co) {
+                    // Extract the numeric part after the last space or dot for proper sorting
+                    preg_match('/([\d\.]+)$/', $co->co_identifier, $matches);
+                    return isset($matches[1]) ? floatval($matches[1]) : $co->co_identifier;
+                });
                 
             foreach ($students as $student) {
                 $activityScores = $this->calculateActivityScores($activities, $student->id);
@@ -277,7 +287,12 @@ class GradeController extends Controller
         
         $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
             ->where('is_deleted', false)
-            ->get();
+            ->get()
+            ->sortBy(function($co) {
+                // Extract the numeric part after the last space or dot for proper sorting
+                preg_match('/([\d\.]+)$/', $co->co_identifier, $matches);
+                return isset($matches[1]) ? floatval($matches[1]) : $co->co_identifier;
+            });
             
         $scores = [];
         $termGrades = [];

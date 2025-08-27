@@ -43,9 +43,10 @@ class CourseOutcomeAttainmentController extends Controller
             // Get unique course outcome IDs and sort them properly
             $coIds = $activities->pluck('course_outcome_id')->unique()->toArray();
             
-            // Sort by getting the actual CourseOutcomes and ordering by co_code
+            // Sort by getting the actual CourseOutcomes and ordering by co_code (excluding soft-deleted)
             if (!empty($coIds)) {
                 $sortedCos = \App\Models\CourseOutcomes::whereIn('id', $coIds)
+                    ->where('is_deleted', false)
                     ->orderBy('co_code')
                     ->pluck('id')
                     ->toArray();
@@ -85,10 +86,21 @@ class CourseOutcomeAttainmentController extends Controller
             $coResults[$student->id] = $this->computeCoAttainment($studentScores[$student->id] ?? [], $activityCoMap);
         }
 
-        // Get CO details for columns
-        $coDetails = \App\Models\CourseOutcomes::whereIn('id', array_unique(array_merge(...array_values($coColumnsByTerm))))->get()->keyBy('id');
+        // Get CO details for columns (excluding soft-deleted ones)
+        $coDetails = \App\Models\CourseOutcomes::whereIn('id', array_unique(array_merge(...array_values($coColumnsByTerm))))
+            ->where('is_deleted', false)
+            ->get()
+            ->keyBy('id');
 
-        // Create properly sorted finalCOs for the combined table
+        // Filter out soft-deleted COs from coColumnsByTerm
+        foreach ($coColumnsByTerm as $term => $coIds) {
+            $coColumnsByTerm[$term] = array_filter($coIds, function($coId) use ($coDetails) {
+                return isset($coDetails[$coId]);
+            });
+            $coColumnsByTerm[$term] = array_values($coColumnsByTerm[$term]); // Reindex
+        }
+
+        // Create properly sorted finalCOs for the combined table (only non-deleted COs)
         $finalCOs = array_unique(array_merge(...array_values($coColumnsByTerm)));
         
         // Sort finalCOs by co_code numerically (CO1, CO2, CO3, CO4)
@@ -167,7 +179,6 @@ class CourseOutcomeAttainmentController extends Controller
 
     public function store(Request $request)
     {
-        \Log::info('CourseOutcomeAttainmentController@store called', ['request' => $request->all()]);
         $data = $request->validate([
             'student_id' => 'required|exists:students,id',
             'term' => 'required|string',
@@ -177,9 +188,7 @@ class CourseOutcomeAttainmentController extends Controller
             'max' => 'required|integer',
             'semester_total' => 'required|numeric',
         ]);
-        \Log::info('Validated data for CourseOutcomeAttainment', $data);
         $attainment = CourseOutcomeAttainment::create($data);
-        \Log::info('Created CourseOutcomeAttainment', ['attainment' => $attainment]);
         return response()->json(['status' => 'success', 'attainment' => $attainment]);
     }
 

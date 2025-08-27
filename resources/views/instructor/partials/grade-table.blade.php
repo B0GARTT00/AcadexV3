@@ -58,40 +58,36 @@
                                             placeholder="Items">
                                     </div>
                                     <div class="mt-2">
-                                        <input type="hidden" name="course_outcomes[{{ $activity->id }}]" value="{{ $activity->course_outcome_id }}" class="course-outcome-input" data-activity-id="{{ $activity->id }}">
-                                        <button type="button" 
-                                            class="btn btn-outline-success btn-sm course-outcome-selector w-100" 
+                                        <select name="course_outcomes[{{ $activity->id }}]" 
+                                            class="form-select form-select-sm course-outcome-select" 
                                             data-activity-id="{{ $activity->id }}"
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#courseOutcomeModal"
-                                            title="Click to select or change course outcome"
-                                            style="font-size: 0.8rem; padding: 0.25rem 0.5rem;">
-                                            <i class="bi bi-target me-1"></i>
-                                            <span class="course-outcome-display">
-                                                @if($activity->courseOutcome)
-                                                    {{ $activity->courseOutcome->co_code }}
-                                                @else
-                                                    Select CO
-                                                @endif
-                                            </span>
-                                        </button>
-                                        <div class="mt-1 text-muted small course-outcome-description">
-                                            @if($activity->courseOutcome)
-                                                @if($activity->courseOutcome->is_deleted)
-                                                    <div class="alert alert-warning py-1 px-2 mb-1 d-flex align-items-center" style="font-size: 0.75rem; border-radius: 4px;">
-                                                        <i class="bi bi-exclamation-triangle-fill me-1" style="font-size: 0.8rem;"></i>
-                                                        <div>
-                                                            <div><strong>{{ $activity->courseOutcome->co_code }}</strong>: {{ $activity->courseOutcome->co_identifier }}</div>
-                                                            <div class="text-danger small fw-bold">⚠️ This course outcome has been deleted</div>
-                                                        </div>
-                                                    </div>
-                                                @else
-                                                    <span><strong>{{ $activity->courseOutcome->co_code }}</strong>: {{ $activity->courseOutcome->co_identifier }}</span>
-                                                @endif
-                                            @else
-                                                <span>No Course Outcome Selected</span>
-                                            @endif
-                                        </div>
+                                            title="Select course outcome for this activity"
+                                            style="font-size: 0.8rem; border-color: #198754; color: #000;">
+                                            <option value="" 
+                                                {{ !$activity->course_outcome_id ? 'selected' : '' }} 
+                                                disabled>Select Course Outcome</option>
+                                            @foreach ($courseOutcomes->sortBy(function($co) {
+                                                // Extract the numeric part after the last space or dot
+                                                preg_match('/([\d\.]+)$/', $co->co_identifier, $matches);
+                                                return isset($matches[1]) ? floatval($matches[1]) : $co->co_identifier;
+                                            }) as $co)
+                                                <option value="{{ $co->id }}" 
+                                                    {{ $activity->course_outcome_id == $co->id ? 'selected' : '' }}
+                                                    @if($co->is_deleted)
+                                                        style="color: #ffc107; background-color: #fff8e1;"
+                                                    @else
+                                                        style="color: #000;"
+                                                    @endif>
+                                                    {{ $co->co_code }} - {{ $co->co_identifier }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @if($activity->courseOutcome && $activity->courseOutcome->is_deleted)
+                                            <div class="mt-1 alert alert-warning py-1 px-2 mb-0 d-flex align-items-center" style="font-size: 0.75rem; border-radius: 4px;">
+                                                <i class="bi bi-exclamation-triangle-fill me-1" style="font-size: 0.8rem;"></i>
+                                                <div class="text-danger small fw-bold">⚠️ Selected course outcome has been deleted</div>
+                                            </div>
+                                        @endif
                                     </div>
                                 </th>
                             @endforeach
@@ -197,65 +193,7 @@
     </div>
 @endif
 
-<!-- Course Outcome Selection Modal -->
-<div class="modal fade" id="courseOutcomeModal" tabindex="-1" aria-labelledby="courseOutcomeModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content">
-            <div class="modal-header text-white" style="background-color: #198754;">
-                <h5 class="modal-title" id="courseOutcomeModalLabel">
-                    <i class="bi bi-target me-2"></i>
-                    Select Course Outcome
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <div class="input-group">
-                        <span class="input-group-text">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" class="form-control" id="courseOutcomeSearch" placeholder="Search course outcomes...">
-                    </div>
-                </div>
-                
-                <div class="row" id="courseOutcomeGrid">
-                    @if($courseOutcomes->isEmpty())
-                        <div class="col-12">
-                            <div class="alert alert-info text-center">
-                                <i class="bi bi-info-circle me-2"></i>
-                                No course outcomes available for this subject.
-                                <br>
-                                <small class="text-muted">Please create course outcomes first.</small>
-                            </div>
-                        </div>
-                    @else
-                        @foreach ($courseOutcomes as $co)
-                            <div class="col-md-6 col-lg-4 mb-3 course-outcome-item" data-search="{{ strtolower($co->co_code . ' ' . $co->co_identifier . ' ' . $co->description) }}">
-                                <div class="card course-outcome-card h-100" data-co-id="{{ $co->id }}" data-co-code="{{ $co->co_code }}" data-co-identifier="{{ $co->co_identifier }}" data-co-description="{{ $co->description }}" style="cursor: pointer; transition: all 0.2s ease;">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="card-title mb-0 text-primary fw-bold">{{ $co->co_code }}</h6>
-                                            <span class="badge bg-secondary">{{ $co->co_identifier }}</span>
-                                        </div>
-                                        <p class="card-text small text-muted mb-0" style="line-height: 1.4;">
-                                            {{ Str::limit($co->description, 80) }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    @endif
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                    <i class="bi bi-x-lg me-1"></i>
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-</div>
+
 
 <!-- JavaScript for Client-Side Filtering -->
 <script>

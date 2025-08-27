@@ -457,7 +457,9 @@
                             <tr>
                                 <th class="text-start">📋 Analysis Metrics</th>
                                 @foreach($finalCOs as $coId)
-                                    <th>{{ $coDetails[$coId]['co_code'] ?? '' }}</th>
+                                    @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                        <th>{{ $coDetails[$coId]['co_code'] ?? '' }}</th>
+                                    @endif
                                 @endforeach
                             </tr>
                         </thead>
@@ -465,83 +467,91 @@
                             <tr style="background:#f8f9fa;">
                                 <td class="fw-bold text-dark text-start">👥 Students Attempted</td>
                                 @foreach($finalCOs as $coId)
-                                    @php
-                                        $attempted = 0;
-                                        foreach($students as $student) {
-                                            $raw = $coResults[$student->id]['semester_raw'][$coId] ?? null;
-                                            $max = $coResults[$student->id]['semester_max'][$coId] ?? null;
-                                            $percent = ($max > 0 && $raw !== null) ? ($raw / $max) * 100 : null;
-                                            if($percent !== null) $attempted++;
-                                        }
-                                    @endphp
-                                    <td class="fw-bold text-success">{{ $attempted }}</td>
+                                    @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                        @php
+                                            $attempted = 0;
+                                            foreach($students as $student) {
+                                                $raw = $coResults[$student->id]['semester_raw'][$coId] ?? null;
+                                                $max = $coResults[$student->id]['semester_max'][$coId] ?? null;
+                                                $percent = ($max > 0 && $raw !== null) ? ($raw / $max) * 100 : null;
+                                                if($percent !== null) $attempted++;
+                                            }
+                                        @endphp
+                                        <td class="fw-bold text-success">{{ $attempted }}</td>
+                                    @endif
                                 @endforeach
                             </tr>
                             <tr style="background:#fff;">
                                 <td class="fw-bold text-dark text-start">✅ Students Passed</td>
                                 @foreach($finalCOs as $coId)
-                                    @php
-                                        $threshold = 75; // Fixed threshold
-                                        $passed = 0;
-                                        foreach($students as $student) {
-                                            $raw = $coResults[$student->id]['semester_raw'][$coId] ?? null;
-                                            $max = $coResults[$student->id]['semester_max'][$coId] ?? null;
-                                            $percent = ($max > 0 && $raw !== null) ? ($raw / $max) * 100 : null;
-                                            if($percent !== null && $percent > $threshold) {
-                                                $passed++;
+                                    @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                        @php
+                                            $threshold = 75; // Fixed threshold
+                                            $passed = 0;
+                                            foreach($students as $student) {
+                                                $raw = $coResults[$student->id]['semester_raw'][$coId] ?? null;
+                                                $max = $coResults[$student->id]['semester_max'][$coId] ?? null;
+                                                $percent = ($max > 0 && $raw !== null) ? ($raw / $max) * 100 : null;
+                                                if($percent !== null && $percent > $threshold) {
+                                                    $passed++;
+                                                }
                                             }
-                                        }
-                                    @endphp
-                                    <td class="fw-bold text-success">{{ $passed }}</td>
+                                        @endphp
+                                        <td class="fw-bold text-success">{{ $passed }}</td>
+                                    @endif
                                 @endforeach
                             </tr>
                             <tr style="background:#f8f9fa;">
                                 <td class="fw-bold text-dark text-start">📊 Pass Percentage</td>
                                 @foreach($finalCOs as $coId)
-                                    @php
-                                        $threshold = 75; // Fixed threshold
-                                        $attempted = 0;
-                                        $passed = 0;
-                                        foreach($students as $student) {
-                                            $raw = $coResults[$student->id]['semester_raw'][$coId] ?? null;
-                                            $max = $coResults[$student->id]['semester_max'][$coId] ?? null;
-                                            $percent = ($max > 0 && $raw !== null) ? ($raw / $max) * 100 : null;
-                                            if($percent !== null) {
-                                                $attempted++;
-                                                if($percent > $threshold) $passed++;
+                                    @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                        @php
+                                            $threshold = 75; // Fixed threshold
+                                            $attempted = 0;
+                                            $passed = 0;
+                                            foreach($students as $student) {
+                                                $raw = $coResults[$student->id]['semester_raw'][$coId] ?? null;
+                                                $max = $coResults[$student->id]['semester_max'][$coId] ?? null;
+                                                $percent = ($max > 0 && $raw !== null) ? ($raw / $max) * 100 : null;
+                                                if($percent !== null) {
+                                                    $attempted++;
+                                                    if($percent > $threshold) $passed++;
+                                                }
                                             }
-                                        }
-                                        $percentPassed = $attempted > 0 ? round(($passed / $attempted) * 100, 2) : 0;
-                                        $textClass = $percentPassed >= 75 ? 'text-success' : 'text-danger';
-                                    @endphp
-                                    <td class="fw-bold {{ $textClass }}">{{ $percentPassed }}%</td>
+                                            $percentPassed = $attempted > 0 ? round(($passed / $attempted) * 100, 2) : 0;
+                                            $textClass = $percentPassed >= 75 ? 'text-success' : 'text-danger';
+                                        @endphp
+                                        <td class="fw-bold {{ $textClass }}">{{ $percentPassed }}%</td>
+                                    @endif
                                 @endforeach
                             </tr>
                             <tr style="background:#fff;">
                                 <td class="fw-bold text-dark text-start">❌ Failed Percentage</td>
                                 @foreach($finalCOs as $coId)
-                                    @php
-                                        $threshold = 75; // Fixed threshold
-                                        $attempted = 0;
-                                        $passed = 0;
-                                        foreach($students as $student) {
-                                            $raw = $coResults[$student->id]['semester_raw'][$coId] ?? null;
-                                            $max = $coResults[$student->id]['semester_max'][$coId] ?? null;
-                                            $percent = ($max > 0 && $raw !== null) ? ($raw / $max) * 100 : null;
-                                            if($percent !== null) {
-                                                $attempted++;
-                                                if($percent > $threshold) $passed++;
+                                    @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                        @php
+                                            $threshold = 75; // Fixed threshold
+                                            $attempted = 0;
+                                            $passed = 0;
+                                            foreach($students as $student) {
+                                                $raw = $coResults[$student->id]['semester_raw'][$coId] ?? null;
+                                                $max = $coResults[$student->id]['semester_max'][$coId] ?? null;
+                                                $percent = ($max > 0 && $raw !== null) ? ($raw / $max) * 100 : null;
+                                                if($percent !== null) {
+                                                    $attempted++;
+                                                    if($percent > $threshold) $passed++;
+                                                }
                                             }
-                                        }
-                                        $failed = $attempted - $passed;
-                                        $failedPercentage = $attempted > 0 ? round(($failed / $attempted) * 100, 1) : 0;
-                                        $textClass = $failedPercentage >= 75 ? 'text-danger' : 'text-success';
-                                    @endphp
-                                    <td>
-                                        <span class="fw-bold {{ $textClass }}">
-                                            {{ $failedPercentage }}%
-                                        </span>
-                                    </td>
+                                            $failed = $attempted - $passed;
+                                            $failedPercentage = $attempted > 0 ? round(($failed / $attempted) * 100, 1) : 0;
+                                            $textClass = $failedPercentage >= 75 ? 'text-danger' : 'text-success';
+                                        @endphp
+                                        <td>
+                                            <span class="fw-bold {{ $textClass }}">
+                                                {{ $failedPercentage }}%
+                                            </span>
+                                        </td>
+                                    @endif
                                 @endforeach
                             </tr>
                         </tbody>
@@ -682,21 +692,25 @@
                                 <i class="bi bi-person-fill me-1"></i>Students
                             </th>
                             @foreach($finalCOs as $coId)
-                                <th colspan="{{ count($terms) + 1 }}" class="text-center fw-semibold" style="font-size: 0.9rem;">
-                                    <i class="bi bi-mortarboard me-1"></i>{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}
-                                </th>
+                                @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                    <th colspan="{{ count($terms) + 1 }}" class="text-center fw-semibold" style="font-size: 0.9rem;">
+                                        <i class="bi bi-mortarboard me-1"></i>{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}
+                                    </th>
+                                @endif
                             @endforeach
                         </tr>
                         <tr>
                             @foreach($finalCOs as $coId)
-                                @foreach($terms as $term)
-                                    <th class="text-center fw-semibold" style="font-size: 0.8rem;">
-                                        <i class="bi bi-calendar-event me-1"></i>{{ ucfirst($term) }}
+                                @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                    @foreach($terms as $term)
+                                        <th class="text-center fw-semibold" style="font-size: 0.8rem;">
+                                            <i class="bi bi-calendar-event me-1"></i>{{ ucfirst($term) }}
+                                        </th>
+                                    @endforeach
+                                    <th class="text-center text-white fw-bold" style="font-size: 0.8rem; background: linear-gradient(135deg, #198754 0%, #0f5132 100%);">
+                                        <i class="bi bi-calculator me-1"></i>Total
                                     </th>
-                                @endforeach
-                                <th class="text-center text-white fw-bold" style="font-size: 0.8rem; background: linear-gradient(135deg, #198754 0%, #0f5132 100%);">
-                                    <i class="bi bi-calculator me-1"></i>Total
-                                </th>
+                                @endif
                             @endforeach
                         </tr>
                     </thead>
@@ -706,16 +720,17 @@
                                 <i class="bi bi-list-ol me-2"></i>Total number of items
                             </td>
                             @foreach($finalCOs as $coId)
-                                @foreach($terms as $term)
-                                    @php
-                                        // Check if this CO exists in this term
-                                        $coExistsInTerm = isset($coColumnsByTerm[$term]) && in_array($coId, $coColumnsByTerm[$term]);
-                                        
-                                        if ($coExistsInTerm) {
-                                            $max = 0;
-                                            foreach(\App\Models\Activity::where('term', $term)
-                                                ->where('course_outcome_id', $coId)
-                                                ->where('subject_id', $subjectId)
+                                @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                    @foreach($terms as $term)
+                                        @php
+                                            // Check if this CO exists in this term
+                                            $coExistsInTerm = isset($coColumnsByTerm[$term]) && in_array($coId, $coColumnsByTerm[$term]);
+                                            
+                                            if ($coExistsInTerm) {
+                                                $max = 0;
+                                                foreach(\App\Models\Activity::where('term', $term)
+                                                    ->where('course_outcome_id', $coId)
+                                                    ->where('subject_id', $subjectId)
                                                 ->get() as $activity) {
                                                 $max += $activity->number_of_items;
                                             }
@@ -744,6 +759,7 @@
                                         {{ $totalMax }}
                                     </span>
                                 </td>
+                                @endif
                             @endforeach
                         </tr>
                         @foreach($students as $student)
@@ -752,19 +768,20 @@
                                     <i class="bi bi-person-circle me-2 text-success"></i>{{ $student->getFullNameAttribute() }}
                                 </td>
                                 @foreach($finalCOs as $coId)
-                                    @foreach($terms as $term)
-                                        @php
-                                            // Check if this CO exists in this term
-                                            $coExistsInTerm = isset($coColumnsByTerm[$term]) && in_array($coId, $coColumnsByTerm[$term]);
-                                            
-                                            if ($coExistsInTerm) {
-                                                // Calculate raw score for this student, term, CO
-                                                $rawScore = 0;
-                                                $maxScore = 0;
-                                                foreach(\App\Models\Activity::where('term', $term)
-                                                    ->where('course_outcome_id', $coId)
-                                                    ->where('subject_id', $subjectId)
-                                                    ->get() as $activity) {
+                                    @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                        @foreach($terms as $term)
+                                            @php
+                                                // Check if this CO exists in this term
+                                                $coExistsInTerm = isset($coColumnsByTerm[$term]) && in_array($coId, $coColumnsByTerm[$term]);
+                                                
+                                                if ($coExistsInTerm) {
+                                                    // Calculate raw score for this student, term, CO
+                                                    $rawScore = 0;
+                                                    $maxScore = 0;
+                                                    foreach(\App\Models\Activity::where('term', $term)
+                                                        ->where('course_outcome_id', $coId)
+                                                        ->where('subject_id', $subjectId)
+                                                        ->get() as $activity) {
                                                     $score = \App\Models\Score::where('student_id', $student->id)
                                                         ->where('activity_id', $activity->id)
                                                         ->first();
@@ -794,6 +811,7 @@
                                             {{ $raw !== '' ? $raw : '-' }}
                                         </span>
                                     </td>
+                                    @endif
                                 @endforeach
                             </tr>
                         @endforeach
@@ -901,7 +919,9 @@
                         <tr>
                             <th class="text-start">👤 Students</th>
                             @foreach($finalCOs as $coId)
-                                <th class="text-center">{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}</th>
+                                @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                    <th class="text-center">{{ $coDetails[$coId]->co_code ?? 'CO'.$coId }}</th>
+                                @endif
                             @endforeach
                         </tr>
                     </thead>
@@ -910,17 +930,19 @@
                             <tr>
                                 <td>{{ $student->getFullNameAttribute() }}</td>
                                 @foreach($finalCOs as $coId)
-                                    @php
-                                        $raw = $coResults[$student->id]['semester_raw'][$coId] ?? 0;
-                                        $max = $coResults[$student->id]['semester_max'][$coId] ?? 0;
-                                        $percent = ($max > 0) ? ($raw / $max) * 100 : 0;
-                                        $threshold = 75; // Fixed threshold
-                                    @endphp
-                                    <td class="fw-bold text-{{ $percent >= $threshold ? 'success' : 'danger' }}">
-                                        {{ $percent >= $threshold ? 'Passed' : 'Failed' }}
-                                        <br>
-                                        <small>({{ ceil($percent) }}%)</small>
-                                    </td>
+                                    @if(isset($coDetails[$coId]) && empty($coDetails[$coId]->is_deleted))
+                                        @php
+                                            $raw = $coResults[$student->id]['semester_raw'][$coId] ?? 0;
+                                            $max = $coResults[$student->id]['semester_max'][$coId] ?? 0;
+                                            $percent = ($max > 0) ? ($raw / $max) * 100 : 0;
+                                            $threshold = 75; // Fixed threshold
+                                        @endphp
+                                        <td class="fw-bold text-{{ $percent >= $threshold ? 'success' : 'danger' }}">
+                                            {{ $percent >= $threshold ? 'Passed' : 'Failed' }}
+                                            <br>
+                                            <small>({{ ceil($percent) }}%)</small>
+                                        </td>
+                                    @endif
                                 @endforeach
                             </tr>
                         @endforeach
