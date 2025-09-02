@@ -84,6 +84,17 @@ Route::prefix('chairperson')
         Route::get('/grades', [ChairpersonController::class, 'viewGrades'])->name('viewGrades');
         Route::get('/students-by-year', [ChairpersonController::class, 'viewStudentsPerYear'])->name('studentsByYear');
 
+        // Course Outcomes - only Manage Course Outcome access for Chairperson
+        Route::resource('course_outcomes', CourseOutcomesController::class);
+        Route::patch('/course_outcomes/{courseOutcome}/description', [CourseOutcomesController::class, 'updateDescription'])
+            ->name('course_outcomes.update_description');
+        Route::post('/course_outcomes/generate', [CourseOutcomesController::class, 'generateCourseOutcomes'])
+            ->name('course_outcomes.generate');
+        Route::post('/course_outcomes/validate_password', [CourseOutcomesController::class, 'validatePassword'])
+            ->name('course_outcomes.validate_password');
+        // AJAX endpoint for course outcomes by subject and term (use GradeController)
+        Route::get('/course-outcomes', [GradeController::class, 'ajaxCourseOutcomes'])->name('course-outcomes.ajax');
+
         Route::get('/approvals', [AccountApprovalController::class, 'index'])->name('accounts.index');
         Route::post('/approvals/{id}/approve', [AccountApprovalController::class, 'approve'])->name('accounts.approve');
         Route::post('/approvals/{id}/reject', [AccountApprovalController::class, 'reject'])->name('accounts.reject');
@@ -113,6 +124,17 @@ Route::prefix('gecoordinator')
         
         Route::get('/students-by-year', [\App\Http\Controllers\GECoordinatorController::class, 'viewStudentsPerYear'])->name('studentsByYear');
         Route::get('/grades', [\App\Http\Controllers\GECoordinatorController::class, 'viewGrades'])->name('viewGrades');
+        
+        // Course Outcomes - GE Coordinator has same access as Chairperson
+        Route::resource('course_outcomes', CourseOutcomesController::class);
+        Route::patch('/course_outcomes/{courseOutcome}/description', [CourseOutcomesController::class, 'updateDescription'])
+            ->name('course_outcomes.update_description');
+        Route::post('/course_outcomes/generate', [CourseOutcomesController::class, 'generateCourseOutcomes'])
+            ->name('course_outcomes.generate');
+        Route::post('/course_outcomes/validate_password', [CourseOutcomesController::class, 'validatePassword'])
+            ->name('course_outcomes.validate_password');
+        // AJAX endpoint for course outcomes by subject and term (use GradeController)
+        Route::get('/course-outcomes', [GradeController::class, 'ajaxCourseOutcomes'])->name('course-outcomes.ajax');
         
         // Account Approval Routes
         Route::get('/approvals', [\App\Http\Controllers\GECoordinator\AccountApprovalController::class, 'index'])->name('accounts.index');

@@ -13,12 +13,12 @@
             return;
         }
 
-    const inputs = Array.from(tableBody.querySelectorAll('.grade-input') || []);
-    const itemsInputs = Array.from(document.querySelectorAll('.items-input') || []);
-    const courseOutcomeInputs = Array.from(document.querySelectorAll('.course-outcome-input') || []);
-    const saveButton = document.getElementById('saveGradesBtn');
-    const form = document.querySelector('form');
-    const studentSearch = document.getElementById('studentSearch');
+        const inputs = Array.from(tableBody.querySelectorAll('.grade-input') || []);
+        const itemsInputs = Array.from(document.querySelectorAll('.items-input') || []);
+        const courseOutcomeInputs = Array.from(document.querySelectorAll('.course-outcome-select') || []);
+        const saveButton = document.getElementById('saveGradesBtn');
+        const form = document.querySelector('form');
+        const studentSearch = document.getElementById('studentSearch');
 
         // Track changes
         const originalValues = new Map();
@@ -722,9 +722,9 @@
         // Initial state check
         updateSaveButtonState();
         
-        // Initialize course outcome modal
-        if (typeof initializeCourseOutcomeModal === 'function') {
-            initializeCourseOutcomeModal();
+        // Initialize course outcome dropdowns
+        if (typeof initializeCourseOutcomeDropdowns === 'function') {
+            initializeCourseOutcomeDropdowns();
         }
     }
 
@@ -733,9 +733,9 @@
         console.log("Grade script loaded");
         bindGradeInputEvents();
         
-        // Also initialize course outcome modal on initial load
-        if (typeof initializeCourseOutcomeModal === 'function') {
-            initializeCourseOutcomeModal();
+        // Also initialize course outcome dropdowns on initial load
+        if (typeof initializeCourseOutcomeDropdowns === 'function') {
+            initializeCourseOutcomeDropdowns();
         }
     });
 
@@ -898,238 +898,58 @@
     // Export for external use
     window.bindGradeInputEvents = bindGradeInputEvents;
 
-    // Course Outcome Modal JavaScript
-    function initializeCourseOutcomeModal() {
-        console.log('Initializing course outcome modal...');
+    // Course Outcome Dropdown JavaScript
+    function initializeCourseOutcomeDropdowns() {
+        console.log('Initializing course outcome dropdowns...');
         
-        // Find all elements
-        const modal = document.getElementById('courseOutcomeModal');
-        const searchInput = document.getElementById('courseOutcomeSearch');
-        const buttons = document.querySelectorAll('.course-outcome-selector');
-        const cards = document.querySelectorAll('.course-outcome-card');
+        // Find all dropdown elements
+        const dropdowns = document.querySelectorAll('.course-outcome-select');
         
-        console.log('Modal found:', !!modal);
-        console.log('Search input found:', !!searchInput);
-        console.log('Buttons found:', buttons.length);
-        console.log('Cards found:', cards.length);
+        console.log('Dropdowns found:', dropdowns.length);
         
-        // Add click handlers
-        let currentActivityId = null;
-        
-        // Remove any existing event listeners to prevent duplicates
-        const existingButtons = document.querySelectorAll('.course-outcome-selector[data-listener="true"]');
-        existingButtons.forEach(button => {
-            button.removeAttribute('data-listener');
-            button.replaceWith(button.cloneNode(true));
-        });
-        
-        const existingCards = document.querySelectorAll('.course-outcome-card[data-listener="true"]');
-        existingCards.forEach(card => {
-            card.removeAttribute('data-listener');
-            card.replaceWith(card.cloneNode(true));
-        });
-        
-        // Re-query after potential replacements
-        const freshButtons = document.querySelectorAll('.course-outcome-selector');
-        const freshCards = document.querySelectorAll('.course-outcome-card');
-        
-        // Button click handlers
-        freshButtons.forEach(function(button) {
-            button.setAttribute('data-listener', 'true');
-            button.addEventListener('click', function(e) {
-                e.preventDefault();
-                currentActivityId = this.dataset.activityId;
-                console.log('Button clicked for activity:', currentActivityId);
-                
-                // Clear any previous selections in the modal
-                freshCards.forEach(card => card.classList.remove('selected'));
-                
-                // Highlight the currently selected course outcome if any
-                const currentCoId = document.querySelector(`input[name="course_outcomes[${currentActivityId}]"]`)?.value;
-                if (currentCoId) {
-                    const selectedCard = document.querySelector(`.course-outcome-card[data-co-id="${currentCoId}"]`);
-                    if (selectedCard) {
-                        selectedCard.classList.add('selected');
-                    }
-                }
-            });
-        });
-        
-        // Card click handlers
-        freshCards.forEach(function(card) {
-            card.setAttribute('data-listener', 'true');
-            card.addEventListener('click', function() {
-                const coId = this.dataset.coId;
-                const coCode = this.dataset.coCode;
-                const coIdentifier = this.dataset.coIdentifier;
-                
-                console.log('Card clicked:', coCode, coIdentifier);
-                
-                if (currentActivityId) {
-                    // Remove selection from all cards
-                    freshCards.forEach(c => c.classList.remove('selected'));
-                    // Add selection to clicked card
-                    this.classList.add('selected');
-                    
-                    // Update the hidden input
-                    const hiddenInput = document.querySelector(`input[name="course_outcomes[${currentActivityId}]"]`);
-                    if (hiddenInput) {
-                        hiddenInput.value = coId;
-                        console.log('Updated hidden input for activity', currentActivityId, 'to CO', coId);
-                        
-                        // Trigger change event to update save button state
-                        hiddenInput.dispatchEvent(new Event('change'));
-                    }
-                    
-                    // Update the button display
-                    const button = document.querySelector(`.course-outcome-selector[data-activity-id="${currentActivityId}"]`);
-                    if (button) {
-                        const displaySpan = button.querySelector('.course-outcome-display');
-                        if (displaySpan) {
-                            displaySpan.textContent = coCode;
-                        }
-                        button.classList.add('has-selection');
-                    }
-                    
-                    // Close modal after a short delay for visual feedback
-                    setTimeout(() => {
-                        if (modal) {
-                            const bsModal = bootstrap.Modal.getInstance(modal);
-                            if (bsModal) {
-                                bsModal.hide();
-                            }
-                            
-                            // Remove focus from the button that opened the modal to clear hover state
-                            const activeButton = document.querySelector(`.course-outcome-selector[data-activity-id="${currentActivityId}"]`);
-                            if (activeButton) {
-                                activeButton.blur();
-                            }
-                            
-                            // Also remove focus from any currently focused element
-                            if (document.activeElement) {
-                                document.activeElement.blur();
-                            }
-                        }
-                    }, 300);
-                    
-                    console.log('Updated activity', currentActivityId, 'with course outcome', coCode);
-                }
-            });
-        });
-        
-        // Search functionality
-        if (searchInput) {
-            // Remove existing listener
-            const newSearchInput = searchInput.cloneNode(true);
-            searchInput.parentNode.replaceChild(newSearchInput, searchInput);
-            
-            newSearchInput.addEventListener('input', function() {
-                const searchTerm = this.value.toLowerCase();
-                console.log('Searching for:', searchTerm);
-                
-                const items = document.querySelectorAll('.course-outcome-item');
-                items.forEach(function(item) {
-                    const searchData = item.dataset.search || '';
-                    const isVisible = searchData.includes(searchTerm);
-                    item.style.display = isVisible ? '' : 'none';
-                });
-            });
-        }
-        
-        // Reset search when modal is opened
-        if (modal) {
-            modal.addEventListener('shown.bs.modal', function() {
-                const searchInput = document.getElementById('courseOutcomeSearch');
-                if (searchInput) {
-                    searchInput.value = '';
-                    // Show all items
-                    const items = document.querySelectorAll('.course-outcome-item');
-                    items.forEach(item => item.style.display = '');
-                }
-            });
-            
-            // Clear button hover state when modal is hidden
-            modal.addEventListener('hidden.bs.modal', function() {
-                // Remove focus and hover state from all course outcome selector buttons
-                const allButtons = document.querySelectorAll('.course-outcome-selector');
-                allButtons.forEach(button => {
-                    button.blur();
-                    button.classList.remove('focus', 'active');
-                });
-                
-                // Ensure no element has focus
-                if (document.activeElement && document.activeElement.classList.contains('course-outcome-selector')) {
-                    document.activeElement.blur();
-                }
-            });
-        }
+        // No need to add change handlers here as they're already handled by the main script
+        // The main script already tracks these elements and updates the save button state
     }
 
     // Export for external use
-    window.initializeCourseOutcomeModal = initializeCourseOutcomeModal;
+    window.initializeCourseOutcomeDropdowns = initializeCourseOutcomeDropdowns;
 
-        // Function to update course outcome modal content after term change
-        window.updateCourseOutcomeModal = function(subjectId, term) {
+        // Function to update course outcome dropdowns after term change
+        window.updateCourseOutcomeDropdowns = function(subjectId, term) {
             // Fetch course outcomes for the selected subject and term
             fetch(`/instructor/course-outcomes?subject_id=${subjectId}&term=${term}`)
                 .then(response => response.json())
                 .then(data => {
-                    const courseOutcomeGrid = document.getElementById('courseOutcomeGrid');
-                    if (!courseOutcomeGrid) return;
+                    const dropdowns = document.querySelectorAll('.course-outcome-select');
                     
-                    // Clear existing content
-                    courseOutcomeGrid.innerHTML = '';
-                    
-                    if (Array.isArray(data) && data.length > 0) {
-                        // Add course outcome cards
-                        data.forEach(outcome => {
-                            const colDiv = document.createElement('div');
-                            colDiv.className = 'col-md-6 col-lg-4 mb-3 course-outcome-item';
-                            colDiv.setAttribute('data-search', (outcome.code + ' ' + outcome.identifier + ' ' + outcome.description).toLowerCase());
+                    dropdowns.forEach(dropdown => {
+                        // Store current selection
+                        const currentValue = dropdown.value;
+                        
+                        // Clear existing options except the first one
+                        dropdown.innerHTML = '<option value="">Select Course Outcome</option>';
+                        
+                        if (Array.isArray(data) && data.length > 0) {
+                            // Add course outcome options
+                            data.forEach(outcome => {
+                                const option = document.createElement('option');
+                                option.value = outcome.id;
+                                option.textContent = `${outcome.code} - ${outcome.identifier}`;
+                                if (outcome.is_deleted) {
+                                    option.classList.add('text-warning');
+                                }
+                                dropdown.appendChild(option);
+                            });
                             
-                            colDiv.innerHTML = `
-                                <div class="card course-outcome-card h-100" data-co-id="${outcome.id}" data-co-code="${outcome.code}" data-co-identifier="${outcome.identifier}" data-co-description="${outcome.description}" style="cursor: pointer; transition: all 0.2s ease;">
-                                    <div class="card-body p-3">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <h6 class="card-title mb-0 text-primary fw-bold">${outcome.code}</h6>
-                                            <span class="badge bg-secondary">${outcome.identifier}</span>
-                                        </div>
-                                        <p class="card-text small text-muted mb-0" style="line-height: 1.4;">
-                                            ${outcome.description.length > 80 ? outcome.description.substring(0, 80) + '...' : outcome.description}
-                                        </p>
-                                    </div>
-                                </div>
-                            `;
-                            
-                            courseOutcomeGrid.appendChild(colDiv);
-                        });
-                    } else {
-                        // No course outcomes available
-                        const noDataDiv = document.createElement('div');
-                        noDataDiv.className = 'col-12';
-                        noDataDiv.innerHTML = `
-                            <div class="alert alert-info text-center">
-                                <i class="bi bi-info-circle me-2"></i>
-                                No course outcomes available for this subject.
-                                <br>
-                                <small class="text-muted">Please create course outcomes first.</small>
-                            </div>
-                        `;
-                        courseOutcomeGrid.appendChild(noDataDiv);
-                    }
+                            // Restore previous selection if it still exists
+                            if (currentValue && dropdown.querySelector(`option[value="${currentValue}"]`)) {
+                                dropdown.value = currentValue;
+                            }
+                        }
+                    });
                 })
                 .catch(() => {
-                    const courseOutcomeGrid = document.getElementById('courseOutcomeGrid');
-                    if (!courseOutcomeGrid) return;
-                    
-                    courseOutcomeGrid.innerHTML = `
-                        <div class="col-12">
-                            <div class="alert alert-danger text-center">
-                                <i class="bi bi-exclamation-triangle me-2"></i>
-                                Error loading course outcomes.
-                            </div>
-                        </div>
-                    `;
+                    console.error('Error loading course outcomes for dropdowns');
                 });
         };
 </script>

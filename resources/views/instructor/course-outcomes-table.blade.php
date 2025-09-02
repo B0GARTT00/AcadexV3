@@ -6,7 +6,7 @@
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
             <li class="breadcrumb-item"><a href="/" class="text-decoration-none">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('instructor.course_outcomes.index') }}" class="text-decoration-none">Course Outcomes</a></li>
+            <li class="breadcrumb-item"><a href="{{ route($routePrefix . '.course_outcomes.index') }}" class="text-decoration-none">Course Outcomes</a></li>
             @if(isset($selectedSubject))
                 <li class="breadcrumb-item active" aria-current="page">
                     {{ $selectedSubject->subject_code }} - {{ $selectedSubject->subject_description }}
@@ -14,6 +14,26 @@
             @endif
         </ol>
     </nav>
+
+    {{-- Current Academic Period Display --}}
+    @if(isset($currentPeriod))
+    <div class="alert alert-info mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <strong><i class="bi bi-calendar-check me-2"></i>Current Academic Period:</strong>
+                <span class="badge bg-primary ms-2">{{ $currentPeriod->academic_year }} - {{ $currentPeriod->semester }}</span>
+                @if(Auth::user()->role === 1 && Auth::user()->course)
+                    <span class="badge bg-success ms-2">{{ Auth::user()->course->course_code }} Program</span>
+                @endif
+            </div>
+            @if(isset($subjects) && count($subjects) > 0)
+            <div>
+                <span class="badge bg-success">{{ count($subjects) }} total subject(s) in program</span>
+            </div>
+            @endif
+        </div>
+    </div>
+    @endif
 
     {{-- Page Title --}}
     @if(isset($selectedSubject))
@@ -42,10 +62,34 @@
                                 </p>
                             </div>
                         </div>
-                        <div>
-                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
-                                <i class="bi bi-plus-circle me-2"></i>Add Course Outcome
-                            </button>
+                        <div class="d-flex align-items-center gap-3">
+                            @php
+                                $coCount = $cos ? $cos->count() : 0;
+                                $isLimitReached = $coCount >= 6;
+                            @endphp
+                            
+                            {{-- CO Count Badge --}}
+                            <div class="text-center">
+                                <div class="badge {{ $isLimitReached ? 'bg-warning' : 'bg-info' }} fs-6 px-3 py-2">
+                                    {{ $coCount }}/6 COs
+                                </div>
+                                <div class="text-muted small mt-1">
+                                    {{ $isLimitReached ? 'Limit Reached' : 'Available Slots' }}
+                                </div>
+                            </div>
+                            
+                            {{-- Add Button --}}
+                            <div>
+                                @if($isLimitReached)
+                                    <button class="btn btn-outline-secondary" disabled title="Maximum 6 course outcomes reached">
+                                        <i class="bi bi-exclamation-triangle me-2"></i>Limit Reached
+                                    </button>
+                                @else
+                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
+                                        <i class="bi bi-plus-circle me-2"></i>Add Course Outcome
+                                    </button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -95,7 +139,11 @@
                                             </th>
                                             <th class="border-0 py-3 fw-semibold">
                                                 <i class="bi bi-file-text me-2"></i>Description 
-                                                <small class="text-muted fw-normal">(Double-click to edit)</small>
+                                                @if(Auth::user()->isChairperson() || Auth::user()->isGECoordinator())
+                                                    <small class="text-muted fw-normal">(Double-click to edit)</small>
+                                                @else
+                                                    <small class="text-muted fw-normal">(Read-only for Instructors)</small>
+                                                @endif
                                             </th>
                                             <th class="border-0 py-3 fw-semibold text-center">
                                                 <i class="bi bi-calendar-event me-2"></i>Academic Period
@@ -103,7 +151,9 @@
                                             <th class="border-0 py-3 fw-semibold text-center">
                                                 <i class="bi bi-percent me-2"></i>Target %
                                             </th>
-                                            <th class="border-0 py-3 fw-semibold text-center">Actions</th>
+                                            @if(Auth::user()->isChairperson() || Auth::user()->isGECoordinator())
+                                                <th class="border-0 py-3 fw-semibold text-center">Actions</th>
+                                            @endif
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -121,9 +171,13 @@
                                                 <td class="editable-cell" 
                                                      data-co-id="{{ $co->id }}" 
                                                      data-original-text="{{ $co->description }}"
-                                                     title="Double-click to edit description"
-                                                     ondblclick="makeEditable(this)">
-                                                    <div class="description-container">
+                                                     @if(Auth::user()->isChairperson() || Auth::user()->isGECoordinator())
+                                                         title="Double-click to edit description"
+                                                         ondblclick="makeEditable(this)"
+                                                     @else
+                                                         title="Only the Chairperson can edit the description"
+                                                     @endif>
+                                                    <div class="description-container @if(!(Auth::user()->isChairperson() || Auth::user()->isGECoordinator())) non-editable @endif">
                                                         <div class="position-relative">
                                                             @if(strlen($co->description) > 100)
                                                                 <span class="description-truncated">{{ substr($co->description, 0, 100) }}...</span>
@@ -132,10 +186,12 @@
                                                             @else
                                                                 {{ $co->description }}
                                                             @endif
-                                                            <div class="edit-indicator">
-                                                                <i class="bi bi-pencil-square"></i>
-                                                                <span class="edit-tooltip">Double-click to edit</span>
-                                                            </div>
+                                                            @if(Auth::user()->isChairperson() || Auth::user()->isGECoordinator())
+                                                                <div class="edit-indicator">
+                                                                    <i class="bi bi-pencil-square"></i>
+                                                                    <span class="edit-tooltip">Double-click to edit</span>
+                                                                </div>
+                                                            @endif
                                                         </div>
                                                     </div>
                                                 </td>
@@ -151,20 +207,22 @@
                                                 <td class="text-center">
                                                     <span class="badge bg-success fs-6 px-3 py-2">75%</span>
                                                 </td>
-                                                <td class="text-center px-4">
-                                                    <div class="btn-group" role="group">
-                                                        <button type="button" class="btn btn-outline-success btn-sm" 
-                                                                onclick="openEditModal({{ $co->id }}, '{{ $co->co_code }}', '{{ $co->co_identifier }}', '{{ addslashes($co->description) }}')"
-                                                                title="Edit Course Outcome">
-                                                            <i class="bi bi-pencil-square"></i>
-                                                        </button>
-                                                        <button type="button" class="btn btn-outline-danger btn-sm" 
-                                                                onclick="openDeleteModal({{ $co->id }}, '{{ $co->co_code }}')"
-                                                                title="Delete Course Outcome">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
-                                                    </div>
-                                                </td>
+                                                @if(Auth::user()->isChairperson() || Auth::user()->isGECoordinator())
+                                                    <td class="text-center px-4">
+                                                        <div class="btn-group" role="group">
+                                                            <button type="button" class="btn btn-outline-success btn-sm" 
+                                                                    onclick="openEditModal({{ $co->id }}, '{{ $co->co_code }}', '{{ $co->co_identifier }}', '{{ addslashes($co->description) }}')"
+                                                                    title="Edit Course Outcome">
+                                                                <i class="bi bi-pencil-square"></i>
+                                                            </button>
+                                                            <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                                    onclick="openDeleteModal({{ $co->id }}, '{{ $co->co_code }}')"
+                                                                    title="Delete Course Outcome">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                @endif
                                             </tr>
                                         @endforeach
                                     </tbody>
@@ -271,7 +329,7 @@
 {{-- Add Course Outcome Modal --}}
 <div class="modal fade" id="addCourseOutcomeModal" tabindex="-1" aria-labelledby="addCourseOutcomeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <form method="POST" action="{{ route('instructor.course_outcomes.store') }}">
+        <form method="POST" action="{{ route($routePrefix . '.course_outcomes.store') }}">
             @csrf
             <div class="modal-content shadow border-0 rounded-3">
                 <div class="modal-header bg-success text-white">
@@ -409,7 +467,8 @@
 // Set subject code for JavaScript functions
 @if(isset($selectedSubject))
     window.courseOutcomesData = {
-        subjectCode: '{{ $selectedSubject->subject_code }}'
+        subjectCode: '{{ $selectedSubject->subject_code }}',
+        userCanEdit: {{ (Auth::user()->isChairperson() || Auth::user()->isGECoordinator()) ? 'true' : 'false' }}
     };
 @endif
 
@@ -703,6 +762,18 @@ function openDeleteModal(id, coCode) {
     background-color: #f8f9fa;
     border-radius: 4px;
     padding: 2px 4px;
+}
+
+/* Non-editable description styles for instructors */
+.description-container.non-editable {
+    cursor: default !important;
+}
+
+.description-container.non-editable:hover {
+    background-color: transparent !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
 }
 
 .editable-description:hover::before {

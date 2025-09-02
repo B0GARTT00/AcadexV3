@@ -139,6 +139,13 @@
                             <span>View Grades</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.course_outcomes.index') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-book me-3"></i>
+                            <span>Manage Course Outcome</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
@@ -268,6 +275,13 @@
                            class="nav-link {{ request()->routeIs('gecoordinator.viewGrades') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-clipboard-data me-3"></i>
                             <span>View GE Grades</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('gecoordinator.course_outcomes.index') }}" 
+                           class="nav-link {{ request()->routeIs('gecoordinator.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-book me-3"></i>
+                            <span>Manage Course Outcome</span>
                         </a>
                     </li>
                 </ul>

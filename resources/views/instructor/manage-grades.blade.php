@@ -136,7 +136,7 @@
 
 <script>
 // Make function globally available
-window.initializeCourseOutcomeModal = initializeCourseOutcomeModal;
+window.initializeCourseOutcomeDropdowns = initializeCourseOutcomeDropdowns;
 
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
@@ -167,8 +167,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (typeof bindGradeInputEvents === 'function') {
                         bindGradeInputEvents();
                     }
-                    if (typeof initializeCourseOutcomeModal === 'function') {
-                        initializeCourseOutcomeModal();
+                    if (typeof initializeCourseOutcomeDropdowns === 'function') {
+                        initializeCourseOutcomeDropdowns();
                     }
                     if (typeof initializeStudentSearch === 'function') {
                         initializeStudentSearch();
@@ -214,8 +214,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (typeof bindGradeInputEvents === 'function') {
                     bindGradeInputEvents();
                 }
-                if (typeof initializeCourseOutcomeModal === 'function') {
-                    initializeCourseOutcomeModal();
+                if (typeof initializeCourseOutcomeDropdowns === 'function') {
+                    initializeCourseOutcomeDropdowns();
                 }
                 if (typeof initializeStudentSearch === 'function') {
                     initializeStudentSearch();

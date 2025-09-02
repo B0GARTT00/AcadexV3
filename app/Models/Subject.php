@@ -32,24 +32,29 @@ class Subject extends Model
             ->withTimestamps();
     }
 
-public function course()
-{
-    return $this->belongsTo(Course::class);
-}
+    public function course()
+    {
+        return $this->belongsTo(Course::class);
+    }
 
-public function department()
-{
-    return $this->belongsTo(Department::class);
-}
+    public function department()
+    {
+        return $this->belongsTo(Department::class);
+    }
 
-public function students()
-{
-    return $this->belongsToMany(Student::class, 'student_subjects', 'subject_id', 'student_id')
-        ->withTimestamps()
-        ->wherePivot('is_deleted', false)
-        ->orderBy('last_name')
-        ->orderBy('first_name');
-}
+    public function students()
+    {   
+        return $this->belongsToMany(Student::class, 'student_subjects', 'subject_id', 'student_id')
+            ->withTimestamps()
+            ->wherePivot('is_deleted', false)
+            ->orderBy('last_name')
+            ->orderBy('first_name');
+    }
+
+    public function courseOutcomes()
+    {
+        return $this->hasMany(\App\Models\CourseOutcomes::class, 'subject_id')->where('is_deleted', false);
+    }
 
 
 

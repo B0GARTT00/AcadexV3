@@ -192,7 +192,7 @@ class ChairpersonController extends Controller
         
         // Chairperson: manages subjects with course_id != 1 (department subjects)
         $subjects = Subject::where('department_id', Auth::user()->department_id)
-            ->where('course_id', '!=', 1) // Exclude General Education subjects
+            ->where('course_id', Auth::user()->course_id) // Only subjects for user's course
             ->where('is_deleted', false)
             ->where('academic_period_id', $academicPeriodId)
             ->orderBy('subject_code')
