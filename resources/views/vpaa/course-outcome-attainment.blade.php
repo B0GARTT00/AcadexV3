@@ -2,64 +2,119 @@
 
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/course-outcome-results.css') }}">
+<style>
+.subject-card {
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.subject-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+.subject-circle {
+    transition: all 0.3s ease;
+}
+ </style>
 @endpush
 
 @section('content')
-<div class="container-fluid px-4 py-4">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div>
-            <h1 class="h3 fw-semibold text-gray-800 mb-0">
-                <i class="bi bi-graph-up me-2"></i>
-                Course Outcome Attainment Results
-            </h1>
-            <nav aria-label="breadcrumb" class="mt-2">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('vpaa.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Course Outcome Attainment</li>
-                </ol>
-            </nav>
-        </div>
-        @if(isset($hasData) && $hasData)
-        <div>
-            <button class="btn btn-success" type="button" onclick="window.print()">
-                <i class="bi bi-printer me-2"></i>Print Report
-            </button>
-        </div>
-        @endif
-    </div>
+<div class="container-fluid">
 
-    {{-- Filter Controls Card --}}
-    <div class="card border-0 shadow-sm rounded-4 mb-4">
-        <div class="card-body p-4">
-            <form action="{{ route('vpaa.course-outcome-attainment') }}" method="GET" class="row g-3">
-                <div class="col-md-5">
-                    <label for="department_id" class="form-label fw-semibold">Department</label>
-                    <select name="department_id" id="department_id" class="form-select" onchange="this.form.submit()">
-                        <option value="">All Departments</option>
-                        @foreach($departments as $department)
-                            <option value="{{ $department->id }}" {{ $selectedDepartmentId == $department->id ? 'selected' : '' }}>
-                                {{ $department->department_description }} ({{ $department->department_code }})
-                            </option>
-                        @endforeach
-                    </select>
+    {{-- Subject Wild Cards --}}
+    @if(isset($subjects) && count($subjects) > 0)
+        <div class="card border-0 shadow-sm rounded-4 mb-4">
+            <div class="card-body p-4">
+                <h5 class="fw-semibold mb-3">
+                    <i class="bi bi-book me-2"></i>Select Subject to View Course Outcomes
+                </h5>
+                <div class="row g-4" id="subject-selection">
+                    @foreach($subjects as $subjectItem)
+                        <div class="col-md-4">
+                            <div
+                                class="subject-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden"
+                                data-url="{{ route('vpaa.course-outcome-attainment.subject', ['subject' => $subjectItem->id]) }}"
+                                style="cursor: pointer;"
+                            >
+                                <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
+                                    <div class="subject-circle position-absolute start-50 translate-middle"
+                                        style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                                        <h6 class="mb-0 text-white fw-bold">{{ $subjectItem->subject_code }}</h6>
+                                    </div>
+                                </div>
+                                <div class="card-body pt-5 text-center">
+                                    <h6 class="fw-semibold mt-4 text-dark text-truncate" title="{{ $subjectItem->subject_description }}">
+                                        {{ $subjectItem->subject_description }}
+                                    </h6>
+                                    <small class="text-muted">Click to view outcomes</small>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
-                <div class="col-md-5">
-                    <label for="course_id" class="form-label fw-semibold">Course</label>
-                    <select name="course_id" id="course_id" class="form-select" {{ empty($courses) ? 'disabled' : '' }} onchange="this.form.submit()">
-                        <option value="">All Courses</option>
-                        @if($courses->isNotEmpty())
-                            @foreach($courses as $course)
-                                <option value="{{ $course->id }}" {{ $selectedCourseId == $course->id ? 'selected' : '' }}>
-                                    {{ $course->course_code }} - {{ $course->course_description }}
-                                </option>
-                            @endforeach
-                        @endif
-                    </select>
-                </div>
-            </form>
+            </div>
         </div>
-    </div>
+    @endif
+
+    {{-- Course Outcomes Table Section --}}
+    @if(request('subject_id'))
+        @if(isset($courseOutcomes) && $courseOutcomes->count() > 0)
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-4">
+                    <h5 class="fw-semibold mb-3">
+                        <i class="bi bi-list-check me-2"></i>Course Outcomes
+                        @if(isset($selectedSubject))
+                            - {{ $selectedSubject->subject_code }}
+                        @endif
+                    </h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead class="table-success">
+                                <tr>
+                                    <th>CO Code</th>
+                                    <th>Identifier</th>
+                                    <th>Description</th>
+                                    <th>Academic Period</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($courseOutcomes as $co)
+                                    <tr>
+                                        <td class="fw-semibold">{{ $co->co_code }}</td>
+                                        <td>{{ $co->co_identifier }}</td>
+                                        <td>{{ $co->description }}</td>
+                                        <td>
+                                            @if($co->academicPeriod)
+                                                {{ $co->academicPeriod->academic_year }} - {{ $co->academicPeriod->semester }}
+                                            @else
+                                                -
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">Active</span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        @else
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-body p-5 text-center">
+                    <div class="text-muted mb-3">
+                        <i class="bi bi-list-check fs-1 opacity-50"></i>
+                    </div>
+                    <h5 class="text-muted mb-2">No Course Outcomes Available</h5>
+                    <p class="text-muted mb-0">
+                        This subject doesn't have course outcomes yet. As VPAA, you can only view results once
+                        instructors define outcomes and record assessments.
+                    </p>
+                </div>
+            </div>
+        @endif
+    @endif
 
     @if(!$hasData)
         <!-- No Data Message -->
@@ -204,41 +259,48 @@
 
 @push('scripts')
 <script>
-    // Enable/disable course select based on department selection
-    document.addEventListener('DOMContentLoaded', function() {
-        const departmentSelect = document.getElementById('department_id');
-        const courseSelect = document.getElementById('course_id');
-        
-        if (departmentSelect && courseSelect) {
-            departmentSelect.addEventListener('change', function() {
-                if (this.value) {
-                    // Enable course select and fetch courses via AJAX
-                    courseSelect.disabled = false;
-                    fetch(`/api/courses?department_id=${this.value}`)
-                        .then(response => response.json())
-                        .then(data => {
-                            // Clear existing options except the first one
-                            while (courseSelect.options.length > 1) {
-                                courseSelect.remove(1);
-                            }
-                            
-                            // Add new options
-                            data.forEach(course => {
-                                const option = document.createElement('option');
-                                option.value = course.id;
-                                option.textContent = `${course.course_code} - ${course.course_description}`;
-                                courseSelect.appendChild(option);
-                            });
-                        })
-                        .catch(error => console.error('Error fetching courses:', error));
-                } else {
-                    // Disable and reset course select if no department is selected
-                    courseSelect.disabled = true;
-                    courseSelect.selectedIndex = 0;
-                }
-            });
-        }
+document.addEventListener('DOMContentLoaded', function() {
+    // Subject card click handlers
+    document.querySelectorAll('.subject-card[data-url]').forEach(card => {
+        card.addEventListener('click', () => {
+            window.location.href = card.dataset.url;
+        });
     });
+
+    // Enable/disable course select based on department selection
+    const departmentSelect = document.getElementById('department_id');
+    const courseSelect = document.getElementById('course_id');
+    if (!departmentSelect || !courseSelect) return;
+
+    departmentSelect.addEventListener('change', function() {
+        const deptId = this.value;
+        if (!deptId) {
+            // Disable and reset course select if no department is selected
+            courseSelect.disabled = true;
+            while (courseSelect.options.length > 1) courseSelect.remove(1);
+            courseSelect.selectedIndex = 0;
+            return;
+        }
+
+        // Enable course select and fetch courses via AJAX
+        courseSelect.disabled = false;
+        fetch(`/api/courses?department_id=${encodeURIComponent(deptId)}`)
+            .then(response => response.json())
+            .then(data => {
+                // Clear existing options except the first one
+                while (courseSelect.options.length > 1) courseSelect.remove(1);
+                // Add new course options
+                data.forEach(course => {
+                    const option = new Option(
+                        `${course.course_code} - ${course.course_description}`,
+                        course.id
+                    );
+                    courseSelect.add(option);
+                });
+            })
+            .catch(error => console.error('Error fetching courses:', error));
+    });
+});
 </script>
 @endpush
 

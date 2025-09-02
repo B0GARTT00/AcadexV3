@@ -231,6 +231,8 @@ Route::prefix('vpaa')
         // Course Outcome Attainment
         Route::get('/course-outcome-attainment', [VPAAController::class, 'viewCourseOutcomeAttainment'])
             ->name('course-outcome-attainment');
+        Route::get('/course-outcome-attainment/subject/{subject}', [VPAAController::class, 'subject'])
+            ->name('course-outcome-attainment.subject');
         // Dashboard
         Route::get('/dashboard', [VPAAController::class, 'index'])->name('dashboard');
         

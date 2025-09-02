@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Course;
 use App\Models\Subject;
+use App\Models\CourseOutcomes;
 use App\Models\FinalGrade;
 use App\Models\Student;
 use App\Models\User;
@@ -39,128 +40,119 @@ class VPAAController extends Controller
      */
     public function viewCourseOutcomeAttainment(Request $request)
     {
-        // Get filter parameters
-        $selectedDepartmentId = $request->input('department_id');
-        $selectedCourseId = $request->input('course_id');
-        
-        // Get all departments for the filter dropdown
-        $departments = Department::where('is_deleted', false)
-            ->select('id', 'department_code', 'department_description')
-            ->orderBy('department_description')
-            ->get();
-            
-        // Get courses based on selected department
-        $courses = collect();
-        if ($selectedDepartmentId) {
-            $courses = Course::where('department_id', $selectedDepartmentId)
-                ->where('is_deleted', false)
-                ->orderBy('course_code')
-                ->get();
-        }
-        
-        // Get base query for course outcome attainment data
-        $query = CourseOutcomeAttainment::select([
-                'course_outcome_attainments.*',
-                'students.id as student_id',
-                'students.first_name',
-                'students.last_name',
-                'students.course_id',
-                'courses.id as course_id',
-                'courses.course_code',
-                'courses.course_description',
-                'departments.department_code',
-                'departments.department_description',
-                'course_outcomes.id as co_id',
-                'course_outcomes.co_code',
-                'course_outcomes.description as co_description'
-            ])
-            ->leftJoin('students', 'course_outcome_attainments.student_id', '=', 'students.id')
-            ->leftJoin('courses', 'students.course_id', '=', 'courses.id')
-            ->leftJoin('departments', 'courses.department_id', '=', 'departments.id')
-            ->leftJoin('course_outcomes', 'course_outcome_attainments.course_outcome_id', '=', 'course_outcomes.id');
-            
-        // Apply filters
-        if ($selectedDepartmentId) {
-            $query->where('courses.department_id', $selectedDepartmentId);
-        }
-        
-        if ($selectedCourseId) {
-            $query->where('students.course_id', $selectedCourseId);
-        }
-        
-        // Get the data
-        $attainmentData = $query->get();
-        
-        // Organize data by course, then student, then outcomes
-        $organizedData = [];
-        $courseOutcomes = [];
-        
-        // First pass: collect all unique course outcomes across all courses
-        foreach ($attainmentData as $item) {
-            $courseKey = $item->course_code ?? 'Unknown';
-            $outcomeKey = $item->course_outcome_id;
+        // Mirror instructor landing: show subject wildcards for active academic period
+        $academicPeriodId = session('active_academic_period_id');
+        $period = $academicPeriodId ? \App\Models\AcademicPeriod::find($academicPeriodId) : null;
 
-            if (!isset($courseOutcomes[$courseKey][$outcomeKey])) {
-                $courseOutcomes[$courseKey][$outcomeKey] = (object)[
-                    'id' => $item->course_outcome_id,
-                    'co_code' => $item->co_code,
-                    'description' => $item->co_description
-                ];
+        // For VPAA, list subjects regardless of active academic period; if a period is set, narrow to it
+        $subjects = Subject::query()
+            ->where('subjects.is_deleted', false)
+            ->when($academicPeriodId, function ($q) use ($academicPeriodId) {
+                $q->where('subjects.academic_period_id', $academicPeriodId);
+            })
+            ->select('subjects.*')
+            ->orderBy('subject_code')
+            ->get();
+
+        return view('vpaa.scores.course-outcome-results-wildcards', [
+            'subjects' => $subjects,
+            'academicYear' => $period->academic_year ?? null,
+            'semester' => $period->semester ?? null,
+        ]);
+    }
+
+    /**
+     * VPAA view for a specific subject's course outcome results (read-only UI mirroring instructor).
+     */
+    public function subject($subjectId)
+    {
+    // Subject + context (no academic period required for VPAA)
+    $selectedSubject = \App\Models\Subject::with(['course', 'academicPeriod'])->findOrFail($subjectId);
+
+        // Students enrolled in the subject
+        $students = \App\Models\Student::whereHas('subjects', function($q) use ($subjectId) {
+            $q->where('subject_id', $subjectId);
+        })->get();
+
+        // Terms
+        $terms = ['prelim', 'midterm', 'prefinal', 'final'];
+
+        // Activities grouped by term with COs
+        $activitiesByTerm = [];
+        $coColumnsByTerm = [];
+        foreach ($terms as $term) {
+            $activities = \App\Models\Activity::where('subject_id', $subjectId)
+                ->where('term', $term)
+                ->where('is_deleted', false)
+                ->whereNotNull('course_outcome_id')
+                ->get();
+            $activitiesByTerm[$term] = $activities;
+
+            $coIds = $activities->pluck('course_outcome_id')->unique()->toArray();
+            if (!empty($coIds)) {
+                $sortedCos = \App\Models\CourseOutcomes::whereIn('id', $coIds)
+                    ->orderBy('co_code')
+                    ->pluck('id')
+                    ->toArray();
+                $coColumnsByTerm[$term] = $sortedCos;
+            } else {
+                $coColumnsByTerm[$term] = [];
             }
         }
-        
-        // Second pass: organize data by course and student
-        foreach ($attainmentData as $item) {
-            $courseKey = $item->course_code ?? 'Unknown';
-            $studentId = $item->student_id;
-            
-            if (!isset($organizedData[$courseKey])) {
-                $organizedData[$courseKey] = [
-                    'course_code' => $item->course_code,
-                    'course_description' => $item->course_description,
-                    'department_code' => $item->department_code,
-                    'students' => [],
-                    'outcomes' => $courseOutcomes[$courseKey] ?? []
-                ];
-            }
-            
-            if (!isset($organizedData[$courseKey]['students'][$studentId])) {
-                $organizedData[$courseKey]['students'][$studentId] = [
-                    'first_name' => $item->first_name,
-                    'last_name' => $item->last_name,
-                    'outcomes' => []
-                ];
-            }
-            
-            // Add the outcome data for this student
-            $organizedData[$courseKey]['students'][$studentId]['outcomes'][$item->course_outcome_id] = (object)[
-                'id' => $item->id,
-                'score' => $item->score,
-                'max' => $item->max,
-                'co_code' => $item->co_code,
-                'co_description' => $item->co_description
-            ];
-        }
-        
-        // Sort outcomes by co_code for consistent display
-        foreach ($organizedData as &$courseData) {
-            if (isset($courseData['outcomes'])) {
-                // Convert to array, sort by co_code, then convert back to object
-                $outcomesArray = (array)$courseData['outcomes'];
-                usort($outcomesArray, function($a, $b) {
-                    return strcmp($a->co_code, $b->co_code);
-                });
-                $courseData['outcomes'] = $outcomesArray;
+
+        // Map activity->CO per term
+        $activityCoMap = [];
+        foreach ($activitiesByTerm as $term => $activities) {
+            foreach ($activities as $activity) {
+                $activityCoMap[$term][$activity->id] = $activity->course_outcome_id;
             }
         }
-        
-        return view('vpaa.course-outcome-attainment', [
-            'departments' => $departments,
-            'courses' => $courses,
-            'selectedDepartmentId' => $selectedDepartmentId,
-            'selectedCourseId' => $selectedCourseId,
-            'attainmentData' => $organizedData,
-            'hasData' => !empty($organizedData)
+
+        // Gather student scores per activity
+        $studentScores = [];
+        foreach ($students as $student) {
+            foreach ($activitiesByTerm as $term => $activities) {
+                foreach ($activities as $activity) {
+                    $score = \App\Models\Score::where('student_id', $student->id)
+                        ->where('activity_id', $activity->id)
+                        ->first();
+                    $studentScores[$student->id][$term][$activity->id] = [
+                        'score' => $score ? $score->score : 0,
+                        'max' => $activity->number_of_items,
+                    ];
+                }
+            }
+        }
+
+        // Compute CO attainment per student using existing trait
+        $coResults = [];
+        $calculator = new \App\Http\Controllers\CourseOutcomeAttainmentController();
+        foreach ($students as $student) {
+            $coResults[$student->id] = $calculator->computeCoAttainment($studentScores[$student->id] ?? [], $activityCoMap);
+        }
+
+        // CO details and final ordered list
+        $flat = array_merge(...array_values($coColumnsByTerm ?: [[]]));
+        $finalCOs = array_unique($flat);
+        $coDetails = \App\Models\CourseOutcomes::whereIn('id', $finalCOs)->get()->keyBy('id');
+        usort($finalCOs, function($a, $b) use ($coDetails) {
+            $codeA = $coDetails[$a]->co_code ?? '';
+            $codeB = $coDetails[$b]->co_code ?? '';
+            $numA = (int)preg_replace('/[^0-9]/', '', $codeA);
+            $numB = (int)preg_replace('/[^0-9]/', '', $codeB);
+            return $numA <=> $numB;
+        });
+        $finalCOs = array_values($finalCOs);
+
+        return view('vpaa.scores.course-outcome-results', [
+            'students' => $students,
+            'coResults' => $coResults,
+            'coColumnsByTerm' => $coColumnsByTerm,
+            'coDetails' => $coDetails,
+            'finalCOs' => $finalCOs,
+            'terms' => $terms,
+            'subjectId' => $subjectId,
+            'selectedSubject' => $selectedSubject,
         ]);
     }
     
