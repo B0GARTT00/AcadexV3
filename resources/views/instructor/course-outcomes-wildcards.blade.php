@@ -152,87 +152,25 @@
                     </div>
                 </div>
 
-                {{-- Compact Subject Cards Grid --}}
-                <div class="row g-2" id="subject-selection-year-{{ $yearLevel }}">
+                {{-- Subject Cards Grid --}}
+                <div class="row g-4 px-4 py-4" id="subject-selection-year-{{ $yearLevel }}">
                     @foreach($subjects as $subjectItem)
-                        <div class="col-4">
-                            <div class="subject-card-modern h-100" data-url="{{ route($routePrefix . '.course_outcomes.index', ['subject_id' => $subjectItem->id]) }}">
-                                <div class="card border-0 shadow-sm h-100 position-relative overflow-hidden" style="transition: all 0.3s ease; cursor: pointer;">
-                                    {{-- Year Level Badge --}}
-                                    <div class="position-absolute top-0 end-0 m-2" style="z-index: 10;">
-                                        @php
-                                            $badgeClass = 'bg-success';
-                                        @endphp
-                                        <span class="badge {{ $badgeClass }} rounded-pill px-1" style="font-size: 0.7rem;">{{ $yearLevel ?: '?' }}Y</span>
+                        <div class="col-md-4">
+                            <div
+                                class="subject-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden transform transition hover:scale-105 hover:shadow-xl"
+                                data-url="{{ route($routePrefix . '.course_outcomes.index', ['subject_id' => $subjectItem->id]) }}"
+                                style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;"
+                            >
+                                <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
+                                    <div class="subject-circle position-absolute start-50 translate-middle"
+                                        style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                                        <h5 class="mb-0 text-white fw-bold">{{ $subjectItem->subject_code }}</h5>
                                     </div>
-                                    
-                                    {{-- Compact Card Header with Subject Code --}}
-                                    <div class="card-header border-0 text-center py-2" style="background: linear-gradient(135deg, #198754, #20c997);">
-                                        <div class="subject-code-circle mx-auto d-flex align-items-center justify-content-center" 
-                                             style="width: 65px; height: 65px; background: rgba(255,255,255,0.2); border-radius: 50%; backdrop-filter: blur(10px);">
-                                            <span class="fw-bold text-white" style="font-size: 0.85rem; text-align: center; line-height: 1.1;">
-                                                {{ $subjectItem->subject_code }}
-                                            </span>
-                                        </div>
-                                    </div>
-                                    
-                                    {{-- Compact Card Body --}}
-                                    <div class="card-body p-3">
-                                        <h6 class="card-title fw-semibold mb-2" style="color: #198754; line-height: 1.3; height: 2.8em; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; font-size: 0.95rem;" title="{{ $subjectItem->subject_description }}">
-                                            {{ $subjectItem->subject_description }}
-                                        </h6>
-                                        
-                                        {{-- Course Outcome Count --}}
-                                        <div class="mb-2" style="font-size: 0.85rem; color: #198754; font-weight: 500;">
-                                            @php
-                                                $coCount = $subjectItem->courseOutcomes ? $subjectItem->courseOutcomes->count() : 0;
-                                            @endphp
-                                            @if($coCount > 0)
-                                                <i class="bi bi-bullseye me-1"></i>{{ $coCount }} CO{{ $coCount > 1 ? 's' : '' }}
-                                            @else
-                                                <i class="bi bi-exclamation-circle me-1"></i>No COs
-                                            @endif
-                                        </div>
-                                        
-                                        {{-- Compact Subject Details --}}
-                                        <div class="row g-1 text-muted" style="font-size: 0.8rem;">
-                                            @if($subjectItem->units)
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="bi bi-clock me-1 text-{{ $iconColors }}"></i>
-                                                    <span>{{ $subjectItem->units }} unit{{ $subjectItem->units != 1 ? 's' : '' }}</span>
-                                                </div>
-                                            </div>
-                                            @endif
-                                            <div class="col-6">
-                                                <div class="d-flex align-items-center">
-                                                    <i class="bi bi-mortarboard me-1 text-{{ $iconColors }}"></i>
-                                                    @php
-                                                        $yearLabels = [1 => '1st', 2 => '2nd', 3 => '3rd', 4 => '4th'];
-                                                    @endphp
-                                                    <span>{{ $yearLabels[$yearLevel] ?? ($yearLevel ? 'Yr ' . $yearLevel : '?') }}</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    {{-- Compact Card Footer --}}
-                                    <div class="card-footer border-0 bg-light py-2">
-                                        <div class="d-flex align-items-center justify-content-between">
-                                            <small class="text-muted" style="font-size: 0.8rem;">
-                                                <i class="bi bi-target me-1"></i>Manage
-                                            </small>
-                                            <i class="bi bi-arrow-right-circle text-{{ $iconColors }}" style="font-size: 1.1rem;"></i>
-                                        </div>
-                                    </div>
-                                    
-                                    {{-- Hover Overlay --}}
-                                    <div class="position-absolute top-0 start-0 w-100 h-100 bg-light bg-opacity-90 d-flex align-items-center justify-content-center hover-overlay" style="opacity: 0; transition: opacity 0.3s ease;">
-                                        <div class="text-center">
-                                            <i class="bi bi-cursor-fill" style="font-size: 1.6rem; color: #198754;"></i>
-                                            <p class="fw-semibold mt-1 mb-0" style="color: #198754; font-size: 0.85rem;">Click to Manage</p>
-                                        </div>
-                                    </div>
+                                </div>
+                                <div class="card-body pt-5 text-center">
+                                    <h6 class="fw-semibold mt-4 text-dark text-truncate" title="{{ $subjectItem->subject_description }}">
+                                        {{ $subjectItem->subject_description }}
+                                    </h6>
                                 </div>
                             </div>
                         </div>
@@ -789,72 +727,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     
     // Modern subject card interactions
-    document.querySelectorAll('.subject-card-modern').forEach(card => {
-        const cardElement = card.querySelector('.card');
-        
+    document.querySelectorAll('.subject-card[data-url]').forEach(card => {
         card.addEventListener('click', function() {
-            // Add loading state with enhanced animation
-            const icon = cardElement.querySelector('.bi-arrow-right-circle');
-            if (icon) {
-                icon.className = 'bi bi-arrow-clockwise text-primary';
-                icon.style.animation = 'spin 1s linear infinite';
-            }
-            
-            // Add ripple effect
-            const ripple = document.createElement('div');
-            const rect = this.getBoundingClientRect();
-            const size = Math.max(rect.width, rect.height);
-            const x = event.clientX - rect.left - size / 2;
-            const y = event.clientY - rect.top - size / 2;
-            
-            ripple.style.cssText = `
-                position: absolute;
-                width: ${size}px;
-                height: ${size}px;
-                left: ${x}px;
-                top: ${y}px;
-                background: rgba(25, 135, 84, 0.3);
-                border-radius: 50%;
-                pointer-events: none;
-                animation: ripple 0.6s ease-out;
-                z-index: 1000;
-            `;
-            
-            this.style.position = 'relative';
-            this.style.overflow = 'hidden';
-            this.appendChild(ripple);
-            
-            setTimeout(() => {
-                ripple.remove();
-                window.location.href = this.dataset.url;
-            }, 300);
-        });
-        
-        // Enhanced hover effects with smooth transitions
-        card.addEventListener('mouseenter', function() {
-            this.style.zIndex = '10';
-            cardElement.style.transform = 'translateY(-10px)';
-            cardElement.style.boxShadow = '0 20px 40px rgba(25, 135, 84, 0.15)';
-            
-            // Scale subject code circle
-            const circle = cardElement.querySelector('.subject-code-circle');
-            if (circle) {
-                circle.style.transform = 'scale(1.1)';
-                circle.style.background = 'rgba(255, 255, 255, 0.3)';
-            }
-        });
-        
-        card.addEventListener('mouseleave', function() {
-            this.style.zIndex = '1';
-            cardElement.style.transform = 'translateY(0)';
-            cardElement.style.boxShadow = '';
-            
-            // Reset subject code circle
-            const circle = cardElement.querySelector('.subject-code-circle');
-            if (circle) {
-                circle.style.transform = 'scale(1)';
-                circle.style.background = '';
-            }
+            window.location.href = this.dataset.url;
         });
         
         // Add accessibility support
@@ -1006,24 +881,48 @@ body {
 }
 
 /* Modern card effects */
-.subject-card-modern .card {
+.subject-card .card {
     border-radius: 1rem;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    background: #4ecd85 !important;
+    border: none;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
 }
 
-.subject-card-modern:hover .card {
-    transform: translateY(-10px);
-    box-shadow: 0 20px 40px rgba(25, 135, 84, 0.15);
+.subject-card:hover .card {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
 }
 
 /* Subject code circle animation */
 .subject-code-circle {
     transition: all 0.3s ease;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #4da674, #023336);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+    position: absolute;
+    top: -40px;
+    left: 50%;
+    transform: translateX(-50%);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
 }
 
-.subject-card-modern:hover .subject-code-circle {
-    transform: scale(1.1);
-    background: rgba(255, 255, 255, 0.3) !important;
+.subject-card:hover .subject-code-circle {
+    transform: translateX(-50%) scale(1.1);
+}
+
+.card-header {
+    background: transparent !important;
+    border-bottom: none;
+    padding-top: 50px;
+    position: relative;
 }
 
 /* Navigation buttons */
@@ -1078,8 +977,19 @@ body {
         padding: 0.375rem 0.75rem;
     }
     
-    .subject-card-modern .card {
+    .subject-card .card {
         margin-bottom: 1rem;
+    }
+    
+    .subject-code-circle {
+        width: 60px;
+        height: 60px;
+        top: -30px;
+        font-size: 14px;
+    }
+    
+    .card-header {
+        padding-top: 40px;
     }
     
     .container-fluid {
@@ -1089,7 +999,7 @@ body {
 }
 
 /* Focus states for accessibility */
-.subject-card-modern:focus-within .card,
+.subject-card:focus-within .card,
 .year-nav-btn:focus {
     outline: 3px solid var(--primary-subtle);
     outline-offset: 2px;
