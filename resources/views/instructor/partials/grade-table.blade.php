@@ -28,6 +28,7 @@
             <span id="studentCount">{{ count($students) }}</span> students
         </div>
     </div>
+
 @endif
 
 <div class="shadow-lg rounded-4 overflow-hidden border">

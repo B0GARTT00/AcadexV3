@@ -335,6 +335,7 @@ class VPAAController extends Controller
             $instructors = User::where('is_active', true)
                 ->where('department_id', $departmentId) // Filter by department
                 ->where('role', '!=', 3) // Exclude admin users (role 3)
+                ->where('role', '!=', 5) // Exclude VPAA users (role 5)
                 ->with(['department' => function($query) {
                     $query->select('id', 'department_code', 'department_description');
                 }])

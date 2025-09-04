@@ -138,52 +138,142 @@
 // Make function globally available
 window.initializeCourseOutcomeDropdowns = initializeCourseOutcomeDropdowns;
 
+    
+    // Global function to show unsaved changes modal
+    window.showUnsavedChangesModal = function(onConfirm, onCancel = null) {
+        // Create modal if it doesn't exist
+        let modal = document.getElementById('unsavedChangesModal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.innerHTML = `
+                <div class="modal fade" id="unsavedChangesModal" tabindex="-1" aria-labelledby="unsavedChangesModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg">
+                            <div class="modal-header bg-warning text-dark border-0">
+                                <h5 class="modal-title d-flex align-items-center" id="unsavedChangesModalLabel">
+                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                    Unsaved Changes
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-3">You have unsaved changes that will be lost if you continue.</p>
+                                <p class="mb-0 text-muted">Are you sure you want to leave without saving?</p>
+                            </div>
+                            <div class="modal-footer border-0">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-warning" id="confirmLeaveBtn">Leave Without Saving</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal.firstElementChild);
+        }
+        
+        const modalInstance = new bootstrap.Modal(document.getElementById('unsavedChangesModal'));
+        const confirmBtn = document.getElementById('confirmLeaveBtn');
+        
+        // Remove any existing event listeners
+        const newConfirmBtn = confirmBtn.cloneNode(true);
+        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+        
+        // Add new event listener
+        newConfirmBtn.addEventListener('click', function() {
+            modalInstance.hide();
+            if (onConfirm) onConfirm();
+        });
+        
+        // Handle cancel
+        document.getElementById('unsavedChangesModal').addEventListener('hidden.bs.modal', function() {
+            if (onCancel) onCancel();
+        }, { once: true });
+        
+        modalInstance.show();
+    };
+
 // Wait for DOM to be fully loaded
 document.addEventListener('DOMContentLoaded', function() {
     const overlay = document.getElementById('fadeOverlay');
     
-    // Handle subject card clicks
-    document.querySelectorAll('.subject-card[data-url]').forEach(card => {
-        if (!card) return;
-        
-        card.addEventListener('click', function() {
-            const url = this.dataset.url;
-            if (!url) return;
+    // Make overlay globally accessible
+    window.gradeOverlay = overlay;
+    
+    // Handle subject card clicks using event delegation
+    const subjectSelectionArea = document.getElementById('subject-selection');
+    if (subjectSelectionArea) {
+        subjectSelectionArea.addEventListener('click', function(e) {
+            const subjectCard = e.target.closest('.subject-card[data-url]');
+            if (!subjectCard) return;
             
-            if (overlay) overlay.classList.remove('d-none');
-
-            fetch(url, {
-                headers: { 'X-Requested-With': 'XMLHttpRequest' }
-            })
-            .then(res => res.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const newGradeSection = doc.querySelector('#grade-section');
-                const currentSection = document.getElementById('grade-section');
-                
-                if (newGradeSection && currentSection) {
-                    currentSection.replaceWith(newGradeSection);
-                    if (typeof bindGradeInputEvents === 'function') {
-                        bindGradeInputEvents();
+            e.preventDefault();
+            e.stopPropagation();
+            
+            const url = subjectCard.dataset.url;
+            console.log('Subject card clicked, URL:', url);
+            
+            if (!url) {
+                console.error('No URL found for subject card');
+                return;
+            }
+            
+            // Check for unsaved changes before subject navigation (only if function exists and we're in grades view)
+            if (typeof checkForChanges === 'function' && document.getElementById('studentTableBody')) {
+                try {
+                    const { hasChanges } = checkForChanges();
+                    if (hasChanges) {
+                        showUnsavedChangesModal(() => {
+                            // User confirmed, proceed with navigation
+                            navigateToSubject(url, window.gradeOverlay || document.getElementById('fadeOverlay'));
+                        });
+                        return;
                     }
-                    if (typeof initializeCourseOutcomeDropdowns === 'function') {
-                        initializeCourseOutcomeDropdowns();
-                    }
-                    if (typeof initializeStudentSearch === 'function') {
-                        initializeStudentSearch();
-                    }
+                } catch (error) {
+                    console.error('Error checking for changes:', error);
                 }
-                
-                if (overlay) overlay.classList.add('d-none');
-            })
-            .catch(error => {
-                console.error('Error loading grades:', error);
-                if (overlay) overlay.classList.add('d-none');
-                alert('Failed to load subject grades.');
-            });
+            }
+            
+            // No unsaved changes, proceed directly
+            navigateToSubject(url, window.gradeOverlay || document.getElementById('fadeOverlay'));
         });
-    });
+    }
+    
+    // Extract subject navigation logic to reusable function
+    function navigateToSubject(url, overlay) {
+        console.log('Navigating to subject URL:', url);
+        if (overlay) overlay.classList.remove('d-none');
+
+        fetch(url, {
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+        .then(res => res.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newGradeSection = doc.querySelector('#grade-section');
+            const currentSection = document.getElementById('grade-section');
+            
+            if (newGradeSection && currentSection) {
+                currentSection.replaceWith(newGradeSection);
+                if (typeof bindGradeInputEvents === 'function') {
+                    bindGradeInputEvents();
+                }
+                if (typeof initializeCourseOutcomeDropdowns === 'function') {
+                    initializeCourseOutcomeDropdowns();
+                }
+                if (typeof initializeStudentSearch === 'function') {
+                    initializeStudentSearch();
+                }
+            }
+            
+            if (overlay) overlay.classList.add('d-none');
+        })
+        .catch(error => {
+            console.error('Error loading grades:', error);
+            if (overlay) overlay.classList.add('d-none');
+            alert('Failed to load subject grades.');
+        });
+    }
 
     // Handle term step clicks
     document.addEventListener('click', function(e) {
@@ -197,6 +287,24 @@ document.addEventListener('DOMContentLoaded', function() {
         const subjectId = subjectInput.value;
         if (!subjectId) return;
         
+        // Check for unsaved changes before term navigation (only if function exists and we're in grades view)
+        if (typeof checkForChanges === 'function' && document.getElementById('studentTableBody')) {
+            const { hasChanges } = checkForChanges();
+            if (hasChanges) {
+                showUnsavedChangesModal(() => {
+                    // User confirmed, proceed with navigation
+                    navigateToTerm(subjectId, term, window.gradeOverlay || document.getElementById('fadeOverlay'));
+                });
+                return;
+            }
+        }
+        
+        // No unsaved changes, proceed directly
+        navigateToTerm(subjectId, term, window.gradeOverlay || document.getElementById('fadeOverlay'));
+    });
+    
+    // Extract term navigation logic to reusable function
+    function navigateToTerm(subjectId, term, overlay) {
         if (overlay) overlay.classList.remove('d-none');
 
         fetch(`/instructor/grades/partial?subject_id=${subjectId}&term=${term}`, {
@@ -229,7 +337,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (overlay) overlay.classList.add('d-none');
             alert('Failed to load term data.');
         });
-    });
+    }
+    
 });
 </script>
 @endpush

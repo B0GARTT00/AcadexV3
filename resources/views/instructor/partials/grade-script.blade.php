@@ -2,23 +2,36 @@
     // Define hasUnsavedChanges globally
     let hasUnsavedChanges = false;
     let checkForChanges; // Declare the function variable globally
+    let form; // Declare form globally
 
     function bindGradeInputEvents() {
         console.log("Binding grade input events...");
         
-        // Safely query elements with null checks
-        const tableBody = document.getElementById('studentTableBody');
-        if (!tableBody) {
-            console.log("Table body not found, skipping grade input binding");
-            return;
-        }
+        // Add a small delay to ensure DOM is ready
+        setTimeout(() => {
+            // Safely query elements with null checks
+            const tableBody = document.getElementById('studentTableBody');
+            if (!tableBody) {
+                console.log("Table body not found, skipping grade input binding");
+                return;
+            }
 
         const inputs = Array.from(tableBody.querySelectorAll('.grade-input') || []);
         const itemsInputs = Array.from(document.querySelectorAll('.items-input') || []);
         const courseOutcomeInputs = Array.from(document.querySelectorAll('.course-outcome-select') || []);
         const saveButton = document.getElementById('saveGradesBtn');
-        const form = document.querySelector('form');
+        form = document.querySelector('form'); // Assign to global form variable
         const studentSearch = document.getElementById('studentSearch');
+
+        // Set up form submission tracking
+        if (form) {
+            form.submitting = false;
+            form.addEventListener('submit', function(e) {
+                console.log('Form submit event fired');
+                this.submitting = true;
+                hasUnsavedChanges = false; // Clear the global flag on form submit
+            });
+        }
 
         // Track changes
         const originalValues = new Map();
@@ -82,19 +95,28 @@
 
             // Update notification
             const container = document.getElementById('unsavedNotificationContainer');
-            if (container) {
-                if (hasChanges) {
-                    let message = 'You have unsaved changes';
-                    if (hasInvalidInputs) {
-                        message = 'Please correct invalid grades before saving';
-                    }
-                    container.innerHTML = `
-                        <div class="unsaved-notification">
-                            <i class="bi ${hasInvalidInputs ? 'bi-exclamation-triangle-fill' : 'bi-info-circle-fill'}"></i>
-                            <span>${message}</span>
-                        </div>
-                    `;
-                } else {
+            
+            if (hasChanges) {
+                let message = 'You have unsaved changes';
+                if (hasInvalidInputs) {
+                    message = 'Please correct invalid grades before saving';
+                }
+                
+                // Compact notification for beside save button
+                const compactNotificationHTML = `
+                    <div class="unsaved-notification-compact">
+                        <i class="bi ${hasInvalidInputs ? 'bi-exclamation-triangle-fill text-danger' : 'bi-info-circle-fill text-warning'}"></i>
+                        <span class="small">${message}</span>
+                    </div>
+                `;
+                
+                // Show beside save button only
+                if (container) {
+                    container.innerHTML = compactNotificationHTML;
+                }
+            } else {
+                // Clear notification
+                if (container) {
                     container.innerHTML = '';
                 }
             }
@@ -722,10 +744,28 @@
         // Initial state check
         updateSaveButtonState();
         
+        // Add click handler for save button to prevent beforeunload warning
+        if (saveButton) {
+            saveButton.addEventListener('click', function(e) {
+                console.log('Save button clicked');
+                if (form) {
+                    form.submitting = true;
+                }
+                hasUnsavedChanges = false; // Clear the global flag
+                
+                // Clear the notification immediately
+                const container = document.getElementById('unsavedNotificationContainer');
+                if (container) {
+                    container.innerHTML = '';
+                }
+            });
+        }
+        
         // Initialize course outcome dropdowns
         if (typeof initializeCourseOutcomeDropdowns === 'function') {
             initializeCourseOutcomeDropdowns();
         }
+        }, 100); // End setTimeout
     }
 
     // Initialize when DOM is loaded
@@ -788,9 +828,21 @@
 
     // Modify the beforeunload event handler
     window.addEventListener('beforeunload', function(e) {
+        // Don't show warning if form is being submitted or no unsaved changes
+        if (form && form.submitting) {
+            console.log('Form is being submitted, allowing navigation');
+            return;
+        }
+        
+        if (!hasUnsavedChanges) {
+            console.log('No unsaved changes, allowing navigation');
+            return;
+        }
+        
         if (typeof checkForChanges === 'function') {
             const { hasChanges } = checkForChanges();
-            if (hasChanges && !form.submitting) {
+            if (hasChanges) {
+                console.log('Unsaved changes detected, showing warning');
                 e.preventDefault();
                 e.returnValue = '';
                 return '';
@@ -798,25 +850,26 @@
         }
     });
 
-    // Add a flag to track form submission
-    if (form) {
-        form.submitting = false;
-        form.addEventListener('submit', function() {
-            this.submitting = true;
-        });
-    }
-
     // Modify the click event handler for links
     document.addEventListener('click', function(e) {
         if (typeof checkForChanges === 'function') {
             const { hasChanges } = checkForChanges();
-            if (hasChanges && !form.submitting) {
+            if (hasChanges && (!form || !form.submitting)) {
                 const link = e.target.closest('a');
                 if (link && !link.hasAttribute('data-bs-toggle')) {
                     e.preventDefault();
-                    if (confirm('You have unsaved changes. Are you sure you want to leave this page?')) {
-                        hasUnsavedChanges = false; // Clear the flag before navigation
-                        window.location.href = link.href;
+                    
+                    // Use custom modal if available, otherwise fallback to confirm
+                    if (typeof window.showUnsavedChangesModal === 'function') {
+                        window.showUnsavedChangesModal(() => {
+                            hasUnsavedChanges = false; // Clear the flag before navigation
+                            window.location.href = link.href;
+                        });
+                    } else {
+                        if (confirm('You have unsaved changes. Are you sure you want to leave this page?')) {
+                            hasUnsavedChanges = false; // Clear the flag before navigation
+                            window.location.href = link.href;
+                        }
                     }
                 }
             }
@@ -850,6 +903,61 @@
         @keyframes slideIn {
             from {
                 transform: translateX(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .unsaved-notification {
+            background: linear-gradient(135deg, #ffc107, #e0a800);
+            color: #212529;
+            padding: 12px 20px;
+            border-radius: 8px;
+            border-left: 4px solid #f57c00;
+            box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 500;
+            margin: 10px 0;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .unsaved-notification i {
+            font-size: 1.1em;
+            color: #e65100;
+        }
+
+        .unsaved-notification span {
+            flex: 1;
+        }
+
+        .unsaved-notification-compact {
+            background: rgba(255, 193, 7, 0.1);
+            color: #856404;
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 500;
+            font-size: 0.875rem;
+            animation: slideInRight 0.3s ease-out;
+            white-space: nowrap;
+            box-shadow: 0 2px 8px rgba(255, 193, 7, 0.15);
+        }
+
+        .unsaved-notification-compact i {
+            font-size: 1em;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(20px);
                 opacity: 0;
             }
             to {

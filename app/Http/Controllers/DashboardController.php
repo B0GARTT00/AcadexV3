@@ -212,9 +212,6 @@ class DashboardController extends Controller
                 ->where("role", 0)
                 ->where("department_id", $departmentId)
                 ->where("course_id", $chairpersonCourseId) // Only count active instructors in the same course
-                ->whereHas('subjects', function($query) use ($academicPeriodId) {
-                    $query->where('academic_period_id', $academicPeriodId);
-                })
                 ->count(),
             "countInactiveInstructors" => User::where("is_active", 0)
                 ->where("role", 0)
