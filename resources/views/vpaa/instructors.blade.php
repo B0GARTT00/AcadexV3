@@ -55,6 +55,7 @@
                 <thead class="table-light">
                     <tr>
                         <th scope="col" class="px-4 py-3 fw-semibold">Name</th>
+                        <th scope="col" class="px-4 py-3 fw-semibold">Role</th>
                         <th scope="col" class="px-4 py-3 fw-semibold">Department</th>
                         <th scope="col" class="px-4 py-3 fw-semibold">Email</th>
                         <th scope="col" class="px-4 py-3 fw-semibold">Status</th>
@@ -74,6 +75,26 @@
                                 </div>
                             </td>
                             <td class="px-4 py-3">
+                                <span class="badge 
+                                    @if($instructor->role == 0) bg-primary
+                                    @elseif($instructor->role == 1) bg-warning
+                                    @elseif($instructor->role == 2) bg-info
+                                    @elseif($instructor->role == 3) bg-danger
+                                    @elseif($instructor->role == 4) bg-success
+                                    @elseif($instructor->role == 5) bg-dark
+                                    @else bg-secondary
+                                    @endif px-3 py-1">
+                                    @if($instructor->role == 0) Instructor
+                                    @elseif($instructor->role == 1) Chairperson
+                                    @elseif($instructor->role == 2) Dean
+                                    @elseif($instructor->role == 3) Admin
+                                    @elseif($instructor->role == 4) GE Coordinator
+                                    @elseif($instructor->role == 5) VPAA
+                                    @else Unknown
+                                    @endif
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
                                 <span class="text-muted">{{ $instructor->department->department_description ?? 'N/A' }}</span>
                             </td>
                             <td class="px-4 py-3">
@@ -87,7 +108,7 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="4" class="text-center py-5">
+                            <td colspan="5" class="text-center py-5">
                                 <div class="text-muted mb-3">
                                     <i class="bi bi-people-x fs-1 opacity-50"></i>
                                 </div>

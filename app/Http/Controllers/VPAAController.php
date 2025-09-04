@@ -40,24 +40,51 @@ class VPAAController extends Controller
      */
     public function viewCourseOutcomeAttainment(Request $request)
     {
-        // Mirror instructor landing: show subject wildcards for active academic period
+        // Department-first flow: if no department selected, show department cards; otherwise show subjects for that department
+        $departmentId = $request->input('department_id');
+
         $academicPeriodId = session('active_academic_period_id');
         $period = $academicPeriodId ? \App\Models\AcademicPeriod::find($academicPeriodId) : null;
 
-        // For VPAA, list subjects regardless of active academic period; if a period is set, narrow to it
+        if (!$departmentId) {
+            // Show department wildcards with chairperson and GE coordinator
+            $departments = Department::where('is_deleted', false)
+                ->select('id', 'department_code', 'department_description')
+                ->orderBy('department_description')
+                ->get();
+
+            // Attach chairperson and GE coordinator to each department
+            foreach ($departments as $dept) {
+                $dept->chairperson = $dept->users()->where('role', 1)->first();
+                $dept->gecoordinator = $dept->users()->where('role', 4)->first();
+            }
+
+            return view('vpaa.scores.course-outcome-departments', [
+                'departments' => $departments,
+                'academicYear' => $period->academic_year ?? null,
+                'semester' => $period->semester ?? null,
+            ]);
+        }
+
+        // Show subjects filtered by selected department (and optionally academic period)
         $subjects = Subject::query()
+            ->join('courses', 'courses.id', '=', 'subjects.course_id')
             ->where('subjects.is_deleted', false)
+            ->where('courses.department_id', $departmentId)
             ->when($academicPeriodId, function ($q) use ($academicPeriodId) {
                 $q->where('subjects.academic_period_id', $academicPeriodId);
             })
             ->select('subjects.*')
-            ->orderBy('subject_code')
+            ->orderBy('subjects.subject_code')
             ->get();
+
+        $selectedDepartment = Department::find($departmentId);
 
         return view('vpaa.scores.course-outcome-results-wildcards', [
             'subjects' => $subjects,
             'academicYear' => $period->academic_year ?? null,
             'semester' => $period->semester ?? null,
+            'selectedDepartment' => $selectedDepartment,
         ]);
     }
 
@@ -182,22 +209,30 @@ class VPAAController extends Controller
 
     public function viewDepartments()
     {
-        // Get all non-deleted departments
+        // Get all non-deleted departments except GE (General Education)
         $departments = Department::where('is_deleted', false)
+            ->where('department_code', '!=', 'GE') // Exclude GE department
             ->select('id', 'department_code', 'department_description')
             ->orderBy('department_description')
             ->get();
 
-        // Manually count instructors and students for each department
+        // Manually count instructors and students for each department, and attach chairperson and GE coordinator
         $departments->each(function ($department) {
             $department->instructor_count = User::where('department_id', $department->id)
                 ->where('role', 0) // Instructor role
                 ->where('is_active', true)
                 ->count();
-                
+
             $department->student_count = $department->students()
                 ->where('is_deleted', false)
                 ->count();
+
+            $department->chairperson = User::where('department_id', $department->id)
+                ->where('role', 1)
+                ->first();
+            $department->gecoordinator = User::where('department_id', $department->id)
+                ->where('role', 4)
+                ->first();
         });
 
         return view('vpaa.departments', compact('departments'));
@@ -293,18 +328,20 @@ class VPAAController extends Controller
         // Check if department_id is passed as a URL parameter or as a request parameter
         $departmentId = $departmentId ?: $request->input('department_id');
         
-        $query = User::where('role', 0) // Instructor role
-            ->where('is_active', true)
-            ->with(['department' => function($query) {
-                $query->select('id', 'department_code', 'department_description');
-            }])
-            ->orderBy('last_name');
-
+        // Only show users if a department is selected
+        $instructors = collect(); // Empty collection by default
+        
         if ($departmentId) {
-            $query->where('department_id', $departmentId);
+            $instructors = User::where('is_active', true)
+                ->where('department_id', $departmentId) // Filter by department
+                ->where('role', '!=', 3) // Exclude admin users (role 3)
+                ->with(['department' => function($query) {
+                    $query->select('id', 'department_code', 'department_description');
+                }])
+                ->orderBy('last_name')
+                ->paginate(15);
         }
 
-        $instructors = $query->paginate(15); // Paginate with 15 items per page
         $departments = Department::where('is_deleted', false)
             ->select('id', 'department_code', 'department_description')
             ->orderBy('department_description')
@@ -367,131 +404,26 @@ class VPAAController extends Controller
     // View Students by Department
     // ============================
 
-    public function viewStudents(Request $request)
-    {
-        $selectedDepartmentId = $request->input('department_id');
-        $selectedCourseId = $request->input('course_id');
-        
-        $query = Student::with(['course', 'department'])
-            ->where('is_deleted', false)
-            ->orderBy('last_name')
-            ->orderBy('first_name');
-
-        if ($selectedDepartmentId) {
-            $query->where('department_id', $selectedDepartmentId);
-        }
-
-        if ($selectedCourseId) {
-            $query->where('course_id', $selectedCourseId);
-        }
-
-        $students = $query->get();
-        
-        $departments = Department::where('is_deleted', false)
-            ->select('id', 'department_code', 'department_description')
-            ->orderBy('department_description')
-            ->get();
-            
-        $courses = $selectedDepartmentId 
-            ? Course::where('department_id', $selectedDepartmentId)
-                ->where('is_deleted', false)
-                ->orderBy('course_code')
-                ->get()
-            : collect();
-
-        // Get the selected department if an ID is provided
-        $selectedDepartment = $selectedDepartmentId 
-            ? Department::find($selectedDepartmentId)
-            : null;
-
-        return view('vpaa.students', compact(
-            'students', 
-            'departments', 
-            'courses', 
-            'selectedDepartmentId',
-            'selectedCourseId',
-            'selectedDepartment'
-        ));
-    }
 
     // ============================
     // View Final Grades by Department/Course
     // ============================
 
-    public function viewGrades(Request $request)
+    public function viewStudents(Request $request)
     {
-    
+        $departments = Department::orderBy('department_description')->get();
         $departmentId = $request->input('department_id');
-        $courseId = $request->input('course_id');
-        $academicPeriodId = session('active_academic_period_id');
-    
-        // Get departments for the filter
-        $departments = Department::where('is_deleted', false)
-            ->select('id', 'department_code', 'department_description')
-            ->orderBy('department_description')
-            ->get();
-            
-        // Get courses based on selected department
-        $courses = $departmentId 
-            ? Course::where('department_id', $departmentId)
-                ->where('is_deleted', false)
-                ->orderBy('course_code')
-                ->get()
-            : collect();
-    
-        // Initialize collections
-        $students = collect();
-        $finalGrades = collect();
-        $instructors = collect();
-        $subjects = collect();
-    
-        if ($courseId) {
-            // Get instructors for the selected course
-            $instructors = User::where('role', 0) // role 0 = instructor
-                ->whereHas('subjects', function ($query) use ($courseId, $academicPeriodId) {
-                    $query->where('course_id', $courseId)
-                        ->where('academic_period_id', $academicPeriodId);
-                })
-                ->where('is_active', true)
+
+        if ($departmentId) {
+            $students = Student::where('department_id', $departmentId)
                 ->orderBy('last_name')
                 ->get();
-    
-            // Get subjects for the selected course
-            $subjects = Subject::where('course_id', $courseId)
-                ->where('academic_period_id', $academicPeriodId)
-                ->where('is_deleted', false)
-                ->orderBy('subject_code')
-                ->get();
-    
-            // Get students for the selected course
-            $students = Student::where('course_id', $courseId)
-                ->where('is_deleted', false)
-                ->orderBy('last_name')
-                ->orderBy('first_name')
-                ->get();
-    
-            // Get final grades for the selected course
-            if ($students->isNotEmpty() && $subjects->isNotEmpty()) {
-                $studentIds = $students->pluck('id');
-                $subjectIds = $subjects->pluck('id');
-    
-                $finalGrades = FinalGrade::whereIn('student_id', $studentIds)
-                    ->whereIn('subject_id', $subjectIds)
-                    ->with(['student', 'subject'])
-                    ->get()
-                    ->groupBy(['student_id', 'subject_id']);
-            }
+            $department = Department::find($departmentId);
+            return view('vpaa.students', compact('students', 'department', 'departments'));
         }
-    
-        return view('vpaa.grades', compact(
-            'departments',
-            'courses',
-            'instructors',
-            'students',
-            'subjects',
-            'finalGrades',
-            'departmentId',
-            'courseId'
-        ));
+
+        // Show department wildcards first
+        return view('vpaa.students-departments', compact('departments'));
     }
+// (Stray code removed)
 }

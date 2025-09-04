@@ -14,6 +14,17 @@
     @if(isset($subjects) && count($subjects))
         <div class="card border-0 shadow-sm rounded-4 mb-3">
             <div class="card-body d-flex flex-wrap gap-3 align-items-center">
+                @if(isset($selectedDepartment))
+                    <div class="me-auto">
+                        <a href="{{ route('vpaa.course-outcome-attainment') }}" class="btn btn-outline-secondary btn-sm me-2">
+                            <i class="bi bi-arrow-left"></i> Departments
+                        </a>
+                        <span class="fw-semibold">{{ $selectedDepartment->department_code }}</span>
+                        <small class="text-muted ms-1">{{ $selectedDepartment->department_description }}</small>
+                    </div>
+                @else
+                    <div class="flex-grow-1"></div>
+                @endif
                 <div class="flex-grow-1">
                     <input type="text" id="subject-search" class="form-control" placeholder="Search subjects (code or title)…" aria-label="Search subjects">
                 </div>

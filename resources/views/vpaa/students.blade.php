@@ -5,16 +5,13 @@
     <div class="d-flex justify-content-between align-items-center mb-6">
         <h1 class="text-2xl font-bold">
             <i class="bi bi-mortarboard me-2"></i>
-            Students
-            @if($selectedDepartment)
-                <span class="text-muted">- {{ $selectedDepartment->department_description ?? '' }}</span>
-                @if($selectedCourseId)
-                    <span class="text-muted">- {{ $courses->firstWhere('id', $selectedCourseId)->course_code ?? '' }}</span>
-                @endif
+            Students Overview
+            @if(isset($department))
+                <span class="text-muted">- {{ $department->department_description ?? '' }}</span>
             @endif
         </h1>
-        <a href="{{ route('vpaa.departments') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-1"></i> Back to Departments
+        <a href="{{ route('vpaa.students') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Students Overview
         </a>
     </div>
 
@@ -26,7 +23,7 @@
                     <select name="department_id" id="department_id" class="form-select" onchange="this.form.submit()">
                         <option value="">All Departments</option>
                         @foreach($departments as $dept)
-                            <option value="{{ $dept->id }}" {{ $selectedDepartmentId == $dept->id ? 'selected' : '' }}>
+                            <option value="{{ $dept->id }}" {{ (isset($department) && $department->id == $dept->id) ? 'selected' : '' }}>
                                 {{ $dept->department_description }}
                             </option>
                         @endforeach
@@ -34,11 +31,11 @@
                 </div>
                 <div class="col-md-4">
                     <label for="course_id" class="form-label">Course</label>
-                    <select name="course_id" id="course_id" class="form-select" {{ !$selectedDepartmentId ? 'disabled' : '' }} onchange="this.form.submit()">
+                    <select name="course_id" id="course_id" class="form-select" {{ !isset($department) ? 'disabled' : '' }} onchange="this.form.submit()">
                         <option value="">All Courses</option>
-                        @if($selectedDepartmentId)
+                        @if(isset($courses) && isset($department))
                             @foreach($courses as $course)
-                                <option value="{{ $course->id }}" {{ $selectedCourseId == $course->id ? 'selected' : '' }}>
+                                <option value="{{ $course->id }}" {{ (isset($selectedCourseId) && $selectedCourseId == $course->id) ? 'selected' : '' }}>
                                     {{ $course->course_code }} - {{ $course->name }}
                                 </option>
                             @endforeach
@@ -49,37 +46,58 @@
         </div>
     </div>
 
-    <div class="card border-0 shadow-sm">
+    <div class="card border-0 shadow-sm rounded-4">
         <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover mb-0">
                 <thead class="table-light">
                     <tr>
-                        <th>Student ID</th>
-                        <th>Name</th>
-                        <th>Course</th>
-                        <th>Department</th>
-                        <th>Year Level</th>
-                        <th class="text-end">Actions</th>
+                        <th scope="col" class="px-4 py-3 fw-semibold">Name</th>
+                        <th scope="col" class="px-4 py-3 fw-semibold">Course</th>
+                        <th scope="col" class="px-4 py-3 fw-semibold">Department</th>
+                        <th scope="col" class="px-4 py-3 fw-semibold">Year Level</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse($students as $student)
                         <tr>
-                            <td>{{ $student->student_id }}</td>
-                            <td>{{ $student->last_name }}, {{ $student->first_name }} {{ $student->middle_name }}</td>
-                            <td>{{ $student->course->course_code ?? 'N/A' }}</td>
-                            <td>{{ $student->department->department_description ?? 'N/A' }}</td>
-                            <td>{{ $student->year_level }}</td>
-                            <td class="text-end">
-                                <a href="#" class="btn btn-sm btn-outline-primary">
-                                    <i class="bi bi-eye"></i> View
-                                </a>
+                            <td class="px-4 py-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="bg-info bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                        <i class="bi bi-person-fill text-info"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-semibold">{{ $student->last_name }}, {{ $student->first_name }} {{ $student->middle_name }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="badge bg-primary-subtle text-primary px-3 py-2 rounded-pill">
+                                    {{ $student->course->course_code ?? 'N/A' }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="text-muted">{{ $student->department->department_description ?? 'N/A' }}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <span class="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
+                                    Year {{ $student->year_level }}
+                                </span>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="6" class="text-center py-4">
-                                No students found.
+                            <td colspan="4" class="text-center py-5">
+                                <div class="text-muted mb-3">
+                                    <i class="bi bi-people-x fs-1 opacity-50"></i>
+                                </div>
+                                <h6 class="text-muted mb-1">No students found</h6>
+                                <p class="text-muted small mb-0">
+                                    @if(isset($department))
+                                        No students are assigned to this department.
+                                    @else
+                                        Try selecting a different department.
+                                    @endif
+                                </p>
                             </td>
                         </tr>
                     @endforelse
