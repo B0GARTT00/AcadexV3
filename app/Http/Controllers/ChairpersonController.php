@@ -122,7 +122,13 @@ class ChairpersonController extends Controller
         }
         $query->where('department_id', '!=', $geDepartment->id);
         $instructor = $query->firstOrFail();
-        $instructor->update(['is_active' => false]);
+        
+        // When chairperson deactivates, remove both active status and GE teaching capability
+        $instructor->update([
+            'is_active' => false,
+            'can_teach_ge' => false
+        ]);
+        
         return redirect()->back()->with('success', 'Instructor deactivated successfully.');
     }
 

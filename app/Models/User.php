@@ -105,6 +105,11 @@ class User extends Authenticatable
         return $this->belongsTo(Course::class);
     }
 
+    public function geSubjectRequests()
+    {
+        return $this->hasMany(GESubjectRequest::class, 'instructor_id');
+    }
+
     /**
      * Check if the user is an admin
      */

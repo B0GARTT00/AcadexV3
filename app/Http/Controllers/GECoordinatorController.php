@@ -84,13 +84,20 @@ class GECoordinatorController extends Controller
             abort(403);
         }
         
-        // GE Coordinator: show instructors from GE department AND those approved to teach GE subjects
+        // GE Coordinator: show instructors from GE department AND those who can/could teach GE subjects
         $geDepartment = Department::where('department_code', 'GE')->first();
         
         $instructors = User::where('role', 0)
             ->where(function($query) use ($geDepartment) {
-                $query->where('department_id', $geDepartment->id)
-                      ->orWhere('can_teach_ge', true);
+                $query->where('department_id', $geDepartment->id) // Always show GE department instructors
+                      ->orWhere('can_teach_ge', true) // Show those who can currently teach GE
+                      ->orWhere(function($subQuery) {
+                          // Show inactive instructors who previously had approved GE requests (were managed by GE Coordinator)
+                          $subQuery->where('is_active', false)
+                                   ->whereHas('geSubjectRequests', function($requestQuery) {
+                                       $requestQuery->where('status', 'approved');
+                                   });
+                      });
             })
             ->orderBy('last_name')
             ->get();
@@ -149,15 +156,18 @@ class GECoordinatorController extends Controller
             ->where('can_teach_ge', true)
             ->firstOrFail();
             
-        // Only remove GE teaching capability, don't deactivate the entire account
-        $instructor->update(['can_teach_ge' => false]);
+        // Remove GE teaching capability AND deactivate the account
+        $instructor->update([
+            'can_teach_ge' => false,
+            'is_active' => false
+        ]);
         
-        // Update any existing approved GE requests to "revoked" status
+        // Update any existing approved GE requests to "rejected" status
         \App\Models\GESubjectRequest::where('instructor_id', $id)
             ->where('status', 'approved')
-            ->update(['status' => 'revoked']);
+            ->update(['status' => 'rejected']);
         
-        return redirect()->back()->with('success', 'Instructor removed from GE teaching successfully.');
+        return redirect()->back()->with('success', 'Instructor deactivated successfully.');
     }
 
     public function activateInstructor($id)
@@ -172,10 +182,13 @@ class GECoordinatorController extends Controller
             ->where('can_teach_ge', false)
             ->firstOrFail();
             
-        // Only enable GE teaching capability, don't affect the entire account status
-        $instructor->update(['can_teach_ge' => true]);
+        // Enable GE teaching capability AND activate the account
+        $instructor->update([
+            'can_teach_ge' => true,
+            'is_active' => true
+        ]);
         
-        return redirect()->back()->with('success', 'Instructor enabled for GE teaching successfully.');
+        return redirect()->back()->with('success', 'Instructor activated successfully.');
     }
 
     // ============================

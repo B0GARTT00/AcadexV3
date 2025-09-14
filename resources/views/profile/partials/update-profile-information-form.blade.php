@@ -38,7 +38,7 @@
 
             <div>
                 <x-input-label for="role" :value="__('Role')" />
-                <x-text-input id="role" type="text" class="mt-1 block w-full bg-gray-100" :value="$user->role == 0 ? 'Instructor' : ($user->role == 1 ? 'Chairperson' : ($user->role == 2 ? 'Dean' : ($user->role == 3 ? 'Admin' : 'Unknown')))" readonly />
+                <x-text-input id="role" type="text" class="mt-1 block w-full bg-gray-100" :value="$user->role == 0 ? 'Instructor' : ($user->role == 1 ? 'Chairperson' : ($user->role == 2 ? 'Dean' : ($user->role == 3 ? 'Admin' : ($user->role == 4 ? 'GE Coordinator' : ($user->role == 5 ? 'VPAA' : 'Unknown')))))" readonly />
             </div>
 
             @if(!$user->isAdmin())
