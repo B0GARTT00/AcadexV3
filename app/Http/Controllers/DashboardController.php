@@ -329,8 +329,15 @@ class DashboardController extends Controller
         // Count all instructors in GE department or approved to teach GE subjects
         $countInstructors = User::where("role", 0)
             ->where(function($query) use ($geDepartment) {
-                $query->where("department_id", $geDepartment->id)
-                      ->orWhere("can_teach_ge", true);
+                $query->where("department_id", $geDepartment->id) // Always count GE department instructors
+                      ->orWhere("can_teach_ge", true) // Count those who can currently teach GE
+                      ->orWhere(function($subQuery) {
+                          // Count inactive instructors who previously had approved GE requests
+                          $subQuery->where('is_active', false)
+                                   ->whereHas('geSubjectRequests', function($requestQuery) {
+                                       $requestQuery->where('status', 'approved');
+                                   });
+                      });
             })
             ->count();
             
@@ -346,7 +353,12 @@ class DashboardController extends Controller
             ->where("role", 0)
             ->where(function($query) use ($geDepartment) {
                 $query->where("department_id", $geDepartment->id)
-                      ->orWhere("can_teach_ge", true);
+                      ->orWhere(function($subQuery) {
+                          // Count inactive instructors who previously had approved GE requests
+                          $subQuery->whereHas('geSubjectRequests', function($requestQuery) {
+                              $requestQuery->where('status', 'approved');
+                          });
+                      });
             })
             ->count();
             
