@@ -5,6 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property string $first_name
+ * @property string|null $middle_name
+ * @property string $last_name
+ * @property int|null $department_id
+ * @property int|null $course_id
+ * @property int|null $academic_period_id
+ * @property int|null $year_level
+ * @property bool $is_deleted
+ * @property-read Course|null $course
+ * @property-read Department|null $department
+ */
 class Student extends Model
 {
     use HasFactory;

@@ -87,13 +87,10 @@
                 </a>
             </li>
             <li>
-                <form method="POST" action="{{ route('logout') }}" id="logoutForm">
-                    @csrf
-                    <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-danger" data-bs-toggle="modal" data-bs-target="#signOutModal">
-                        <i class="bi bi-box-arrow-right me-2"></i>
-                        <span>Sign Out</span>
-                    </button>
-                </form>
+                <button type="button" class="dropdown-item d-flex align-items-center py-2 px-3 text-danger" data-bs-toggle="modal" data-bs-target="#signOutModal">
+                    <i class="bi bi-box-arrow-right me-2"></i>
+                    <span>Sign Out</span>
+                </button>
             </li>
         </ul>
     </div>
@@ -115,9 +112,12 @@
             </div>
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-danger" onclick="document.getElementById('logoutForm').submit();">
-                    Yes, Sign Out
-                </button>
+                <form method="POST" action="{{ route('logout') }}" id="logoutForm">
+                    @csrf
+                    <button type="submit" class="btn btn-danger">
+                        Yes, Sign Out
+                    </button>
+                </form>
             </div>
         </div>
     </div>

@@ -2,6 +2,19 @@
     <div class="modal-dialog modal-lg">
         <form method="POST" action="{{ route('instructor.activities.store') }}">
             @csrf
+            @php
+                $typeOptions = collect($activityTypes ?? [])
+                    ->map(fn ($type) => mb_strtolower($type))
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if (empty($typeOptions)) {
+                    $typeOptions = ['quiz', 'ocr', 'exam'];
+                }
+
+                $formatActivityType = fn ($type) => ucwords(str_replace('_', ' ', $type));
+            @endphp
             <div class="modal-content">
                 <div class="modal-header bg-success text-white">
                     <h5 class="modal-title fw-semibold" id="addActivityModalLabel">➕ Add New Activity</h5>
@@ -42,9 +55,9 @@
                         <label class="form-label">Activity Type</label>
                         <select name="type" class="form-select" required>
                             <option value="">-- Select Type --</option>
-                            @foreach(['quiz','ocr','exam'] as $type)
-                                <option value="{{ $type }}" {{ old('type') == $type ? 'selected' : '' }}>
-                                    {{ ucfirst($type) }}
+                            @foreach($typeOptions as $type)
+                                <option value="{{ $type }}" {{ mb_strtolower(old('type', '')) == $type ? 'selected' : '' }}>
+                                    {{ $formatActivityType($type) }}
                                 </option>
                             @endforeach
                         </select>

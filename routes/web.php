@@ -238,6 +238,21 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::get('/user-logs', [AdminController::class, 'viewUserLogs'])->name('userLogs');
     Route::get('/admin/user-logs/filter', [AdminController::class, 'filterUserLogs'])->name('user_logs.filter');
 
+    Route::get('/grades-formula', [AdminController::class, 'gradesFormula'])->name('gradesFormula');
+    Route::get('/grades-formula/default', [AdminController::class, 'gradesFormulaDefault'])->name('gradesFormula.default');
+    Route::get('/grades-formula/department/{department}', [AdminController::class, 'gradesFormulaDepartment'])->name('gradesFormula.department');
+    Route::get('/grades-formula/department/{department}/edit', [AdminController::class, 'gradesFormulaEditDepartment'])->name('gradesFormula.edit.department');
+    Route::get('/grades-formula/department/{department}/formulas/create', [AdminController::class, 'createDepartmentFormula'])->name('gradesFormula.department.formulas.create');
+    Route::get('/grades-formula/department/{department}/formulas/{formula}/edit', [AdminController::class, 'editDepartmentFormulaEntry'])->name('gradesFormula.department.formulas.edit');
+    Route::delete('/grades-formula/department/{department}/formulas/{formula}', [AdminController::class, 'destroyDepartmentFormula'])->name('gradesFormula.department.formulas.destroy');
+    Route::get('/grades-formula/department/{department}/course/{course}', [AdminController::class, 'gradesFormulaCourse'])->name('gradesFormula.course');
+    Route::get('/grades-formula/department/{department}/course/{course}/edit', [AdminController::class, 'gradesFormulaEditCourse'])->name('gradesFormula.edit.course');
+    Route::get('/grades-formula/subject/{subject}', [AdminController::class, 'gradesFormulaSubject'])->name('gradesFormula.subject');
+    Route::get('/grades-formula/subject/{subject}/edit', [AdminController::class, 'gradesFormulaEditSubject'])->name('gradesFormula.edit.subject');
+    Route::post('/grades-formula/subject/{subject}/apply', [AdminController::class, 'applySubjectFormula'])->name('gradesFormula.subject.apply');
+    Route::post('/grades-formula/store', [AdminController::class, 'storeGradesFormula'])->name('gradesFormula.store');
+    Route::put('/grades-formula/{formula}', [AdminController::class, 'updateGradesFormula'])->name('gradesFormula.update');
+
     Route::get('/users', [AdminController::class, 'viewUsers'])->name('users');
     Route::post('/users/confirm-password', [AdminController::class, 'adminConfirmUserCreationWithPassword'])->name('confirmUserCreationWithPassword');
     Route::post('/users/store-verified-user', [AdminController::class, 'storeUser'])->name('storeVerifiedUser');

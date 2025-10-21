@@ -5,12 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Activity;
 use App\Models\Subject;
 use App\Models\AcademicPeriod;
+use App\Services\GradesFormulaService;
+use App\Traits\ActivityManagementTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException as ValidationError;
 
 class ActivityController extends Controller
 {
+    use ActivityManagementTrait;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -28,9 +33,10 @@ class ActivityController extends Controller
             ->where('is_deleted', false)
             ->when($academicPeriodId, fn($q) => $q->where('academic_period_id', $academicPeriodId))
             ->get();
-    
-        $activities = collect();
-    
+
+    $activities = collect();
+    $activityTypes = [];
+
         if ($request->filled('subject_id')) {
             $subject = Subject::findOrFail($request->subject_id);
     
@@ -48,22 +54,8 @@ class ActivityController extends Controller
                 ->count();
     
             if ($existing === 0) {
-                $terms = ['prelim', 'midterm', 'prefinal', 'final'];
-                foreach ($terms as $term) {
-                    foreach (['quiz' => 3, 'ocr' => 3, 'exam' => 1] as $type => $count) {
-                        for ($i = 1; $i <= $count; $i++) {
-                            Activity::create([
-                                'subject_id' => $subject->id,
-                                'term' => $term,
-                                'type' => $type,
-                                'title' => ucfirst($type) . ' ' . $i,
-                                'number_of_items' => 100,
-                                'is_deleted' => false,
-                                'created_by' => Auth::id(),
-                                'updated_by' => Auth::id(),
-                            ]);
-                        }
-                    }
+                foreach (['prelim', 'midterm', 'prefinal', 'final'] as $termName) {
+                    $this->getOrCreateDefaultActivities($subject->id, $termName);
                 }
             }
     
@@ -75,10 +67,12 @@ class ActivityController extends Controller
                 ->orderBy('type')
                 ->orderBy('created_at')
                 ->get();
+
+            $activityTypes = GradesFormulaService::getActivityTypes($subject->id, $subject->course_id, $subject->department_id);
         }
-    
-        return view('instructor.activities.index', compact('subjects', 'activities'));
-    }       
+
+        return view('instructor.activities.index', compact('subjects', 'activities', 'activityTypes'));
+    }
     
     // ➕ Full Create Activity Form
     public function create()
@@ -95,7 +89,9 @@ class ActivityController extends Controller
             ->orderBy('semester')
             ->get();
 
-        return view('instructor.activities.create', compact('subjects', 'academicPeriods'));
+    $activityTypes = GradesFormulaService::getActivityTypes(null, null, Auth::user()->department_id);
+
+        return view('instructor.activities.create', compact('subjects', 'academicPeriods', 'activityTypes'));
     }
 
     // 🎯 Quick Add Form from inside Manage Grades
@@ -121,7 +117,8 @@ class ActivityController extends Controller
         return view('instructor.activities.add', [
             'subject' => $subject,
             'term' => $request->term,
-            'courseOutcomes' => $courseOutcomes
+            'courseOutcomes' => $courseOutcomes,
+            'activityTypes' => GradesFormulaService::getActivityTypes($subject->id, $subject->course_id, $subject->department_id),
         ]);
     }
 
@@ -130,26 +127,36 @@ class ActivityController extends Controller
     {
         Gate::authorize('instructor');
     
-        $request->validate([
+        $validated = $request->validate([
             'subject_id' => 'required|exists:subjects,id',
             'term' => 'required|in:prelim,midterm,prefinal,final',
-            'type' => 'required|in:quiz,ocr,exam',
+            'type' => 'required|string',
             'title' => 'required|string|max:255',
             'number_of_items' => 'required|integer|min:1',
             'course_outcome_id' => 'nullable|exists:course_outcomes,id',
         ]);
     
-        $subject = Subject::findOrFail($request->subject_id);
+        $subject = Subject::findOrFail($validated['subject_id']);
         $academicPeriodId = session('active_academic_period_id');
     
         if ($academicPeriodId && $subject->academic_period_id !== (int) $academicPeriodId) {
             abort(403, 'This subject does not belong to the active academic period.');
         }
+
+    $allowedTypes = GradesFormulaService::getActivityTypes($subject->id, $subject->course_id, $subject->department_id);
+        $normalizedType = mb_strtolower($validated['type']);
+
+        $allowedNormalized = array_map('mb_strtolower', $allowedTypes);
+        if (! in_array($normalizedType, $allowedNormalized, true)) {
+            throw ValidationError::withMessages([
+                'type' => 'Selected activity type is not allowed for the active grade formula.',
+            ]);
+        }
     
         Activity::create([
             'subject_id' => $subject->id,
             'term' => $request->term,
-            'type' => $request->type,
+            'type' => $normalizedType,
             'title' => $request->title,
             'number_of_items' => $request->number_of_items,
             'course_outcome_id' => $request->course_outcome_id,
@@ -171,7 +178,7 @@ class ActivityController extends Controller
 
         try {
             $validated = $request->validate([
-                'type' => 'required|in:quiz,ocr,exam',
+                'type' => 'required|string',
                 'title' => 'required|string|max:255',
                 'number_of_items' => 'required|integer|min:1',
                 'course_outcome_id' => 'nullable|exists:course_outcomes,id',
@@ -196,8 +203,18 @@ class ActivityController extends Controller
                 ], 403);
             }
 
+            $allowedTypes = GradesFormulaService::getActivityTypes($subject->id, $subject->course_id, $subject->department_id);
+            $normalizedType = mb_strtolower($validated['type']);
+            $allowedNormalized = array_map('mb_strtolower', $allowedTypes);
+
+            if (! in_array($normalizedType, $allowedNormalized, true)) {
+                throw ValidationError::withMessages([
+                    'type' => 'Selected activity type is not allowed for the active grade formula.',
+                ]);
+            }
+
             $activity->update([
-                'type' => $validated['type'],
+                'type' => $normalizedType,
                 'title' => $validated['title'],
                 'number_of_items' => $validated['number_of_items'],
                 'course_outcome_id' => $validated['course_outcome_id'] ?? null,
@@ -219,7 +236,7 @@ class ActivityController extends Controller
                 'term' => $activity->term,
             ])->with('success', 'Activity updated successfully.');
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+    } catch (ValidationError $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Validation failed',

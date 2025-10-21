@@ -2,64 +2,87 @@
 
 namespace App\Traits;
 
-use App\Models\Activity;
-use App\Models\Score;
-use App\Models\TermGrade;
 use App\Models\FinalGrade;
+use App\Models\Score;
+use App\Models\Subject;
+use App\Models\TermGrade;
+use App\Services\GradesFormulaService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 
 trait GradeCalculationTrait
 {
-    protected function calculateActivityScores(Collection $activities, int $studentId): array
+    protected function getGradesFormulaSettings(?int $subjectId = null, ?int $courseId = null, ?int $departmentId = null): array
     {
-        $scoresByType = [
-            'quiz' => ['total' => 0, 'count' => 0],
-            'ocr' => ['total' => 0, 'count' => 0],
-            'exam' => ['total' => 0, 'count' => 0],
-        ];
-        
+        return GradesFormulaService::getSettings(
+            $subjectId,
+            $courseId,
+            $departmentId,
+            null,
+            session('active_academic_period_id')
+        );
+    }
+
+    protected function calculateActivityScores(Collection $activities, int $studentId, ?Subject $subject = null, ?array $formulaSettings = null): array
+    {
+        $formula = $formulaSettings
+            ?? $this->getGradesFormulaSettings(
+                $subject?->id,
+                $subject?->course_id,
+                $subject?->department_id
+            );
+        // ensure weights keys are lowercase
+        $weights = array_change_key_case($formula['weights'], CASE_LOWER);
+
+        $scoresByType = [];
+        foreach (array_keys($weights) as $type) {
+            $scoresByType[$type] = ['total' => 0, 'count' => 0];
+        }
+
         $allScored = true;
-        
+
         foreach ($activities as $activity) {
+            // match activity type case-insensitively by lowercasing the activity type
+            $type = mb_strtolower($activity->type);
+
+            if (! array_key_exists($type, $scoresByType)) {
+                $scoresByType[$type] = ['total' => 0, 'count' => 0];
+            }
+
             $score = Score::where('student_id', $studentId)
                 ->where('activity_id', $activity->id)
                 ->first();
-                
+
             if ($score && $score->score !== null) {
-                $scaledScore = ($score->score / $activity->number_of_items) * 60 + 40;
-                $scoresByType[$activity->type]['total'] += $scaledScore;
-                $scoresByType[$activity->type]['count']++;
+                $denominator = max($activity->number_of_items, 1);
+                $scaledScore = ($score->score / $denominator) * $formula['scale_multiplier'] + $formula['base_score'];
+                $scoresByType[$type]['total'] += $scaledScore;
+                $scoresByType[$type]['count']++;
             } else {
                 $allScored = false;
             }
         }
-        
+
         return [
             'scores' => $scoresByType,
-            'allScored' => $allScored
+            'weights' => $weights,
+            'formula' => $formula,
+            'allScored' => $allScored,
         ];
     }
-    
-    protected function calculateTermGrade(array $scoresByType): ?float
+
+    protected function calculateTermGrade(array $scoresByType, array $weights): ?float
     {
-        $quizAvg = $scoresByType['quiz']['count'] > 0
-            ? $scoresByType['quiz']['total'] / $scoresByType['quiz']['count']
-            : 0;
-            
-        $ocrAvg = $scoresByType['ocr']['count'] > 0
-            ? $scoresByType['ocr']['total'] / $scoresByType['ocr']['count']
-            : 0;
-            
-        $examAvg = $scoresByType['exam']['count'] > 0
-            ? $scoresByType['exam']['total'] / $scoresByType['exam']['count']
-            : 0;
-            
-        return round(
-            ($quizAvg * 0.4) + ($ocrAvg * 0.2) + ($examAvg * 0.4),
-            2
-        );
+        $weightedTotal = 0;
+
+        foreach ($weights as $type => $weight) {
+            $count = $scoresByType[$type]['count'] ?? 0;
+            $average = $count > 0 ? $scoresByType[$type]['total'] / $count : 0;
+            $weightedTotal += $average * $weight;
+        }
+
+        return round($weightedTotal, 2);
     }
     
     protected function updateTermGrade(int $studentId, int $subjectId, int $termId, int $academicPeriodId, float $termGrade): void
@@ -79,21 +102,27 @@ trait GradeCalculationTrait
         );
     }
     
-    protected function calculateAndUpdateFinalGrade(int $studentId, int $subjectId, int $academicPeriodId): void
+    protected function calculateAndUpdateFinalGrade(int $studentId, Subject $subject, int $academicPeriodId, ?array $formulaSettings = null): void
     {
         $termGrades = TermGrade::where('student_id', $studentId)
-            ->where('subject_id', $subjectId)
+            ->where('subject_id', $subject->id)
             ->whereIn('term_id', [1, 2, 3, 4])
             ->get();
             
         if ($termGrades->count() === 4) {
+            $formula = $formulaSettings
+                ?? $this->getGradesFormulaSettings(
+                    $subject->id,
+                    $subject->course_id,
+                    $subject->department_id
+                );
             $finalGrade = round($termGrades->avg('term_grade'), 2);
-            $remarks = $finalGrade >= 75 ? 'Passed' : 'Failed';
+            $remarks = $finalGrade >= $formula['passing_grade'] ? 'Passed' : 'Failed';
             
             FinalGrade::updateOrCreate(
                 [
                     'student_id' => $studentId,
-                    'subject_id' => $subjectId
+                    'subject_id' => $subject->id
                 ],
                 [
                     'academic_period_id' => $academicPeriodId,
@@ -105,7 +134,7 @@ trait GradeCalculationTrait
                 ]
             );
             
-            Log::info("Final grade updated for student {$studentId} in subject {$subjectId}: {$finalGrade} ({$remarks})");
+            Log::info("Final grade updated for student {$studentId} in subject {$subject->id}: {$finalGrade} ({$remarks})");
         }
     }
     

@@ -6,6 +6,23 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * @property int $id
+ * @property string $first_name
+ * @property string|null $middle_name
+ * @property string $last_name
+ * @property string $email
+ * @property int $role
+ * @property int|null $department_id
+ * @property int|null $course_id
+ * @property string $password
+ * @property bool $is_active
+ * @property bool $is_universal
+ * @property-read Department|null $department
+ * @property-read Course|null $course
+ * @property-read string $full_name
+ * @property-read string $name
+ */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;

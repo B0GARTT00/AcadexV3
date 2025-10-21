@@ -5,6 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property string $course_code
+ * @property string $course_description
+ * @property int|null $department_id
+ * @property bool $is_deleted
+ * @property-read \Illuminate\Database\Eloquent\Collection|Subject[] $subjects
+ * @property-read int|null $subjects_count
+ * @property-read \Illuminate\Database\Eloquent\Collection|Student[] $students
+ * @property-read Department|null $department
+ */
 class Course extends Model
 {
     use HasFactory;
@@ -43,6 +54,12 @@ class Course extends Model
     public function students()
     {
         return $this->hasMany(Student::class);
+    }
+
+    public function subjects()
+    {
+        return $this->hasMany(Subject::class)
+            ->where('is_deleted', false);
     }
 
     /**

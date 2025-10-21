@@ -9,11 +9,13 @@ use App\Models\Subject;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
-use App\Models\Activity;
+use App\Traits\ActivityManagementTrait;
 
 
 class StudentController extends Controller
 {
+    use ActivityManagementTrait;
+
     public function __construct()
     {
         $this->middleware('auth');
@@ -116,32 +118,8 @@ class StudentController extends Controller
         ]);
     
         // ✅ Automatically insert default activities for all terms
-        $terms = ['prelim', 'midterm', 'prefinal', 'final'];
-        foreach ($terms as $term) {
-            $exists = Activity::where('subject_id', $subject->id)
-                ->where('term', $term)
-                ->exists();
-    
-            if (!$exists) {
-                $defaultActivities = [];
-                foreach (['quiz' => 3, 'ocr' => 3, 'exam' => 1] as $type => $count) {
-                    for ($i = 1; $i <= $count; $i++) {
-                        $defaultActivities[] = [
-                            'subject_id' => $subject->id,
-                            'term' => $term,
-                            'type' => $type,
-                            'title' => ucfirst($type) . " $i",
-                            'number_of_items' => 100,
-                            'is_deleted' => false,
-                            'created_by' => Auth::id(),
-                            'updated_by' => Auth::id(),
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                    }
-                }
-                Activity::insert($defaultActivities);
-            }
+        foreach (['prelim', 'midterm', 'prefinal', 'final'] as $term) {
+            $this->getOrCreateDefaultActivities($subject->id, $term);
         }
     
         return redirect()->route('instructor.students.index')->with('success', 'Student enrolled successfully with default activities.');

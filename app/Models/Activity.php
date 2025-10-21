@@ -5,6 +5,17 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property int $subject_id
+ * @property string $term
+ * @property string $type
+ * @property string $title
+ * @property int $number_of_items
+ * @property int|null $course_outcome_id
+ * @property bool $is_deleted
+ * @property-read Subject $subject
+ */
 class Activity extends Model
 {
     use HasFactory;

@@ -5,6 +5,15 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property string $department_code
+ * @property string $department_description
+ * @property bool $is_deleted
+ * @property-read \Illuminate\Database\Eloquent\Collection|Course[] $courses
+ * @property-read \Illuminate\Database\Eloquent\Collection|User[] $users
+ * @property-read \Illuminate\Database\Eloquent\Collection|Student[] $students
+ */
 class Department extends Model
 {
     use HasFactory;

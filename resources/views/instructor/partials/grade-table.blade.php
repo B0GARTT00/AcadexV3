@@ -3,9 +3,37 @@
     if (!isset($courseOutcomes) || empty($courseOutcomes)) {
         $courseOutcomes = collect();
     }
+    // Determine passing grade threshold (fallback to 75 if not provided)
+    $threshold = isset($passingGrade) && is_numeric($passingGrade)
+        ? (float) $passingGrade
+        : 75.0;
 @endphp
 
 @if ($hasData)
+    @if (!empty($formulaMeta))
+        <div class="alert alert-secondary shadow-sm d-flex align-items-center gap-3 rounded-4 py-2 px-3 mb-3" style="transition: all 0.3s ease;">
+            <div class="rounded-circle d-flex align-items-center justify-content-center" style="width: 36px; height: 36px; background: rgba(25, 135, 84, 0.12); color: #198754;">
+                <i class="bi bi-gear-fill"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-semibold text-dark mb-1" style="font-size: 0.95rem;">
+                    Using <span class="text-success">{{ $formulaMeta['label'] ?? 'ASBME Default' }}</span>
+                </div>
+                <div class="text-muted small">
+                    Scope: {{ strtoupper($formulaMeta['scope'] ?? 'GLOBAL') }}
+                    @if(!empty($formulaMeta['department']))
+                        · Department: {{ $formulaMeta['department'] }}
+                    @endif
+                    @if(!empty($formulaMeta['course']))
+                        · Course: {{ $formulaMeta['course'] }}
+                    @endif
+                    @if(!empty($formulaMeta['subject']))
+                        · Subject Formula Active
+                    @endif
+                </div>
+            </div>
+        </div>
+    @endif
     <div class="mb-3 d-flex justify-content-between align-items-center">
         <div class="d-flex align-items-center gap-2">
             <div class="input-group shadow-sm" style="width: 300px;">
@@ -131,16 +159,13 @@
                                     </td>
                                 @endforeach
                                 @php
-                                    $grade = $termGrades[$student->id] ?? null;
-                                    if ($grade !== null && is_numeric($grade)) {
-                                        $grade = (int) round($grade);
-                                    } else {
-                                        $grade = null;
-                                    }
-                                    
-                                    // Enhanced grade styling
-                                    if ($grade !== null) {
-                                        if ($grade >= 75) {
+                                    // Raw term grade (to 2 decimals), and separate integer for display
+                                    $rawGrade = $termGrades[$student->id] ?? null; // e.g., 89.67
+                                    $displayGrade = $rawGrade !== null && is_numeric($rawGrade) ? (int) round($rawGrade) : null;
+
+                                    // Enhanced grade styling based on dynamic passing grade threshold
+                                    if ($rawGrade !== null) {
+                                        if ($rawGrade >= $threshold) {
                                             $gradeClass = 'bg-success-subtle border-success';
                                             $textClass = 'text-success';
                                             $icon = 'bi-check-circle-fill';
@@ -164,7 +189,7 @@
                                             <i class="bi {{ $icon }}"></i>
                                         </div>
                                         <span class="fw-medium {{ $textClass }}" style="font-size: 1rem; margin-left: 8px;">
-                                            {{ $grade !== null ? $grade : '–' }}
+                                            {{ $displayGrade !== null ? $displayGrade : '–' }}
                                         </span>
                                     </div>
                                 </td>

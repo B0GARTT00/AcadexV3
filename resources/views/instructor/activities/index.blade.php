@@ -4,6 +4,20 @@
 <div class="container mx-auto px-4">
     <h1 class="text-2xl font-bold mb-6">Manage Activities</h1>
 
+    @php
+        $typeOptions = collect($activityTypes ?? [])
+            ->map(fn ($type) => mb_strtolower($type))
+            ->unique()
+            ->values()
+            ->all();
+
+        if (empty($typeOptions)) {
+            $typeOptions = ['quiz', 'ocr', 'exam'];
+        }
+
+        $formatActivityType = fn ($type) => ucwords(str_replace('_', ' ', $type));
+    @endphp
+
     {{-- Back and Add Button --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <a href="{{ route('instructor.grades.index') }}" class="text-success fw-semibold">
@@ -103,10 +117,16 @@
 
                             <div class="col-md-6">
                                 <label class="form-label">Activity Type</label>
+                                @php
+                                    $editTypeOptions = collect($typeOptions);
+                                    if (! $editTypeOptions->contains(mb_strtolower($activity->type))) {
+                                        $editTypeOptions->push(mb_strtolower($activity->type));
+                                    }
+                                @endphp
                                 <select name="type" class="form-select" required>
-                                    @foreach(['quiz','ocr','exam'] as $type)
-                                        <option value="{{ $type }}" {{ $activity->type == $type ? 'selected' : '' }}>
-                                            {{ ucfirst($type) }}
+                                    @foreach($editTypeOptions as $type)
+                                        <option value="{{ $type }}" {{ mb_strtolower($activity->type) == $type ? 'selected' : '' }}>
+                                            {{ $formatActivityType($type) }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -184,9 +204,9 @@
                         <label class="form-label">Activity Type</label>
                         <select name="type" class="form-select" required>
                             <option value="">-- Select Type --</option>
-                            @foreach(['quiz','ocr','exam'] as $type)
-                                <option value="{{ $type }}" {{ old('type') == $type ? 'selected' : '' }}>
-                                    {{ ucfirst($type) }}
+                            @foreach($typeOptions as $type)
+                                <option value="{{ $type }}" {{ mb_strtolower(old('type', '')) == $type ? 'selected' : '' }}>
+                                    {{ $formatActivityType($type) }}
                                 </option>
                             @endforeach
                         </select>

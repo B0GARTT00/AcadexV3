@@ -19,6 +19,20 @@
             <input type="hidden" name="subject_id" value="{{ $subject->id }}">
             <input type="hidden" name="term" value="{{ $term }}">
 
+            @php
+                $typeOptions = collect($activityTypes ?? [])
+                    ->map(fn ($type) => mb_strtolower($type))
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if (empty($typeOptions)) {
+                    $typeOptions = ['quiz', 'ocr', 'exam'];
+                }
+
+                $formatActivityType = fn ($type) => ucwords(str_replace('_', ' ', $type));
+            @endphp
+
             <div class="modal-content rounded-4 shadow-lg overflow-hidden">
                 <!-- Modal Header -->
                 <div class="modal-header text-white" style="background: linear-gradient(135deg, #4da674, #3d865f);">
@@ -33,9 +47,9 @@
                             <label class="form-label">Activity Type <span class="text-danger">*</span></label>
                             <select name="type" class="form-select" required>
                                 <option value="">-- Select Type --</option>
-                                <option value="quiz">Quiz</option>
-                                <option value="ocr">OCR</option>
-                                <option value="exam">Exam</option>
+                                @foreach($typeOptions as $type)
+                                    <option value="{{ $type }}">{{ $formatActivityType($type) }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">

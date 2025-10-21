@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
@@ -29,7 +32,8 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
 
         // Get the authenticated user
-        $user = Auth::user();
+    /** @var User $user */
+    $user = Auth::user();
 
         // Check if the user's account is active
         if ($user->is_active == 0) {
@@ -43,6 +47,8 @@ class AuthenticatedSessionController extends Controller
                 'email' => 'Your account has been deactivated. Please contact the admin or your chairperson.',
             ]);
         }
+
+        $this->sanitizeIntendedUrl($request, $user);
 
         // Regenerate the session to prevent session fixation
         $request->session()->regenerate();
@@ -62,6 +68,30 @@ class AuthenticatedSessionController extends Controller
 
         // Redirect to the intended route (dashboard or other)
         return redirect()->intended(route('dashboard', absolute: false));
+    }
+
+    private function sanitizeIntendedUrl(Request $request, User $user): void
+    {
+        $intended = $request->session()->get('url.intended');
+
+        if (!$intended) {
+            return;
+        }
+
+        if ($this->pointsToAdminArea($intended) && !Gate::forUser($user)->allows('admin')) {
+            $request->session()->forget('url.intended');
+        }
+    }
+
+    private function pointsToAdminArea(string $url): bool
+    {
+        $path = ltrim(parse_url($url, PHP_URL_PATH) ?? '', '/');
+
+        if ($path === '') {
+            return false;
+        }
+
+        return Str::startsWith($path, 'admin');
     }
 
     /**

@@ -11,6 +11,7 @@ use App\Models\TermGrade;
 use App\Models\FinalGrade;
 use App\Traits\GradeCalculationTrait;
 use App\Traits\ActivityManagementTrait;
+use App\Services\GradesFormulaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -61,6 +62,12 @@ class GradeController extends Controller
         $this->middleware('auth');
     }
 
+    /**
+     * Display the grade management dashboard for the instructor.
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Contracts\View\Factory
+     */
     public function index(Request $request)
     {
         Gate::authorize('instructor');
@@ -105,6 +112,9 @@ class GradeController extends Controller
             $students = $activities = $scores = $termGrades = [];
             $subject = null;
             $courseOutcomes = collect();
+            $activityTypes = [];
+            $passingGrade = null;
+            $formulaMeta = null;
     
         if ($request->filled('subject_id')) {
             $subject = Subject::where('id', $request->subject_id)
@@ -120,6 +130,16 @@ class GradeController extends Controller
                 ->get();
 
             $activities = $this->getOrCreateDefaultActivities($subject->id, $term);
+            $formulaSettings = GradesFormulaService::getSettings(
+                $subject->id,
+                $subject->course_id,
+                $subject->department_id,
+                null,
+                session('active_academic_period_id')
+            );
+            $activityTypes = array_keys($formulaSettings['weights']);
+            $passingGrade = $formulaSettings['passing_grade'] ?? null;
+            $formulaMeta = $formulaSettings['meta'] ?? null;
 
             // Get all course outcomes for this subject and term's academic period
             $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
@@ -132,13 +152,14 @@ class GradeController extends Controller
                 });
                 
             foreach ($students as $student) {
-                $activityScores = $this->calculateActivityScores($activities, $student->id);
+                $activityScores = $this->calculateActivityScores($activities, $student->id, $subject, $formulaSettings);
+                $weights = $activityScores['weights'];
                 foreach ($activities as $activity) {
                     $scoreRecord = $student->scores()->where('activity_id', $activity->id)->first();
                     $scores[$student->id][$activity->id] = $scoreRecord?->score;
                 }
                 if ($activityScores['allScored']) {
-                    $termGrades[$student->id] = $this->calculateTermGrade($activityScores['scores']);
+                    $termGrades[$student->id] = $this->calculateTermGrade($activityScores['scores'], $weights);
                 } else {
                     $termGrades[$student->id] = null;
                 }
@@ -147,12 +168,12 @@ class GradeController extends Controller
     
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return view('instructor.partials.grade-body', compact(
-                'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes'
+                'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes', 'activityTypes', 'passingGrade', 'formulaMeta'
             ));
         }
 
         return view('instructor.manage-grades', compact(
-            'subjects', 'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes'
+            'subjects', 'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes', 'activityTypes', 'passingGrade', 'formulaMeta'
         ));
     }
 
@@ -170,6 +191,13 @@ class GradeController extends Controller
         $subject = Subject::findOrFail($request->subject_id);
         $termId = $this->getTermId($request->term);
         $activities = $this->getOrCreateDefaultActivities($subject->id, $request->term);
+        $formulaSettings = GradesFormulaService::getSettings(
+            $subject->id,
+            $subject->course_id,
+            $subject->department_id,
+            null,
+            session('active_academic_period_id')
+        );
     
         // Update course_outcome_id for each activity if provided
         if ($request->has('course_outcomes')) {
@@ -194,17 +222,18 @@ class GradeController extends Controller
             }
 
             // Calculate and update term grade
-            $activityScores = $this->calculateActivityScores($activities, $studentId);
+            $activityScores = $this->calculateActivityScores($activities, $studentId, $subject, $formulaSettings);
             if ($activityScores['allScored']) {
-                $termGrade = $this->calculateTermGrade($activityScores['scores']);
+                $termGrade = $this->calculateTermGrade($activityScores['scores'], $activityScores['weights']);
                 $this->updateTermGrade($studentId, $subject->id, $termId, $subject->academic_period_id, $termGrade);
-                $this->calculateAndUpdateFinalGrade($studentId, $subject->id, $subject->academic_period_id);
+                $this->calculateAndUpdateFinalGrade($studentId, $subject, $subject->academic_period_id, $activityScores['formula']);
             }
 
             // --- NEW: Save Course Outcome Attainment ---
             // Group activities by course_outcome_id
             $coScores = [];
             foreach ($activities as $activity) {
+                /** @var \App\Models\Activity $activity */
                 $coId = $activity->course_outcome_id;
                 if (!$coId) continue;
                 $score = isset($request->scores[$studentId][$activity->id]) ? $request->scores[$studentId][$activity->id] : null;
@@ -263,12 +292,19 @@ class GradeController extends Controller
     
         // Calculate and update term grade
         $activities = $this->getOrCreateDefaultActivities($subject->id, $request->term);
-        $activityScores = $this->calculateActivityScores($activities, $studentId);
+        $formulaSettings = GradesFormulaService::getSettings(
+            $subject->id,
+            $subject->course_id,
+            $subject->department_id,
+            null,
+            session('active_academic_period_id')
+        );
+        $activityScores = $this->calculateActivityScores($activities, $studentId, $subject, $formulaSettings);
         
         if ($activityScores['allScored']) {
-            $termGrade = $this->calculateTermGrade($activityScores['scores']);
+            $termGrade = $this->calculateTermGrade($activityScores['scores'], $activityScores['weights']);
             $this->updateTermGrade($studentId, $subject->id, $termId, $subject->academic_period_id, $termGrade);
-            $this->calculateAndUpdateFinalGrade($studentId, $subject->id, $subject->academic_period_id);
+            $this->calculateAndUpdateFinalGrade($studentId, $subject, $subject->academic_period_id, $activityScores['formula']);
         }
     
         return response()->json(['status' => 'success']);
@@ -284,6 +320,16 @@ class GradeController extends Controller
             ->get();
 
         $activities = $this->getOrCreateDefaultActivities($subject->id, $term);
+        $formulaSettings = GradesFormulaService::getSettings(
+            $subject->id,
+            $subject->course_id,
+            $subject->department_id,
+            null,
+            session('active_academic_period_id')
+        );
+        $activityTypes = array_keys($formulaSettings['weights']);
+        $passingGrade = $formulaSettings['passing_grade'] ?? null;
+        $formulaMeta = $formulaSettings['meta'] ?? null;
         
         $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
             ->where('is_deleted', false)
@@ -298,7 +344,8 @@ class GradeController extends Controller
         $termGrades = [];
 
         foreach ($students as $student) {
-            $activityScores = $this->calculateActivityScores($activities, $student->id);
+            $activityScores = $this->calculateActivityScores($activities, $student->id, $subject, $formulaSettings);
+            $weights = $activityScores['weights'];
             
             foreach ($activities as $activity) {
                 $scoreRecord = $student->scores()->where('activity_id', $activity->id)->first();
@@ -306,14 +353,14 @@ class GradeController extends Controller
             }
             
             if ($activityScores['allScored']) {
-                $termGrades[$student->id] = $this->calculateTermGrade($activityScores['scores']);
+                $termGrades[$student->id] = $this->calculateTermGrade($activityScores['scores'], $weights);
             } else {
                 $termGrades[$student->id] = null;
             }
         }
 
         return view('instructor.partials.grade-body', compact(
-            'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes'
+            'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes', 'activityTypes', 'passingGrade', 'formulaMeta'
         ));
     }
 

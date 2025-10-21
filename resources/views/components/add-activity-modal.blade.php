@@ -1,6 +1,6 @@
 <!-- resources/views/components/add-activity-modal.blade.php -->
 
-@props(['subject', 'term'])
+@props(['subject', 'term', 'activityTypes' => []])
 
 <div x-data="{ open: false }" class="relative">
     <!-- Trigger Button -->
@@ -23,6 +23,20 @@
 
             <h2 class="text-xl font-semibold mb-4">Add New Activity</h2>
 
+            @php
+                $typeOptions = collect($activityTypes)
+                    ->map(fn ($type) => mb_strtolower($type))
+                    ->unique()
+                    ->values()
+                    ->all();
+
+                if (empty($typeOptions)) {
+                    $typeOptions = ['quiz', 'ocr', 'exam'];
+                }
+
+                $formatActivityType = fn ($type) => ucwords(str_replace('_', ' ', $type));
+            @endphp
+
             <form method="POST" action="{{ route('activities.store') }}">
                 @csrf
                 <input type="hidden" name="subject_id" value="{{ $subject->id }}">
@@ -33,9 +47,9 @@
                     <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Activity Type</label>
                     <select name="type" id="type" class="w-full border rounded px-3 py-2" required>
                         <option value="">-- Select Type --</option>
-                        <option value="quiz">Quiz</option>
-                        <option value="ocr">OCR</option>
-                        <option value="exam">Exam</option>
+                        @foreach($typeOptions as $type)
+                            <option value="{{ $type }}">{{ $formatActivityType($type) }}</option>
+                        @endforeach
                     </select>
                 </div>
 

@@ -2,36 +2,26 @@
 
 namespace App\Listeners;
 
-use App\Models\UserLog;
+use App\Services\UserLogRecorder;
 use Illuminate\Auth\Events\Login;
 use Jenssegers\Agent\Agent;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
 
 class LogUserLogin
 {
+    public function __construct(private readonly UserLogRecorder $recorder)
+    {
+    }
+
     public function handle(Login $event)
     {
-        $userId = $event->user->id;
-
-        // Avoid duplicate logs within 5 seconds
-        $lastLog = UserLog::where('user_id', $userId)
-            ->where('event_type', 'login')
-            ->orderByDesc('created_at')
-            ->first();
-
-        if ($lastLog && $lastLog->created_at->gt(now()->subSeconds(5))) {
-            return;
-        }
+        $userId = $event->user->getAuthIdentifier();
 
         $agent = new Agent();
         $browser = $agent->browser();
         $platform = $agent->platform();
         $device = $agent->isMobile() ? 'Mobile' : ($agent->isTablet() ? 'Tablet' : 'Desktop');
 
-        UserLog::create([
-            'user_id' => $userId,
-            'event_type' => 'login',
+        $this->recorder->record($userId, 'login', [
             'browser' => $browser,
             'platform' => $platform,
             'device' => $device,
