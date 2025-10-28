@@ -12,13 +12,14 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Fetch Department and Courses
-        $department = Department::where('department_code', 'ASBM')->first();
+        // Fetch Departments and Courses (updated department codes: ASE and SBISM)
+        $ase = Department::where('department_code', 'ASE')->first();
+        $sbism = Department::where('department_code', 'SBISM')->first();
         $bsit = Course::where('course_code', 'BSIT')->first();
         $bsba = Course::where('course_code', 'BSBA')->first();
         $bspsy = Course::where('course_code', 'BSPSY')->first();
 
-        if (!$department || !$bsit || !$bsba || !$bspsy) {
+        if (! $ase || ! $sbism || ! $bsit || ! $bsba || ! $bspsy) {
             throw new \Exception('Required department or courses not found. Seed departments and courses first.');
         }
 
@@ -30,7 +31,7 @@ class UserSeeder extends Seeder
                 'last_name' => 'User',
                 'email' => 'admin@brokenshire.edu.ph',
                 'role' => 3,
-                'department_id' => $department->id,
+                'department_id' => $ase->id,
                 'course_id' => null,
             ],
             // GE Coordinator
@@ -40,7 +41,7 @@ class UserSeeder extends Seeder
                 'last_name' => 'Coordinator',
                 'email' => 'gecoordinator@brokenshire.edu.ph',
                 'role' => 4,
-                'department_id' => $department->id,
+                'department_id' => $ase->id,
                 'course_id' => null,
             ],
             // VPAA
@@ -50,17 +51,17 @@ class UserSeeder extends Seeder
                 'last_name' => 'User',
                 'email' => 'vpaa@brokenshire.edu.ph',
                 'role' => 5,
-                'department_id' => $department->id,
+                'department_id' => $ase->id,
                 'course_id' => null,
             ],
-            // BSIT Users
+            // BSIT Users (now under SBISM)
             [
                 'first_name' => 'Chairperson',
                 'middle_name' => null,
                 'last_name' => 'BSIT',
                 'email' => 'chairperson.bsit@brokenshire.edu.ph',
                 'role' => 1,
-                'department_id' => $department->id,
+                'department_id' => $sbism->id,
                 'course_id' => $bsit->id,
             ],
             [
@@ -69,17 +70,17 @@ class UserSeeder extends Seeder
                 'last_name' => 'BSIT',
                 'email' => 'instructor.bsit@brokenshire.edu.ph',
                 'role' => 0,
-                'department_id' => $department->id,
+                'department_id' => $sbism->id,
                 'course_id' => $bsit->id,
             ],
-            // BSBA Users
+            // BSBA Users (now under SBISM)
             [
                 'first_name' => 'Chairperson',
                 'middle_name' => null,
                 'last_name' => 'BSBA',
                 'email' => 'chairperson.bsba@brokenshire.edu.ph',
                 'role' => 1,
-                'department_id' => $department->id,
+                'department_id' => $sbism->id,
                 'course_id' => $bsba->id,
             ],
             [
@@ -88,17 +89,17 @@ class UserSeeder extends Seeder
                 'last_name' => 'BSBA',
                 'email' => 'instructor.bsba@brokenshire.edu.ph',
                 'role' => 0,
-                'department_id' => $department->id,
+                'department_id' => $sbism->id,
                 'course_id' => $bsba->id,
             ],
-            // BSPSY Users
+            // BSPSY Users (now under ASE)
             [
                 'first_name' => 'Chairperson',
                 'middle_name' => null,
                 'last_name' => 'BSPSY',
                 'email' => 'chairperson.bspsy@brokenshire.edu.ph',
                 'role' => 1,
-                'department_id' => $department->id,
+                'department_id' => $ase->id,
                 'course_id' => $bspsy->id,
             ],
             [
@@ -107,7 +108,7 @@ class UserSeeder extends Seeder
                 'last_name' => 'User',
                 'email' => 'dean@brokenshire.edu.ph',
                 'role' => 2,
-                'department_id' => $department->id,
+                'department_id' => $ase->id,
             ],
             [
                 'first_name' => 'Instructor',
@@ -115,7 +116,7 @@ class UserSeeder extends Seeder
                 'last_name' => 'BSPSY',
                 'email' => 'instructor.bspsy@brokenshire.edu.ph',
                 'role' => 0,
-                'department_id' => $department->id,
+                'department_id' => $ase->id,
                 'course_id' => $bspsy->id,
             ],
         ];

@@ -10,31 +10,33 @@ class CoursesTableSeeder extends Seeder
 {
     public function run(): void
     {
-        $asbm = Department::where('department_code', 'ASBM')->first();
+        $ase = Department::where('department_code', 'ASE')->first();
+        $sbism = Department::where('department_code', 'SBISM')->first();
         $nursing = Department::where('department_code', 'NURSING')->first();
         $medicine = Department::where('department_code', 'MEDICINE')->first();
         $allied = Department::where('department_code', 'ALLIED')->first();
 
-        if (!$asbm || !$nursing || !$medicine || !$allied) {
+        if (! $ase || ! $sbism || ! $nursing || ! $medicine || ! $allied) {
             throw new \Exception('Required departments not found. Seed departments first.');
         }
 
         $courses = [
-            // ASBM Courses
+            // SBISM Courses
             [
                 'course_code' => 'BSIT',
                 'course_description' => 'Bachelor of Science in Information Technology',
-                'department_id' => $asbm->id,
+                'department_id' => $sbism->id,
             ],
             [
                 'course_code' => 'BSBA',
                 'course_description' => 'Bachelor of Science in Business Administration',
-                'department_id' => $asbm->id,
+                'department_id' => $sbism->id,
             ],
+            // ASE Courses
             [
                 'course_code' => 'BSPSY',
                 'course_description' => 'Bachelor of Science in Psychology',
-                'department_id' => $asbm->id,
+                'department_id' => $ase->id,
             ],
             // Nursing Course
             [

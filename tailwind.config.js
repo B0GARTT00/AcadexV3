@@ -17,7 +17,10 @@ export default {
         },
     },
 
-    darkMode: false,
+    // Use class-based dark mode so the site only switches to dark styles
+    // when an explicit `.dark` class is present on <html> or <body>.
+    // This prevents following the OS `prefers-color-scheme` setting.
+    darkMode: 'class',
 
     plugins: [forms],
 };

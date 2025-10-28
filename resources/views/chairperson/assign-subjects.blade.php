@@ -318,7 +318,7 @@
         background-color: #198754 !important;
     }
     .table-success th {
-        color: white;
+        color: #000000 !important;
         font-weight: 500;
     }
 </style>

@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-3 py-2" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
+<div class="container-fluid px-3 py-2 course-outcomes-page" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
     {{-- Compact Header Section --}}
     <div class="row mb-2">
         <div class="col">
@@ -847,9 +847,9 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 /* Global styles */
-body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
+    .course-outcomes-page {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
