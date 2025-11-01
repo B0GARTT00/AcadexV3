@@ -191,6 +191,7 @@ Route::prefix('instructor')
         Route::get('/activities', [ActivityController::class, 'index'])->name('activities.index');
         Route::get('/activities/create', [ActivityController::class, 'create'])->name('activities.create');
         Route::post('/activities/store', [ActivityController::class, 'store'])->name('activities.store');
+        Route::post('/activities/realign', [ActivityController::class, 'realign'])->name('activities.realign');
         Route::put('/activities/{activity}', [ActivityController::class, 'update'])->name('activities.update');
         Route::delete('/activities/{id}', [ActivityController::class, 'delete'])->name('activities.delete');
 

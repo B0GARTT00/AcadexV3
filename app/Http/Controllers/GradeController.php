@@ -153,13 +153,12 @@ class GradeController extends Controller
                 
             foreach ($students as $student) {
                 $activityScores = $this->calculateActivityScores($activities, $student->id, $subject, $formulaSettings);
-                $weights = $activityScores['weights'];
                 foreach ($activities as $activity) {
                     $scoreRecord = $student->scores()->where('activity_id', $activity->id)->first();
                     $scores[$student->id][$activity->id] = $scoreRecord?->score;
                 }
-                if ($activityScores['allScored']) {
-                    $termGrades[$student->id] = $this->calculateTermGrade($activityScores['scores'], $weights);
+                if ($activityScores['allScored'] && $activityScores['grade'] !== null) {
+                    $termGrades[$student->id] = round($activityScores['grade'], 2);
                 } else {
                     $termGrades[$student->id] = null;
                 }
@@ -223,8 +222,8 @@ class GradeController extends Controller
 
             // Calculate and update term grade
             $activityScores = $this->calculateActivityScores($activities, $studentId, $subject, $formulaSettings);
-            if ($activityScores['allScored']) {
-                $termGrade = $this->calculateTermGrade($activityScores['scores'], $activityScores['weights']);
+            if ($activityScores['allScored'] && $activityScores['grade'] !== null) {
+                $termGrade = round($activityScores['grade'], 2);
                 $this->updateTermGrade($studentId, $subject->id, $termId, $subject->academic_period_id, $termGrade);
                 $this->calculateAndUpdateFinalGrade($studentId, $subject, $subject->academic_period_id, $activityScores['formula']);
             }
@@ -301,8 +300,8 @@ class GradeController extends Controller
         );
         $activityScores = $this->calculateActivityScores($activities, $studentId, $subject, $formulaSettings);
         
-        if ($activityScores['allScored']) {
-            $termGrade = $this->calculateTermGrade($activityScores['scores'], $activityScores['weights']);
+        if ($activityScores['allScored'] && $activityScores['grade'] !== null) {
+            $termGrade = round($activityScores['grade'], 2);
             $this->updateTermGrade($studentId, $subject->id, $termId, $subject->academic_period_id, $termGrade);
             $this->calculateAndUpdateFinalGrade($studentId, $subject, $subject->academic_period_id, $activityScores['formula']);
         }
@@ -352,8 +351,8 @@ class GradeController extends Controller
                 $scores[$student->id][$activity->id] = $scoreRecord?->score;
             }
             
-            if ($activityScores['allScored']) {
-                $termGrades[$student->id] = $this->calculateTermGrade($activityScores['scores'], $weights);
+            if ($activityScores['allScored'] && $activityScores['grade'] !== null) {
+                $termGrades[$student->id] = round($activityScores['grade'], 2);
             } else {
                 $termGrades[$student->id] = null;
             }

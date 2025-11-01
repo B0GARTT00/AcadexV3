@@ -6,6 +6,7 @@ use App\Models\AcademicPeriod;
 use App\Models\Course;
 use App\Models\GradesFormula;
 use App\Models\Subject;
+use App\Support\Grades\FormulaStructure;
 
 class GradesFormulaService
 {
@@ -44,26 +45,62 @@ class GradesFormulaService
         if (! array_key_exists($cacheKey, self::$cache)) {
             $resolved = self::resolveFormula($subjectId, $courseId, $departmentId, $semester, $academicPeriodId);
 
-            $weights = $resolved['formula']->weights
-                ->map(fn ($weight) => [
-                    'activity_type' => mb_strtolower($weight->activity_type),
-                    'weight' => (float) $weight->weight,
-                ])
+            $structure = $resolved['formula']->structure_config;
+            if (! is_array($structure) || empty($structure)) {
+                $structure = FormulaStructure::default($resolved['formula']->structure_type ?? 'lecture_only');
+            } else {
+                $structure = FormulaStructure::normalize($structure);
+            }
+
+            $flattened = FormulaStructure::flattenWeights($structure);
+            $weights = collect($flattened)
                 ->pluck('weight', 'activity_type')
+                ->map(fn ($weight) => (float) $weight)
+                ->toArray();
+            $relativeWeights = collect($flattened)
+                ->pluck('relative_weight', 'activity_type')
+                ->map(fn ($weight) => (float) $weight)
                 ->toArray();
 
             if (empty($weights)) {
-                $weights = [
-                    'quiz' => 0.40,
-                    'ocr' => 0.20,
-                    'exam' => 0.40,
-                ];
+                $fallbackStructure = FormulaStructure::default('lecture_only');
+                $structure = $fallbackStructure;
+                $flattened = FormulaStructure::flattenWeights($fallbackStructure);
+                $weights = collect($flattened)
+                    ->pluck('weight', 'activity_type')
+                    ->map(fn ($weight) => (float) $weight)
+                    ->toArray();
+                $relativeWeights = collect($flattened)
+                    ->pluck('relative_weight', 'activity_type')
+                    ->map(fn ($weight) => (float) $weight)
+                    ->toArray();
             }
 
             $meta = $resolved['meta'];
-            $meta['weights'] = collect($weights)
-                ->map(fn ($weight) => round($weight * 100, 0))
-                ->toArray();
+            $meta['weights'] = collect($flattened)
+                ->mapWithKeys(fn ($entry) => [
+                    $entry['activity_type'] => round($entry['weight'] * 100, 2),
+                ])
+                ->all();
+            $meta['relative_weights'] = collect($flattened)
+                ->mapWithKeys(fn ($entry) => [
+                    $entry['activity_type'] => round($entry['relative_weight'] * 100, 2),
+                ])
+                ->all();
+            $meta['weight_details'] = collect($flattened)
+                ->map(fn ($entry) => [
+                    'activity_type' => $entry['activity_type'],
+                    'label' => $entry['label'] ?? FormulaStructure::formatLabel($entry['activity_type']),
+                    'weight_percent' => round($entry['weight'] * 100, 2),
+                    'relative_weight_percent' => round(($entry['relative_weight'] ?? $entry['weight']) * 100, 2),
+                    'max_assessments' => $entry['max_assessments'] ?? null,
+                ])
+                ->values()
+                ->all();
+            $meta['structure'] = $structure;
+            $meta['structure_type'] = $resolved['formula']->structure_type ?? 'lecture_only';
+            $meta['activity_labels'] = FormulaStructure::activityLabelMap($structure);
+            $meta['max_assessments'] = FormulaStructure::leafMaxAssessmentMap($structure);
             $meta['base_score'] = (float) $resolved['formula']->base_score;
             $meta['scale_multiplier'] = (float) $resolved['formula']->scale_multiplier;
             $meta['passing_grade'] = (float) $resolved['formula']->passing_grade;
@@ -75,8 +112,15 @@ class GradesFormulaService
                 'scale_multiplier' => (float) $resolved['formula']->scale_multiplier,
                 'passing_grade' => (float) $resolved['formula']->passing_grade,
                 'weights' => $weights,
+                'relative_weights' => $relativeWeights,
+                'structure' => $structure,
                 'meta' => $meta,
             ];
+        } elseif (! isset(self::$cache[$cacheKey]['relative_weights'])
+            || ! isset(self::$cache[$cacheKey]['meta']['relative_weights'])
+            || ! isset(self::$cache[$cacheKey]['meta']['weight_details'][0]['relative_weight_percent'])) {
+            unset(self::$cache[$cacheKey]);
+            return self::getSettings($subjectId, $courseId, $departmentId, $semester, $academicPeriodId);
         }
 
         return self::$cache[$cacheKey];
@@ -94,6 +138,11 @@ class GradesFormulaService
     ): array
     {
         $settings = self::getSettings($subjectId, $courseId, $departmentId, $semester, $academicPeriodId);
+
+        if (isset($settings['structure'])) {
+            return FormulaStructure::leafActivityTypes($settings['structure']);
+        }
+
         return array_keys($settings['weights']);
     }
 
@@ -279,8 +328,8 @@ class GradesFormulaService
 
         if (! $formula) {
             $formula = new GradesFormula([
-                'base_score' => 50,
-                'scale_multiplier' => 50,
+                'base_score' => 40,
+                'scale_multiplier' => 60,
                 'passing_grade' => 75,
                 'label' => 'ASBME Default',
                 'scope_level' => 'global',

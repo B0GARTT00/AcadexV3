@@ -141,7 +141,7 @@
             default => 'System Default Formula',
         };
 
-        $activeWeights = collect($activeMeta['weights'] ?? [])
+        $activeWeights = collect($activeMeta['relative_weights'] ?? $activeMeta['weights'] ?? [])
             ->map(fn ($weight, $type) => [
                 'type' => strtoupper($type),
                 'percent' => number_format($weight, 0),

@@ -8,7 +8,11 @@
     $baseScoreValue = old('base_score', optional($activeFormula)->base_score ?? optional($defaultFormula)->base_score ?? 0);
     $scaleMultiplierValue = old('scale_multiplier', optional($activeFormula)->scale_multiplier ?? optional($defaultFormula)->scale_multiplier ?? 0);
     $passingGradeValue = old('passing_grade', optional($activeFormula)->passing_grade ?? optional($defaultFormula)->passing_grade ?? 0);
-    $weightPayload = $weightPayload ?? [];
+    $structurePayload = $structurePayload ?? [
+        'type' => 'lecture_only',
+        'structure' => \App\Support\Grades\FormulaStructure::toPercentPayload(\App\Support\Grades\FormulaStructure::default('lecture_only')),
+    ];
+    $structureCatalog = $structureCatalog ?? [];
 
     $labelSuggestion = $defaultFormula->label ?? 'Grades Formula';
     if ($context === "department" && isset($department)) {
@@ -186,8 +190,8 @@
                 <form
                     method="POST"
                     action="{{ $buildRoute('admin.gradesFormula.update', ['formula' => $defaultFormula->id]) }}"
-                    x-data="formulaEditor(@js($weightPayload))"
-                    @submit="if (! formIsValid()) { $event.preventDefault(); }"
+                    x-data="structuredFormulaEditor({ initial: @js($structurePayload), catalog: @js($structureCatalog) })"
+                    @submit="handleSubmit"
                     class="row g-4 js-validated-form"
                     novalidate
                 >
@@ -230,23 +234,15 @@
                         <small class="text-muted">Used to label final grades as Passed or Failed.</small>
                     </div>
 
-                    @include('admin.partials.formula-weight-editor')
+                    @include('admin.partials.formula-structure-editor')
 
                     <div class="col-12">
                         <div class="alert alert-info mb-2">
                             <strong>Formula:</strong> <code>(score / items) * scale multiplier + base score</code> &middot;
                             <strong>Passing mark:</strong> {{ $passingGradeValue }} &middot;
-                            <strong>Total weight:</strong> <span x-text="weightTotal().toFixed(0) + '%'" class="fw-semibold"></span>
+                            <strong>Layout:</strong> <span x-text="catalog[structureType]?.label ?? 'Custom'"></span>
                         </div>
-                        <div
-                            class="alert alert-danger py-2 mb-0 weight-error"
-                            style="display: none;"
-                            x-show="weightTotal() > 100"
-                            x-transition.opacity
-                        >
-                            Total activity weight must not exceed 100%.
-                        </div>
-                        <div class="alert alert-danger py-2 mb-0 validation-error d-none">Please complete all required fields and ensure total weight does not exceed 100%.</div>
+                        <div class="alert alert-danger py-2 mb-0 validation-error d-none">Please complete all required fields and ensure each component group totals 100%.</div>
                     </div>
 
                     <div class="col-12 d-flex justify-content-end">
@@ -257,8 +253,8 @@
                 <form
                     method="POST"
                     action="{{ $formAction }}"
-                    x-data="formulaEditor(@js($weightPayload))"
-                    @submit="if (! formIsValid()) { $event.preventDefault(); }"
+                    x-data="structuredFormulaEditor({ initial: @js($structurePayload), catalog: @js($structureCatalog) })"
+                    @submit="handleSubmit"
                     class="row g-4 js-validated-form"
                     novalidate
                 >
@@ -320,22 +316,14 @@
                         <input type="number" step="0.01" min="0" max="100" name="passing_grade" class="form-control" value="{{ $passingGradeValue }}" required>
                     </div>
 
-                    @include('admin.partials.formula-weight-editor')
+                    @include('admin.partials.formula-structure-editor')
 
                     <div class="col-12">
                         <div class="alert alert-{{ $hasFormula ? 'info' : 'secondary' }} mb-2">
                             <strong>{{ $hasFormula ? 'Reminder:' : 'Tip:' }}</strong>
                             Base score + scale multiplier should total 100 to preserve the grading scale.
                         </div>
-                        <div
-                            class="alert alert-danger py-2 mb-0 weight-error"
-                            style="display: none;"
-                            x-show="weightTotal() > 100"
-                            x-transition.opacity
-                        >
-                            Total activity weight must not exceed 100%.
-                        </div>
-                        <div class="alert alert-danger py-2 mb-0 validation-error d-none">Please complete all required fields and ensure total weight does not exceed 100%.</div>
+                        <div class="alert alert-danger py-2 mb-0 validation-error d-none">Please complete all required fields and ensure each component group totals 100%.</div>
                     </div>
 
                     <div class="col-12 d-flex justify-content-end">
@@ -353,122 +341,175 @@
 @push('scripts')
 <script>
     document.addEventListener('alpine:init', () => {
-        Alpine.data('formulaEditor', (initialWeights = []) => ({
-            weights: initialWeights.length ? JSON.parse(JSON.stringify(initialWeights)) : [{ activity_type: '', weight: 0 }],
-            addRow() {
-                this.weights.push({ activity_type: '', weight: 0 });
+        Alpine.data('structuredFormulaEditor', ({ initial, catalog }) => ({
+            structureType: initial?.type ?? 'lecture_only',
+            catalog: catalog ?? {},
+            structure: null,
+            init() {
+                this.catalog = this.catalog ?? {};
+                this.loadStructure(initial);
             },
-            removeRow(index) {
-                if (this.weights.length > 1) {
-                    this.weights.splice(index, 1);
+            loadStructure(payload) {
+                const template = payload?.structure
+                    ?? (this.catalog[this.structureType]?.structure ?? { key: 'period_grade', label: 'Period Grade', type: 'composite', children: [] });
+
+                this.structure = this.decorateNode(this.cloneStructure(template), true, 100);
+                this.syncTotals();
+            },
+            switchStructure() {
+                this.loadStructure({ type: this.structureType, structure: this.catalog[this.structureType]?.structure });
+            },
+            decorateNode(node, isRoot = false, parentOverall = 100) {
+                node = node ?? {};
+                node.type = node.type ?? ((node.children ?? []).length ? 'composite' : 'activity');
+                node.label = node.label ?? this.titleCase(node.key ?? 'component');
+                node.weight_percent = isRoot
+                    ? 100
+                    : Number(node.weight_percent ?? (node.weight ?? 0) * 100);
+                node.max_assessments = node.max_assessments ?? null;
+                node.uid = this.generateUid();
+                node.overall_percent = isRoot
+                    ? 100
+                    : Number(((parentOverall ?? 0) * (node.weight_percent ?? 0)) / 100);
+                node.children = (node.children ?? []).map(child => this.decorateNode(child, false, node.overall_percent));
+                return node;
+            },
+            orderedNodes() {
+                const items = [];
+                if (!this.structure) {
+                    return items;
                 }
+                let index = 0;
+                const walk = (parent, depth = 0) => {
+                    (parent.children ?? []).forEach(child => {
+                        items.push({ ref: child, parent, depth, index: index++ });
+                        walk(child, depth + 1);
+                    });
+                };
+                walk(this.structure, 0);
+                return items;
             },
-            weightTotal() {
-                return this.weights.reduce((sum, weight) => {
-                    const numeric = parseFloat(weight.weight);
-                    return sum + (Number.isFinite(numeric) ? numeric : 0);
-                }, 0);
+            syncWeight(node) {
+                const numeric = Number(node.weight_percent);
+                node.weight_percent = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : 0;
+                this.syncTotals();
+            },
+            syncTotals() {
+                this.collectCompositeNodes().forEach(composite => {
+                    composite.total_percent = (composite.children ?? []).reduce(
+                        (sum, child) => sum + Number(child.weight_percent ?? 0),
+                        0
+                    );
+                });
+                this.recalculateOverall();
+            },
+            collectCompositeNodes() {
+                const nodes = [];
+                const walk = (item) => {
+                    if (item && (item.children ?? []).length) {
+                        nodes.push(item);
+                        item.children.forEach(walk);
+                    }
+                };
+                if (this.structure) {
+                    walk(this.structure);
+                }
+                return nodes;
+            },
+            compositeWarning(node) {
+                return Math.abs(Number(node.total_percent ?? 0) - 100) > 0.1;
+            },
+            structureIsBalanced() {
+                return this.collectCompositeNodes().every(node => !this.compositeWarning(node));
             },
             formIsComplete() {
-                const requiredFields = this.$el.querySelectorAll('[required]');
-                return Array.from(requiredFields).every((field) => {
+                const required = this.$el.querySelectorAll('[required]');
+                return Array.from(required).every(field => {
                     if (field.type === 'number') {
                         return field.value !== '' && Number.isFinite(parseFloat(field.value));
                     }
-
                     return field.value.trim() !== '';
                 });
             },
-            hasValidTotal() {
-                return this.weightTotal() <= 100;
-            },
             formIsValid() {
-                return this.formIsComplete() && this.hasValidTotal();
+                return this.formIsComplete() && this.structureIsBalanced();
+            },
+            handleSubmit(event) {
+                const banner = this.$el.querySelector('.validation-error');
+                if (! this.formIsValid()) {
+                    event.preventDefault();
+                    if (banner) {
+                        banner.classList.remove('d-none');
+                        banner.textContent = 'Please complete all required fields and ensure each component group totals 100%.';
+                    }
+                } else if (banner) {
+                    banner.classList.add('d-none');
+                }
+            },
+            serializeStructure() {
+                const clone = this.cloneStructure(this.structure);
+                this.stripRuntimeFields(clone, true);
+                return JSON.stringify(clone);
+            },
+            stripRuntimeFields(node, isRoot = false) {
+                if (! node) {
+                    return;
+                }
+                delete node.uid;
+                delete node.total_percent;
+                delete node.overall_percent;
+                if (! isRoot) {
+                    node.weight_percent = Number(node.weight_percent ?? 0);
+                    delete node.weight;
+                }
+                if (node.children) {
+                    node.children = node.children.map(child => {
+                        this.stripRuntimeFields(child, false);
+                        return child;
+                    });
+                }
+            },
+            cloneStructure(value) {
+                return JSON.parse(JSON.stringify(value ?? {}));
+            },
+            generateUid() {
+                return window.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2);
+            },
+            isComposite(node) {
+                return (node.type ?? '') === 'composite';
+            },
+            formatPercent(value) {
+                return `${Number(value ?? 0).toFixed(1)}%`;
+            },
+            displayMaxAssessments(node) {
+                return node.max_assessments ? node.max_assessments : 'Flexible';
+            },
+            titleCase(value) {
+                return (value ?? '')
+                    .toString()
+                    .replace(/[._]/g, ' ')
+                    .replace(/\s+/g, ' ')
+                    .trim()
+                    .replace(/\b\w/g, match => match.toUpperCase());
+            },
+            recalculateOverall() {
+                const assign = (node, parentOverall = 100) => {
+                    if (! node) {
+                        return;
+                    }
+                    node.overall_percent = parentOverall;
+                    (node.children ?? []).forEach(child => {
+                        const childRelative = Number(child.weight_percent ?? 0);
+                        const childOverall = (parentOverall * childRelative) / 100;
+                        assign(child, childOverall);
+                    });
+                };
+                if (this.structure) {
+                    assign(this.structure, 100);
+                }
             }
         }));
     });
-</script>
-<script>
-// Failsafe validator (vanilla JS) to ensure required fields are present and total weight <= 100
-document.addEventListener('DOMContentLoaded', () => {
-    // small debounce helper to prevent thrashing when many mutations/inputs fire
-    function debounce(fn, wait) {
-        let t = null;
-        return function () {
-            const args = arguments;
-            clearTimeout(t);
-            t = setTimeout(() => fn.apply(null, args), wait);
-        };
-    }
-
-    function parseWeightInput(el) {
-        const v = parseFloat(el.value);
-        return Number.isFinite(v) ? v : 0;
-    }
-
-    function computeTotal(form) {
-        // weight inputs are named like weights[<index>][weight]
-        const weightInputs = form.querySelectorAll('input[name$="[weight]"]');
-        let total = 0;
-        weightInputs.forEach(i => total += parseWeightInput(i));
-        return total;
-    }
-
-    function formComplete(form) {
-        const required = Array.from(form.querySelectorAll('[required]'));
-        return required.every(f => {
-            if (f.type === 'number') return f.value !== '' && Number.isFinite(parseFloat(f.value));
-            return f.value.trim() !== '';
-        });
-    }
-
-    function updateFormState(form) {
-        const total = computeTotal(form);
-        const valid = formComplete(form) && total <= 100;
-
-        // toggle error messages
-        const weightErr = form.querySelector('.weight-error');
-        if (weightErr) weightErr.style.display = total > 100 ? 'block' : 'none';
-
-        const validationErr = form.querySelector('.validation-error');
-        if (validationErr) validationErr.classList.toggle('d-none', valid);
-
-        // disable/enable submit buttons inside this form
-        const submits = form.querySelectorAll('button[type="submit"]');
-        submits.forEach(btn => btn.disabled = !valid);
-
-        return valid;
-    }
-
-    function attachForm(form) {
-        if (form.__validatorAttached) return;
-        form.__validatorAttached = true;
-
-        // initial state
-        updateFormState(form);
-
-        // watch inputs and dynamic changes
-        // debounce input/change handlers so rapid typing doesn't thrash
-        const debouncedUpdater = debounce(() => updateFormState(form), 80);
-        form.addEventListener('input', debouncedUpdater);
-        form.addEventListener('change', debouncedUpdater);
-
-        // observe DOM changes (rows added/removed). IMPORTANT: do NOT observe attributes
-        // because updateFormState mutates element attributes (disabled/style) which can
-        // re-trigger the observer and cause a feedback loop. We also debounce the callback.
-        const mo = new MutationObserver(debounce(() => updateFormState(form), 100));
-        mo.observe(form, { childList: true, subtree: true });
-
-        // final guard on submit
-        form.addEventListener('submit', (e) => {
-            if (! updateFormState(form)) {
-                e.preventDefault();
-            }
-        });
-    }
-
-    document.querySelectorAll('.js-validated-form').forEach(attachForm);
-});
 </script>
 @endpush
 

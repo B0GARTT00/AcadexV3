@@ -10,6 +10,7 @@ use App\Models\UserLog;
 use App\Models\User;
 use App\Models\GradesFormula;
 use App\Services\GradesFormulaService;
+use App\Support\Grades\FormulaStructure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -337,7 +338,7 @@ class AdminController extends Controller
 
         $defaultFormula = $this->getGlobalFormula();
 
-        $weightPayload = $this->prepareWeightPayload($defaultFormula);
+        $structurePayload = $this->prepareStructurePayload($defaultFormula);
 
         return view('admin.grades-formula-form', [
             'context' => 'default',
@@ -346,7 +347,8 @@ class AdminController extends Controller
             'subject' => null,
             'formula' => $defaultFormula,
             'fallbackFormula' => $defaultFormula,
-            'weightPayload' => $weightPayload,
+            'structurePayload' => $structurePayload,
+            'structureCatalog' => $this->getStructureCatalog(),
             'defaultFormula' => $defaultFormula,
         ]);
     }
@@ -610,10 +612,13 @@ class AdminController extends Controller
 
         $fallbackFormula = $formula;
 
-        $weightPayload = $this->prepareWeightPayload($formula);
+        $structurePayload = $this->prepareStructurePayload($formula);
 
-        if (Str::startsWith($request->old('form_context'), 'department') && $request->old('weights')) {
-            $weightPayload = $this->prepareWeightPayloadFromOldInput($request->old('weights'));
+        if (Str::startsWith($request->old('form_context'), 'department') && $request->old('structure_config')) {
+            $structurePayload = $this->prepareStructurePayloadFromOldInput(
+                $request->old('structure_type'),
+                $request->old('structure_config')
+            );
         }
 
         return view('admin.grades-formula-form', [
@@ -623,7 +628,8 @@ class AdminController extends Controller
             'subject' => null,
             'formula' => $formula,
             'fallbackFormula' => $fallbackFormula,
-            'weightPayload' => $weightPayload,
+            'structurePayload' => $structurePayload,
+            'structureCatalog' => $this->getStructureCatalog(),
             'defaultFormula' => $this->getGlobalFormula(),
             'formMode' => 'edit-department-fallback',
             'semester' => $selectedSemester,
@@ -690,10 +696,13 @@ class AdminController extends Controller
             ?? $fallbackCandidates->first()
             ?? $this->getGlobalFormula();
 
-        $weightPayload = $this->prepareWeightPayload($courseFormula ?? $fallbackFormula);
+        $structurePayload = $this->prepareStructurePayload($courseFormula ?? $fallbackFormula);
 
-        if (Str::startsWith($request->old('form_context'), 'course') && $request->old('weights')) {
-            $weightPayload = $this->prepareWeightPayloadFromOldInput($request->old('weights'));
+        if (Str::startsWith($request->old('form_context'), 'course') && $request->old('structure_config')) {
+            $structurePayload = $this->prepareStructurePayloadFromOldInput(
+                $request->old('structure_type'),
+                $request->old('structure_config')
+            );
         }
 
         return view('admin.grades-formula-form', [
@@ -703,7 +712,8 @@ class AdminController extends Controller
             'subject' => null,
             'formula' => $courseFormula,
             'fallbackFormula' => $fallbackFormula,
-            'weightPayload' => $weightPayload,
+            'structurePayload' => $structurePayload,
+            'structureCatalog' => $this->getStructureCatalog(),
             'defaultFormula' => $this->getGlobalFormula(),
             'semester' => $selectedSemester,
             'academicPeriods' => $academicPeriods,
@@ -732,10 +742,13 @@ class AdminController extends Controller
         $fallbackFormula = $this->ensureDepartmentFallback($department, $periodContext);
         $fallbackFormula->loadMissing('weights');
 
-        $weightPayload = $this->prepareWeightPayload($fallbackFormula);
+        $structurePayload = $this->prepareStructurePayload($fallbackFormula);
 
-        if (Str::startsWith($request->old('form_context'), 'department') && $request->old('weights')) {
-            $weightPayload = $this->prepareWeightPayloadFromOldInput($request->old('weights'));
+        if (Str::startsWith($request->old('form_context'), 'department') && $request->old('structure_config')) {
+            $structurePayload = $this->prepareStructurePayloadFromOldInput(
+                $request->old('structure_type'),
+                $request->old('structure_config')
+            );
         }
 
         return view('admin.grades-formula-form', [
@@ -745,7 +758,8 @@ class AdminController extends Controller
             'subject' => null,
             'formula' => null,
             'fallbackFormula' => $fallbackFormula,
-            'weightPayload' => $weightPayload,
+            'structurePayload' => $structurePayload,
+            'structureCatalog' => $this->getStructureCatalog(),
             'defaultFormula' => $this->getGlobalFormula(),
             'formMode' => 'create-department',
             'semester' => $selectedSemester,
@@ -776,10 +790,13 @@ class AdminController extends Controller
         $fallbackFormula = $this->ensureDepartmentFallback($department, $periodContext);
         $fallbackFormula->loadMissing('weights');
 
-        $weightPayload = $this->prepareWeightPayload($formula);
+        $structurePayload = $this->prepareStructurePayload($formula);
 
-        if (Str::startsWith($request->old('form_context'), 'department') && $request->old('weights')) {
-            $weightPayload = $this->prepareWeightPayloadFromOldInput($request->old('weights'));
+        if (Str::startsWith($request->old('form_context'), 'department') && $request->old('structure_config')) {
+            $structurePayload = $this->prepareStructurePayloadFromOldInput(
+                $request->old('structure_type'),
+                $request->old('structure_config')
+            );
         }
 
         return view('admin.grades-formula-form', [
@@ -789,7 +806,8 @@ class AdminController extends Controller
             'subject' => null,
             'formula' => $formula,
             'fallbackFormula' => $fallbackFormula,
-            'weightPayload' => $weightPayload,
+            'structurePayload' => $structurePayload,
+            'structureCatalog' => $this->getStructureCatalog(),
             'defaultFormula' => $this->getGlobalFormula(),
             'formMode' => 'edit-department',
             'semester' => $selectedSemester,
@@ -924,10 +942,13 @@ class AdminController extends Controller
             ?? $fallbackCandidates->first()
             ?? $this->getGlobalFormula();
 
-        $weightPayload = $this->prepareWeightPayload($subjectFormula ?? $fallbackFormula);
+        $structurePayload = $this->prepareStructurePayload($subjectFormula ?? $fallbackFormula);
 
-        if (Str::startsWith($request->old('form_context'), 'subject') && $request->old('weights')) {
-            $weightPayload = $this->prepareWeightPayloadFromOldInput($request->old('weights'));
+        if (Str::startsWith($request->old('form_context'), 'subject') && $request->old('structure_config')) {
+            $structurePayload = $this->prepareStructurePayloadFromOldInput(
+                $request->old('structure_type'),
+                $request->old('structure_config')
+            );
         }
 
         return view('admin.grades-formula-form', [
@@ -937,7 +958,8 @@ class AdminController extends Controller
             'subject' => $subject,
             'formula' => $subjectFormula,
             'fallbackFormula' => $fallbackFormula,
-            'weightPayload' => $weightPayload,
+            'structurePayload' => $structurePayload,
+            'structureCatalog' => $this->getStructureCatalog(),
             'defaultFormula' => $this->getGlobalFormula(),
             'semester' => $selectedSemester,
             'academicPeriods' => $academicPeriods,
@@ -1150,9 +1172,8 @@ class AdminController extends Controller
             'base_score' => ['required', 'numeric', 'min:0', 'max:100'],
             'scale_multiplier' => ['required', 'numeric', 'min:0', 'max:100'],
             'passing_grade' => ['required', 'numeric', 'min:0', 'max:100'],
-            'weights' => ['required', 'array', 'min:1'],
-            'weights.*.activity_type' => ['required', 'string', 'max:255'],
-            'weights.*.weight' => ['required', 'numeric', 'min:0', 'max:100'],
+            'structure_type' => ['required', Rule::in(array_keys(FormulaStructure::STRUCTURE_DEFINITIONS))],
+            'structure_config' => ['required', 'string'],
         ];
 
         $scope = $request->input('scope_level');
@@ -1227,47 +1248,47 @@ class AdminController extends Controller
 
         $isFallback = $scope === 'department' ? $request->boolean('is_department_fallback') : false;
 
-        $weightEntries = collect($validated['weights'])
-            ->map(function ($weight) {
-                return [
-                    'activity_type' => trim($weight['activity_type']),
-                    'weight_percent' => (float) $weight['weight'],
-                ];
-            })
-            ->filter(fn ($weight) => $weight['activity_type'] !== '')
-            ->values();
-
-        if ($weightEntries->isEmpty()) {
-            return back()
-                ->withErrors(['weights' => 'Please provide at least one activity weight.'])
-                ->withInput();
-        }
-
-        $lowerCount = $weightEntries->map(fn ($w) => mb_strtolower($w['activity_type']))->unique()->count();
-        if ($lowerCount !== $weightEntries->count()) {
-            return back()
-                ->withErrors(['weights' => 'Each activity type must be unique.'])
-                ->withInput();
-        }
-
-        $weightPercentTotal = $weightEntries->sum('weight_percent');
-
-        if (abs($weightPercentTotal - 100) > 0.1) {
-            return back()
-                ->withErrors(['weights' => 'The total of the activity weights must equal 100%.'])
-                ->withInput();
-        }
-
         if (abs(($validated['base_score'] + $validated['scale_multiplier']) - 100) > 0.001) {
             return back()
                 ->withErrors(['base_score' => 'Base score and scale multiplier must add up to 100 to keep the grading scale consistent.'])
                 ->withInput();
         }
+        try {
+            $percentStructure = json_decode($validated['structure_config'], true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable $exception) {
+            return back()
+                ->withErrors(['structure_config' => 'Unable to read structure configuration payload.'])
+                ->withInput();
+        }
 
-        $weights = $weightEntries->map(fn ($entry) => [
-            'activity_type' => $entry['activity_type'],
-            'weight' => $entry['weight_percent'] / 100,
-        ]);
+        if (! is_array($percentStructure)) {
+            return back()
+                ->withErrors(['structure_config' => 'Invalid structure configuration payload.'])
+                ->withInput();
+        }
+
+        $normalizedStructure = FormulaStructure::fromPercentPayload($percentStructure);
+        $structureErrors = FormulaStructure::validate($normalizedStructure);
+
+        if (! empty($structureErrors)) {
+            return back()
+                ->withErrors(['structure_config' => implode(' ', $structureErrors)])
+                ->withInput();
+        }
+
+        $flattenedWeights = collect(FormulaStructure::flattenWeights($normalizedStructure));
+
+        if ($flattenedWeights->isEmpty()) {
+            return back()
+                ->withErrors(['structure_config' => 'The grade structure must include at least one assessment component.'])
+                ->withInput();
+        }
+
+        $weights = $flattenedWeights
+            ->map(fn ($entry) => [
+                'activity_type' => $entry['activity_type'],
+                'weight' => $entry['weight'],
+            ]);
 
         $department = null;
         $course = null;
@@ -1301,7 +1322,8 @@ class AdminController extends Controller
             $weights,
             $isFallback,
             $selectedSemester,
-            $selectedAcademicPeriodId
+            $selectedAcademicPeriodId,
+            $normalizedStructure
         ) {
             if ($scope === 'department' && $department) {
                 if ($isFallback) {
@@ -1335,6 +1357,8 @@ class AdminController extends Controller
                 'base_score' => $validated['base_score'],
                 'scale_multiplier' => $validated['scale_multiplier'],
                 'passing_grade' => $validated['passing_grade'],
+                'structure_type' => $validated['structure_type'],
+                'structure_config' => $normalizedStructure,
                 'is_department_fallback' => $scope === 'department' ? $isFallback : false,
             ]);
 
@@ -1385,9 +1409,8 @@ class AdminController extends Controller
             'base_score' => ['required', 'numeric', 'min:0', 'max:100'],
             'scale_multiplier' => ['required', 'numeric', 'min:0', 'max:100'],
             'passing_grade' => ['required', 'numeric', 'min:0', 'max:100'],
-            'weights' => ['required', 'array', 'min:1'],
-            'weights.*.activity_type' => ['required', 'string', 'max:255'],
-            'weights.*.weight' => ['required', 'numeric', 'min:0', 'max:100'],
+            'structure_type' => ['required', Rule::in(array_keys(FormulaStructure::STRUCTURE_DEFINITIONS))],
+            'structure_config' => ['required', 'string'],
         ];
 
         if ($scope === 'department') {
@@ -1413,51 +1436,51 @@ class AdminController extends Controller
             }
         }
 
-        $weightEntries = collect($validated['weights'])
-            ->map(function ($weight) {
-                return [
-                    'activity_type' => trim($weight['activity_type']),
-                    'weight_percent' => (float) $weight['weight'],
-                ];
-            })
-            ->filter(fn ($weight) => $weight['activity_type'] !== '')
-            ->values();
-
-        if ($weightEntries->isEmpty()) {
-            return back()
-                ->withErrors(['weights' => 'Please provide at least one activity weight.'])
-                ->withInput();
-        }
-
-        $lowerCount = $weightEntries->map(fn ($w) => mb_strtolower($w['activity_type']))->unique()->count();
-        if ($lowerCount !== $weightEntries->count()) {
-            return back()
-                ->withErrors(['weights' => 'Each activity type must be unique.'])
-                ->withInput();
-        }
-
-        $weightPercentTotal = $weightEntries->sum('weight_percent');
-
-        if (abs($weightPercentTotal - 100) > 0.1) {
-            return back()
-                ->withErrors(['weights' => 'The total of the activity weights must equal 100%.'])
-                ->withInput();
-        }
-
         if (abs(($validated['base_score'] + $validated['scale_multiplier']) - 100) > 0.001) {
             return back()
                 ->withErrors(['base_score' => 'Base score and scale multiplier must add up to 100 to keep the grading scale consistent.'])
                 ->withInput();
         }
+        try {
+            $percentStructure = json_decode($validated['structure_config'], true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable $exception) {
+            return back()
+                ->withErrors(['structure_config' => 'Unable to read structure configuration payload.'])
+                ->withInput();
+        }
 
-        $weights = $weightEntries->map(fn ($entry) => [
-            'activity_type' => $entry['activity_type'],
-            'weight' => $entry['weight_percent'] / 100,
-        ]);
+        if (! is_array($percentStructure)) {
+            return back()
+                ->withErrors(['structure_config' => 'Invalid structure configuration payload.'])
+                ->withInput();
+        }
+
+        $normalizedStructure = FormulaStructure::fromPercentPayload($percentStructure);
+        $structureErrors = FormulaStructure::validate($normalizedStructure);
+
+        if (! empty($structureErrors)) {
+            return back()
+                ->withErrors(['structure_config' => implode(' ', $structureErrors)])
+                ->withInput();
+        }
+
+        $flattenedWeights = collect(FormulaStructure::flattenWeights($normalizedStructure));
+
+        if ($flattenedWeights->isEmpty()) {
+            return back()
+                ->withErrors(['structure_config' => 'The grade structure must include at least one assessment component.'])
+                ->withInput();
+        }
+
+        $weights = $flattenedWeights
+            ->map(fn ($entry) => [
+                'activity_type' => $entry['activity_type'],
+                'weight' => $entry['weight'],
+            ]);
 
         $label = $validated['label'] ?? $formula->label;
 
-        DB::transaction(function () use ($formula, $label, $validated, $weights, $scope, $isFallback, $selectedSemester, $selectedAcademicPeriodId) {
+    DB::transaction(function () use ($formula, $label, $validated, $weights, $scope, $isFallback, $selectedSemester, $selectedAcademicPeriodId, $normalizedStructure) {
             if ($scope === 'department' && $isFallback) {
                 GradesFormula::where('department_id', $formula->department_id)
                     ->where('scope_level', 'department')
@@ -1487,6 +1510,8 @@ class AdminController extends Controller
                 'semester' => $selectedSemester,
                 'academic_period_id' => $selectedAcademicPeriodId,
                 'is_department_fallback' => $scope === 'department' ? $isFallback : $formula->is_department_fallback,
+                'structure_type' => $validated['structure_type'],
+                'structure_config' => $normalizedStructure,
             ]);
             $formula->save();
 
@@ -1751,8 +1776,8 @@ class AdminController extends Controller
                 'department_id' => $department->id,
                 'semester' => $semesterForInsert,
                 'academic_period_id' => $periodForInsert,
-                'base_score' => 50,
-                'scale_multiplier' => 50,
+                'base_score' => 40,
+                'scale_multiplier' => 60,
                 'passing_grade' => 75,
                 'is_department_fallback' => true,
             ]);
@@ -1890,8 +1915,8 @@ class AdminController extends Controller
             $formula = new GradesFormula([
                 'label' => 'ASBME Default',
                 'scope_level' => 'global',
-                'base_score' => 50,
-                'scale_multiplier' => 50,
+                'base_score' => 40,
+                'scale_multiplier' => 60,
                 'passing_grade' => 75,
             ]);
             $formula->setRelation('weights', collect());
@@ -1900,26 +1925,56 @@ class AdminController extends Controller
         return $formula;
     }
 
-    private function prepareWeightPayload(GradesFormula $formula): array
+    private function prepareStructurePayload(GradesFormula $formula): array
     {
-        return collect($formula->weight_map)
-            ->map(fn ($weight, $type) => [
-                'activity_type' => $type,
-                'weight' => $weight * 100,
-            ])
-            ->values()
-            ->all();
+        $type = $formula->structure_type ?? 'lecture_only';
+        $structure = $formula->structure_config ?? \App\Support\Grades\FormulaStructure::default($type);
+
+        return [
+            'type' => $type,
+            'structure' => \App\Support\Grades\FormulaStructure::toPercentPayload($structure),
+        ];
     }
 
-    private function prepareWeightPayloadFromOldInput(array $weights): array
+    private function prepareStructurePayloadFromOldInput(?string $type, ?string $payload): array
     {
-        return collect($weights)
-            ->map(fn ($weight) => [
-                'activity_type' => $weight['activity_type'] ?? '',
-                'weight' => isset($weight['weight']) ? (float) $weight['weight'] : 0,
-            ])
-            ->values()
-            ->all();
+        $type = $type ?: 'lecture_only';
+
+        if ($payload) {
+            try {
+                $decoded = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+                if (is_array($decoded)) {
+                    return [
+                        'type' => $type,
+                        'structure' => $decoded,
+                    ];
+                }
+            } catch (\Throwable $exception) {
+                // Fallback to defaults when payload cannot be decoded.
+            }
+        }
+
+        return [
+            'type' => $type,
+            'structure' => \App\Support\Grades\FormulaStructure::toPercentPayload(
+                \App\Support\Grades\FormulaStructure::default($type)
+            ),
+        ];
+    }
+
+    private function getStructureCatalog(): array
+    {
+        return collect(FormulaStructure::STRUCTURE_DEFINITIONS)
+            ->mapWithKeys(function ($meta, $key) {
+                return [
+                    $key => [
+                        'label' => $meta['label'],
+                        'description' => $meta['description'],
+                        'structure' => FormulaStructure::toPercentPayload(FormulaStructure::default($key)),
+                    ],
+                ];
+            })
+            ->toArray();
     }
 
 

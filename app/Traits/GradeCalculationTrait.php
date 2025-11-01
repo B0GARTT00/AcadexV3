@@ -7,6 +7,7 @@ use App\Models\Score;
 use App\Models\Subject;
 use App\Models\TermGrade;
 use App\Services\GradesFormulaService;
+use App\Support\Grades\FormulaStructure;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
@@ -32,57 +33,47 @@ trait GradeCalculationTrait
                 $subject?->course_id,
                 $subject?->department_id
             );
-        // ensure weights keys are lowercase
-        $weights = array_change_key_case($formula['weights'], CASE_LOWER);
 
-        $scoresByType = [];
-        foreach (array_keys($weights) as $type) {
-            $scoresByType[$type] = ['total' => 0, 'count' => 0];
+        $structure = $formula['structure'] ?? null;
+        if (! is_array($structure) || empty($structure)) {
+            $structure = FormulaStructure::default($formula['meta']['structure_type'] ?? 'lecture_only');
         }
 
+        $activitiesByType = $activities
+            ->groupBy(fn ($activity) => mb_strtolower($activity->type));
+
+        $scores = Score::where('student_id', $studentId)
+            ->whereIn('activity_id', $activities->pluck('id')->all())
+            ->get()
+            ->keyBy('activity_id');
+
+        $details = [
+            'activities' => [],
+            'composites' => [],
+        ];
         $allScored = true;
 
-        foreach ($activities as $activity) {
-            // match activity type case-insensitively by lowercasing the activity type
-            $type = mb_strtolower($activity->type);
+        $termGrade = $this->evaluateStructureNode(
+            $structure,
+            $activitiesByType,
+            $scores,
+            $formula,
+            $details,
+            $allScored,
+            []
+        );
 
-            if (! array_key_exists($type, $scoresByType)) {
-                $scoresByType[$type] = ['total' => 0, 'count' => 0];
-            }
-
-            $score = Score::where('student_id', $studentId)
-                ->where('activity_id', $activity->id)
-                ->first();
-
-            if ($score && $score->score !== null) {
-                $denominator = max($activity->number_of_items, 1);
-                $scaledScore = ($score->score / $denominator) * $formula['scale_multiplier'] + $formula['base_score'];
-                $scoresByType[$type]['total'] += $scaledScore;
-                $scoresByType[$type]['count']++;
-            } else {
-                $allScored = false;
-            }
+        if ($termGrade !== null) {
+            $termGrade = $this->clampGradeValue($termGrade);
         }
 
         return [
-            'scores' => $scoresByType,
-            'weights' => $weights,
+            'grade' => $termGrade,
+            'details' => $details,
+            'weights' => $formula['weights'] ?? [],
             'formula' => $formula,
             'allScored' => $allScored,
         ];
-    }
-
-    protected function calculateTermGrade(array $scoresByType, array $weights): ?float
-    {
-        $weightedTotal = 0;
-
-        foreach ($weights as $type => $weight) {
-            $count = $scoresByType[$type]['count'] ?? 0;
-            $average = $count > 0 ? $scoresByType[$type]['total'] / $count : 0;
-            $weightedTotal += $average * $weight;
-        }
-
-        return round($weightedTotal, 2);
     }
     
     protected function updateTermGrade(int $studentId, int $subjectId, int $termId, int $academicPeriodId, float $termGrade): void
@@ -146,5 +137,114 @@ trait GradeCalculationTrait
             'prefinal' => 3,
             'final' => 4,
         ][$term] ?? null;
+    }
+
+    /**
+     * Recursively evaluate the grade structure tree to produce a term grade.
+     */
+    protected function evaluateStructureNode(
+        array $node,
+        \Illuminate\Support\Collection $activitiesByType,
+        \Illuminate\Support\Collection $scores,
+        array $formula,
+        array &$details,
+        bool &$allScored,
+        array $path
+    ): ?float {
+        $type = $node['type'] ?? 'composite';
+        $label = $node['label'] ?? ($path ? end($path) : 'Period Grade');
+        $currentPath = array_merge($path, [$label]);
+
+        if ($type === 'activity') {
+            return $this->evaluateActivityNode($node, $activitiesByType, $scores, $formula, $details, $allScored, $currentPath);
+        }
+
+        $children = $node['children'] ?? [];
+        if (empty($children)) {
+            $allScored = false;
+            return null;
+        }
+
+        $compositeTotal = 0.0;
+        foreach ($children as $child) {
+            $weight = (float) ($child['weight'] ?? 0);
+            $value = $this->evaluateStructureNode($child, $activitiesByType, $scores, $formula, $details, $allScored, $currentPath);
+
+            if ($value === null) {
+                return null;
+            }
+
+            $compositeTotal += $value * $weight;
+        }
+
+        $details['composites'][] = [
+            'path' => $currentPath,
+            'value' => round($compositeTotal, 2),
+        ];
+
+        return $compositeTotal;
+    }
+
+    /**
+     * Evaluate an activity leaf node and return the averaged score.
+     */
+    protected function evaluateActivityNode(
+        array $node,
+        \Illuminate\Support\Collection $activitiesByType,
+        \Illuminate\Support\Collection $scores,
+        array $formula,
+        array &$details,
+        bool &$allScored,
+        array $path
+    ): ?float {
+        $activityType = mb_strtolower($node['activity_type'] ?? $node['key'] ?? '');
+        $activities = $activitiesByType->get($activityType, collect());
+
+        if ($activities->isEmpty()) {
+            $allScored = false;
+            return null;
+        }
+
+        $maxAssessments = $node['max_assessments'] ?? null;
+        if (is_numeric($maxAssessments) && $maxAssessments > 0) {
+            $activities = $activities->take((int) $maxAssessments);
+        }
+
+        $collected = [];
+        foreach ($activities as $activity) {
+            $score = $scores->get($activity->id);
+
+            if (! $score || $score->score === null) {
+                $allScored = false;
+                return null;
+            }
+
+            $denominator = max($activity->number_of_items, 1);
+            $transmuted = ($score->score / $denominator) * $formula['scale_multiplier'] + $formula['base_score'];
+            $collected[] = $this->clampGradeValue($transmuted);
+        }
+
+        if (empty($collected)) {
+            $allScored = false;
+            return null;
+        }
+
+        $average = array_sum($collected) / count($collected);
+        $details['activities'][$activityType] = [
+            'path' => $path,
+            'average' => round($average, 2),
+            'count' => count($collected),
+            'scores' => $collected,
+        ];
+
+        return $average;
+    }
+
+    /**
+     * Clamp grade values to the acceptable 0-100 range.
+     */
+    protected function clampGradeValue(float $value): float
+    {
+        return max(0, min(100, round($value, 2)));
     }
 } 

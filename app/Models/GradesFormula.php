@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Grades\FormulaStructure;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 /**
@@ -35,9 +36,11 @@ class GradesFormula extends Model
         'department_id',
         'course_id',
         'subject_id',
-    'semester',
-    'academic_period_id',
+        'semester',
+        'academic_period_id',
         'scope_level',
+        'structure_type',
+        'structure_config',
         'is_department_fallback',
         'base_score',
         'scale_multiplier',
@@ -66,6 +69,17 @@ class GradesFormula extends Model
 
     public function getWeightMapAttribute(): array
     {
+        if (is_array($this->structure_config) && ! empty($this->structure_config)) {
+            $flattened = FormulaStructure::flattenWeights($this->structure_config);
+
+            if (! empty($flattened)) {
+                return collect($flattened)
+                    ->pluck('weight', 'activity_type')
+                    ->map(fn ($value) => (float) $value)
+                    ->toArray();
+            }
+        }
+
         $weights = $this->relationLoaded('weights')
             ? $this->weights
             : $this->weights()->get();
@@ -75,15 +89,16 @@ class GradesFormula extends Model
             ->map(fn ($value) => (float) $value)
             ->toArray();
 
-        if (empty($mapped)) {
-            $mapped = [
-                'quiz' => 0.40,
-                'ocr' => 0.20,
-                'exam' => 0.40,
-            ];
+        if (! empty($mapped)) {
+            return $mapped;
         }
 
-        return $mapped;
+    $fallback = FormulaStructure::default('lecture_only');
+
+    return collect(FormulaStructure::flattenWeights($fallback))
+            ->pluck('weight', 'activity_type')
+            ->map(fn ($value) => (float) $value)
+            ->toArray();
     }
 
     protected $casts = [
@@ -91,6 +106,7 @@ class GradesFormula extends Model
         'scale_multiplier' => 'float',
         'passing_grade' => 'float',
         'is_department_fallback' => 'bool',
+        'structure_config' => 'array',
     ];
 
     public function getScopeLabelAttribute(): string
