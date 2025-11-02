@@ -150,6 +150,33 @@
             </div>
 
             <div class="sidebar-section">
+                <h6 class="px-3 mb-2">REPORTS</h6>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.reports.co-program') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-diagram-3 me-3"></i>
+                            <span>Program CO Summary</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.reports.co-course') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-book me-3"></i>
+                            <span>Course CO Summary</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.reports.co-student') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-person-lines-fill me-3"></i>
+                            <span>Student CO Report</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
                 <h6 class="px-3 mb-2">DATA MANAGEMENT</h6>
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
@@ -187,6 +214,33 @@
                            class="nav-link {{ request()->routeIs('dean.grades') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-clipboard-data me-3"></i>
                             <span>View Grades</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">REPORTS</h6>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('dean.reports.co-program') }}" 
+                           class="nav-link {{ request()->routeIs('dean.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-diagram-3 me-3"></i>
+                            <span>Program CO Summary</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('dean.reports.co-course') }}" 
+                           class="nav-link {{ request()->routeIs('dean.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-book me-3"></i>
+                            <span>Course CO Summary</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('dean.reports.co-student') }}" 
+                           class="nav-link {{ request()->routeIs('dean.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-person-lines-fill me-3"></i>
+                            <span>Student CO Report</span>
                         </a>
                     </li>
                 </ul>
@@ -293,6 +347,34 @@
                     </li>
                 </ul>
             </div>
+
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">REPORTS</h6>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('gecoordinator.reports.co-program') }}" 
+                           class="nav-link {{ request()->routeIs('gecoordinator.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-diagram-3 me-3"></i>
+                            <span>Program CO Summary</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('gecoordinator.reports.co-course') }}" 
+                           class="nav-link {{ request()->routeIs('gecoordinator.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-book me-3"></i>
+                            <span>Course CO Summary</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('gecoordinator.reports.co-student') }}" 
+                           class="nav-link {{ request()->routeIs('gecoordinator.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-person-lines-fill me-3"></i>
+                            <span>Student CO Report</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
             <div class="sidebar-section">
                 <h6 class="px-3 mb-2">DATA MANAGEMENT</h6>
                 <ul class="nav nav-pills flex-column">
@@ -326,11 +408,31 @@
                             <span>Students Overview</span>
                         </a>
                     </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">REPORTS</h6>
+                <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
-                        <a href="{{ route('vpaa.course-outcome-attainment') }}" 
-                           class="nav-link {{ request()->routeIs('vpaa.course-outcome-attainment*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-graph-up me-3"></i>
-                            <span>Course Outcome Attainment</span>
+                        <a href="{{ route('vpaa.reports.co-program') }}" 
+                           class="nav-link {{ request()->routeIs('vpaa.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-diagram-3 me-3"></i>
+                            <span>Program CO Summary</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('vpaa.reports.co-course') }}" 
+                           class="nav-link {{ request()->routeIs('vpaa.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-book me-3"></i>
+                            <span>Course CO Summary</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('vpaa.reports.co-student') }}" 
+                           class="nav-link {{ request()->routeIs('vpaa.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-person-lines-fill me-3"></i>
+                            <span>Student CO Report</span>
                         </a>
                     </li>
                 </ul>

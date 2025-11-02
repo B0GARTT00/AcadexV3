@@ -195,17 +195,6 @@
                                     </div>
                                 </a>
                             </div>
-                            <div class="col-12">
-                                <a href="{{ route('vpaa.course-outcome-attainment') }}" class="card border-0 bg-warning bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
-                                    <div class="card-body text-center p-3">
-                                        <div class="bg-warning bg-opacity-25 text-warning rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
-                                            <i class="bi bi-graph-up fs-4"></i>
-                                        </div>
-                                        <h6 class="mb-1 fw-semibold">Reports</h6>
-                                        <p class="text-muted small mb-0">Course outcome attainment</p>
-                                    </div>
-                                </a>
-                            </div>
                         </div>
                     </div>
                 </div>

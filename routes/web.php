@@ -19,6 +19,7 @@ use App\Http\Controllers\StudentImportController;
 use App\Http\Controllers\CourseOutcomesController;
 use App\Http\Middleware\EnsureAcademicPeriodSet;
 use App\Http\Controllers\CourseOutcomeAttainmentController;
+use App\Http\Controllers\CourseOutcomeReportsController;
 
 // Welcome Page
 use Illuminate\Support\Facades\Auth;
@@ -81,7 +82,13 @@ Route::prefix('chairperson')
         // Add this route for toggling assigned subjects
         Route::post('/assign-subjects/toggle', [ChairpersonController::class, 'toggleAssignedSubject'])->name('toggleAssignedSubject');
 
-        Route::get('/grades', [ChairpersonController::class, 'viewGrades'])->name('viewGrades');
+    Route::get('/grades', [ChairpersonController::class, 'viewGrades'])->name('viewGrades');
+
+    // Reports - Program-level CO compliance for chairperson's department
+    Route::get('/reports/co-program', [\App\Http\Controllers\ProgramReportsController::class, 'chairProgram'])->name('reports.co-program');
+        // Reports - Per-course and Per-student CO compliance
+        Route::get('/reports/co-course', [CourseOutcomeReportsController::class, 'chairCourse'])->name('reports.co-course');
+        Route::get('/reports/co-student', [CourseOutcomeReportsController::class, 'chairStudent'])->name('reports.co-student');
         Route::get('/students-by-year', [ChairpersonController::class, 'viewStudentsPerYear'])->name('studentsByYear');
 
         // Course Outcomes - only Manage Course Outcome access for Chairperson
@@ -149,6 +156,14 @@ Route::prefix('gecoordinator')
 
         // Reports Route
         Route::get('/reports', [\App\Http\Controllers\GECoordinatorController::class, 'reports'])->name('reports');
+        
+        // CO Reports
+        Route::get('/reports/co-student', [\App\Http\Controllers\CourseOutcomeReportsController::class, 'geCoordinatorStudent'])
+            ->name('reports.co-student');
+        Route::get('/reports/co-course', [\App\Http\Controllers\CourseOutcomeReportsController::class, 'geCoordinatorCourse'])
+            ->name('reports.co-course');
+        Route::get('/reports/co-program', [\App\Http\Controllers\ProgramReportsController::class, 'geCoordinatorProgram'])
+            ->name('reports.co-program');
     });
 
 // Curriculum Routes
@@ -212,12 +227,17 @@ Route::prefix('instructor')
     });
 
 // Dean Routes
-Route::prefix('dean')->middleware('auth')->name('dean.')->group(function () {
+Route::prefix('dean')->middleware(['auth', 'academic.period.set'])->name('dean.')->group(function () {
     Route::get('/instructors', [DeanController::class, 'viewInstructors'])->name('instructors');
     Route::get('/students', [DeanController::class, 'viewStudents'])->name('students');
     Route::get('/grades', [DeanController::class, 'viewGrades'])->name('grades');
     Route::get('/instructor/grades/partial', [GradeController::class, 'partial'])->name('instructor.grades.partial');
     Route::get('/dean/students', [DeanController::class, 'viewStudents'])->name('dean.students');
+    
+    // CO Reports - Dean sees their department's data
+    Route::get('/reports/co-program', [\App\Http\Controllers\ProgramReportsController::class, 'deanProgram'])->name('reports.co-program');
+    Route::get('/reports/co-course', [\App\Http\Controllers\CourseOutcomeReportsController::class, 'deanCourse'])->name('reports.co-course');
+    Route::get('/reports/co-student', [\App\Http\Controllers\CourseOutcomeReportsController::class, 'deanStudent'])->name('reports.co-student');
 });
 
 // Admin Routes
@@ -261,6 +281,7 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
 
 // VPAA Routes
 use App\Http\Controllers\VPAAController as VPAAController;
+use App\Http\Controllers\ProgramReportsController;
 
 Route::prefix('vpaa')
     ->middleware(['auth', 'academic.period.set'])
@@ -271,6 +292,13 @@ Route::prefix('vpaa')
             ->name('course-outcome-attainment');
         Route::get('/course-outcome-attainment/subject/{subject}', [VPAAController::class, 'subject'])
             ->name('course-outcome-attainment.subject');
+        // CO Reports
+        Route::get('/reports/co-student', [CourseOutcomeReportsController::class, 'vpaaStudent'])
+            ->name('reports.co-student');
+        Route::get('/reports/co-course', [CourseOutcomeReportsController::class, 'vpaaCourse'])
+            ->name('reports.co-course');
+        Route::get('/reports/co-program', [ProgramReportsController::class, 'vpaaDepartment'])
+            ->name('reports.co-program');
         // Dashboard
         Route::get('/dashboard', [VPAAController::class, 'index'])->name('dashboard');
         
