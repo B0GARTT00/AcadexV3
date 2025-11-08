@@ -271,6 +271,7 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::get('/grades-formula/subject/{subject}', [AdminController::class, 'gradesFormulaSubject'])->name('gradesFormula.subject');
     Route::get('/grades-formula/subject/{subject}/edit', [AdminController::class, 'gradesFormulaEditSubject'])->name('gradesFormula.edit.subject');
     Route::post('/grades-formula/subject/{subject}/apply', [AdminController::class, 'applySubjectFormula'])->name('gradesFormula.subject.apply');
+    Route::delete('/grades-formula/subject/{subject}/custom', [AdminController::class, 'removeSubjectFormula'])->name('gradesFormula.subject.remove');
     Route::post('/grades-formula/store', [AdminController::class, 'storeGradesFormula'])->name('gradesFormula.store');
     Route::put('/grades-formula/{formula}', [AdminController::class, 'updateGradesFormula'])->name('gradesFormula.update');
 

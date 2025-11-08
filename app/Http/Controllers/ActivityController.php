@@ -11,6 +11,7 @@ use App\Traits\ActivityManagementTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException as ValidationError;
 
 class ActivityController extends Controller
@@ -292,36 +293,100 @@ class ActivityController extends Controller
         $baseType = FormulaStructure::baseActivityType($normalizedType);
         $maxAllowed = $maxAssessmentsMap[$normalizedType] ?? $maxAssessmentsMap[$baseType] ?? null;
 
-        if ($maxAllowed !== null) {
-            $existingCount = Activity::where('subject_id', $subject->id)
-                ->where('term', $request->term)
-                ->where('type', $normalizedType)
-                ->where('is_deleted', false)
-                ->count();
+        $existingCount = Activity::where('subject_id', $subject->id)
+            ->where('term', $request->term)
+            ->where('type', $normalizedType)
+            ->where('is_deleted', false)
+            ->count();
 
-            if ($existingCount >= (int) $maxAllowed) {
-                throw ValidationError::withMessages([
-                    'type' => 'You have reached the maximum number of assessments for this component.',
-                ]);
+        if ($maxAllowed !== null && $existingCount >= (int) $maxAllowed) {
+            throw ValidationError::withMessages([
+                'type' => 'You have reached the maximum number of assessments for this component.',
+            ]);
+        }
+
+        $bulkTypes = ['quiz', 'ocr'];
+        $isBulkType = in_array($baseType, $bulkTypes, true);
+        $desiredBulkCount = $isBulkType ? 3 : 1;
+
+        if ($isBulkType && $maxAllowed !== null) {
+            $desiredBulkCount = (int) min($desiredBulkCount, $maxAllowed);
+        }
+
+        $availableSlots = $maxAllowed !== null
+            ? max(0, (int) $maxAllowed - $existingCount)
+            : ($isBulkType ? $desiredBulkCount : PHP_INT_MAX);
+
+        if ($availableSlots <= 0) {
+            throw ValidationError::withMessages([
+                'type' => 'You have reached the maximum number of assessments for this component.',
+            ]);
+        }
+
+        $createCount = $isBulkType
+            ? max(1, min($desiredBulkCount, $availableSlots))
+            : 1;
+
+        $baseTitle = trim($validated['title']);
+        if ($baseTitle === '') {
+            $baseTitle = FormulaStructure::formatLabel($normalizedType);
+        }
+
+        if ($isBulkType) {
+            $baseTitle = preg_replace('/\s+\d+$/', '', $baseTitle);
+            $baseTitle = trim($baseTitle);
+
+            if ($baseTitle === '') {
+                $baseTitle = FormulaStructure::formatLabel($normalizedType);
             }
         }
-    
-        Activity::create([
-            'subject_id' => $subject->id,
-            'term' => $request->term,
-            'type' => $normalizedType,
-            'title' => $request->title,
-            'number_of_items' => $request->number_of_items,
-            'course_outcome_id' => $request->course_outcome_id,
-            'is_deleted' => false,
-            'created_by' => Auth::id(),
-            'updated_by' => Auth::id(),
-        ]);
-    
+
+        $sequenceStart = $existingCount + 1;
+        $actorId = Auth::id();
+        $courseOutcomeId = $request->course_outcome_id;
+        $numberOfItems = $request->number_of_items;
+
+        DB::transaction(function () use (
+            $subject,
+            $request,
+            $normalizedType,
+            $createCount,
+            $isBulkType,
+            $baseTitle,
+            $sequenceStart,
+            $actorId,
+            $courseOutcomeId,
+            $numberOfItems
+        ) {
+            for ($index = 0; $index < $createCount; $index++) {
+                $sequenceNumber = $sequenceStart + $index;
+                $title = $isBulkType
+                    ? trim($baseTitle . ' ' . $sequenceNumber)
+                    : $baseTitle;
+
+                Activity::create([
+                    'subject_id' => $subject->id,
+                    'term' => $request->term,
+                    'type' => $normalizedType,
+                    'title' => $title,
+                    'number_of_items' => $numberOfItems,
+                    'course_outcome_id' => $courseOutcomeId,
+                    'is_deleted' => false,
+                    'created_by' => $actorId,
+                    'updated_by' => $actorId,
+                ]);
+            }
+        });
+
+        $typeLabel = strtolower(FormulaStructure::formatLabel($normalizedType));
+        $message = $createCount > 1
+            ? sprintf('%d %s activities created successfully.', $createCount, $typeLabel)
+            : 'Activity created successfully.';
+
         return redirect()->route('instructor.grades.index', [
             'subject_id' => $subject->id,
             'term' => $request->term,
-        ])->with('success', 'Activity created successfully.');
+        ])->with('success', $message);
     }    
 
     public function realign(Request $request)

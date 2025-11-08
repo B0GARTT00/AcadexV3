@@ -3,12 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcademicPeriod;
+use App\Models\Activity;
 use App\Models\Course;
 use App\Models\Department;
+use App\Models\FinalGrade;
+use App\Models\Score;
 use App\Models\Subject;
 use App\Models\UserLog;
 use App\Models\User;
 use App\Models\GradesFormula;
+use App\Models\TermGrade;
 use App\Services\GradesFormulaService;
 use App\Support\Grades\FormulaStructure;
 use Illuminate\Support\Facades\DB;
@@ -218,6 +222,27 @@ class AdminController extends Controller
     public function gradesFormula()
     {
         Gate::authorize('admin');
+
+        $request = request();
+
+        $requiresSelection = ! $request->filled('academic_period_id');
+
+        if ($requiresSelection) {
+            $periods = AcademicPeriod::where('is_deleted', false)
+                ->orderByDesc('academic_year')
+                ->orderByRaw("FIELD(semester, '1st', '2nd', 'Summer')")
+                ->get();
+
+            if ($periods->isEmpty()) {
+                return view('admin.grades-formula-select-period', [
+                    'academicPeriods' => collect(),
+                ]);
+            }
+
+            return view('admin.grades-formula-select-period', [
+                'academicPeriods' => $periods,
+            ]);
+        }
 
         $periodContext = $this->resolveFormulaPeriodContext();
         $selectedSemester = $periodContext['semester'];
@@ -1033,23 +1058,11 @@ class AdminController extends Controller
             }
         }
 
-        $departmentFormulas = collect();
         $departmentFallback = null;
 
         if ($subject->department) {
             $departmentFallback = $this->ensureDepartmentFallback($subject->department, $periodContext);
             $departmentFallback->loadMissing('weights');
-
-            $departmentFormulas = $this->applyPeriodFilters(
-                GradesFormula::with('weights')
-                    ->where('department_id', $subject->department_id)
-                    ->where('scope_level', 'department'),
-                $selectedSemester,
-                $selectedAcademicPeriodId
-            )
-                ->orderByDesc('is_department_fallback')
-                ->orderBy('label')
-                ->get();
         }
 
         $globalFormula = $this->getGlobalFormula();
@@ -1079,15 +1092,6 @@ class AdminController extends Controller
                 ? 'course'
                 : ($departmentFallback ? 'department' : 'default'));
 
-        $matchingDepartmentFormulaId = null;
-        if ($subjectFormula && $departmentFormulas->isNotEmpty()) {
-            $matchingDepartmentFormulaId = $departmentFormulas
-                ->first(fn (GradesFormula $candidate) => $this->formulasEquivalent($subjectFormula, $candidate))
-                ?->id;
-        } elseif (! $subjectFormula && $departmentFallback) {
-            $matchingDepartmentFormulaId = $departmentFallback->id;
-        }
-
         $resolvedSettings = GradesFormulaService::getSettings(
             $subject->id,
             $subject->course_id,
@@ -1099,18 +1103,70 @@ class AdminController extends Controller
         $courseFormulaForView = $exactCourseFormula ?? $courseFormula;
         $subjectFallback = $subjectFallbackCandidates->first() ?? $globalFormula;
 
+        $structureDefinitions = collect(FormulaStructure::STRUCTURE_DEFINITIONS);
+
+        $structureOptions = $structureDefinitions
+            ->map(function (array $definition, string $key) {
+                return [
+                    'key' => $key,
+                    'label' => $definition['label'] ?? Str::of($key)->replace('_', ' ')->title()->toString(),
+                ];
+            })
+            ->values();
+
+        $baselineFormula = $departmentFallback ?? $globalFormula;
+        $baselineStructureType = $baselineFormula->structure_type ?? 'lecture_only';
+
+        $structureBlueprints = $structureDefinitions
+            ->map(function (array $definition, string $key) use ($baselineFormula, $baselineStructureType) {
+                $structure = FormulaStructure::default($key);
+                $flattened = collect(FormulaStructure::flattenWeights($structure));
+
+                $weights = $flattened
+                    ->map(function (array $entry) {
+                        $activityType = $entry['activity_type'] ?? $entry['key'] ?? 'component';
+                        $weight = (float) ($entry['weight'] ?? 0);
+                        $formattedLabel = Str::of($entry['label'] ?? FormulaStructure::formatLabel($activityType))
+                            ->replace(['.', '_'], ' ')
+                            ->upper()
+                            ->toString();
+
+                        return [
+                            'type' => $formattedLabel,
+                            'label' => $formattedLabel,
+                            'display' => number_format($weight * 100, 0),
+                            'progress' => $weight,
+                        ];
+                    })
+                    ->values();
+
+                return [
+                    'key' => $key,
+                    'label' => $definition['label'] ?? Str::of($key)->replace('_', ' ')->title()->toString(),
+                    'description' => $definition['description'] ?? null,
+                    'base_score' => (float) ($baselineFormula->base_score ?? 40),
+                    'scale_multiplier' => (float) ($baselineFormula->scale_multiplier ?? 60),
+                    'passing_grade' => (float) ($baselineFormula->passing_grade ?? 75),
+                    'weights' => $weights,
+                    'is_baseline' => $baselineStructureType === $key,
+                ];
+            })
+            ->values();
+
+        $activeStructureType = $resolvedSettings['meta']['structure_type']
+            ?? ($subjectFormula->structure_type ?? null)
+            ?? $baselineStructureType;
+
         return view('admin.grades-formula-subject', [
             'subject' => $subject,
             'course' => $subject->course,
             'department' => $subject->department,
             'subjectFormula' => $subjectFormula,
             'courseFormula' => $courseFormulaForView,
-            'departmentFormulas' => $departmentFormulas,
             'departmentFallback' => $departmentFallback,
             'globalFormula' => $globalFormula,
             'activeScope' => $activeScope,
             'activeMeta' => $resolvedSettings['meta'] ?? [],
-            'matchingDepartmentFormulaId' => $matchingDepartmentFormulaId,
             'semester' => $selectedSemester,
             'academicPeriods' => $academicPeriods,
             'academicYears' => $academicYears,
@@ -1118,6 +1174,9 @@ class AdminController extends Controller
             'selectedAcademicPeriodId' => $selectedAcademicPeriodId,
             'availableSemesters' => $periodContext['available_semesters'],
             'fallbackFormula' => $subjectFallback,
+            'structureOptions' => $structureOptions,
+            'structureBlueprints' => $structureBlueprints,
+            'selectedStructureType' => $activeStructureType,
         ]);
     }
 
@@ -1130,10 +1189,37 @@ class AdminController extends Controller
         }
 
         $validated = $request->validate([
-            'department_formula_id' => ['required', 'integer'],
+            'department_formula_id' => ['nullable', 'integer'],
+            'structure_type' => ['nullable', Rule::in(array_keys(FormulaStructure::STRUCTURE_DEFINITIONS))],
         ]);
 
+        if (empty($validated['department_formula_id']) && empty($validated['structure_type'])) {
+            return back()
+                ->withErrors(['structure_type' => 'Select a structure template to apply.'])
+                ->withInput();
+        }
+
         $subject->load(['course.department']);
+
+        if (! empty($validated['structure_type'])) {
+            $periodContext = $this->resolveFormulaPeriodContext();
+
+            $baselineFormula = $subject->department
+                ? $this->ensureDepartmentFallback($subject->department, $periodContext)
+                : $this->getGlobalFormula();
+
+            $baselineFormula->loadMissing('weights');
+
+            $this->applyStructureTypeToSubject($subject, $validated['structure_type'], $baselineFormula);
+            $this->resetSubjectAssessmentsForNewStructure($subject);
+            GradesFormulaService::flushCache();
+
+            return redirect()
+                ->route('admin.gradesFormula.subject', array_merge([
+                    'subject' => $subject->id,
+                ], $this->formulaQueryParams()))
+                ->with('success', 'Structure template applied to this subject.');
+        }
 
         $selectedFormula = GradesFormula::with('weights')
             ->where('id', $validated['department_formula_id'])
@@ -1154,6 +1240,65 @@ class AdminController extends Controller
                 'subject' => $subject->id,
             ], $this->formulaQueryParams()))
             ->with('success', 'Formula applied to this subject.');
+    }
+
+    public function removeSubjectFormula(Request $request, Subject $subject)
+    {
+        Gate::authorize('admin');
+
+        if ($subject->is_deleted) {
+            abort(404);
+        }
+
+        $periodContext = $this->resolveFormulaPeriodContext();
+        $selectedSemester = $periodContext['semester'];
+        $selectedAcademicPeriodId = $periodContext['academic_period_id'];
+
+        $subjectFormulaQuery = GradesFormula::where('subject_id', $subject->id)
+            ->where('scope_level', 'subject');
+
+        $subjectFormulaQuery = $this->applyPeriodFilters($subjectFormulaQuery, $selectedSemester, $selectedAcademicPeriodId);
+
+        if ($selectedAcademicPeriodId) {
+            $subjectFormulaQuery->orderByRaw('CASE WHEN academic_period_id = ? THEN 0 WHEN academic_period_id IS NULL THEN 1 ELSE 2 END', [$selectedAcademicPeriodId]);
+        } else {
+            $subjectFormulaQuery->orderByRaw('CASE WHEN academic_period_id IS NULL THEN 0 ELSE 1 END');
+        }
+
+        if ($selectedSemester) {
+            $subjectFormulaQuery->orderByRaw('CASE WHEN semester = ? THEN 0 WHEN semester IS NULL THEN 1 ELSE 2 END', [$selectedSemester]);
+        } else {
+            $subjectFormulaQuery->orderByRaw('CASE WHEN semester IS NULL THEN 0 ELSE 1 END');
+        }
+
+        $subjectFormula = $subjectFormulaQuery->first();
+
+        if (! $subjectFormula || ! $this->formulaMatchesContext($subjectFormula, $selectedSemester, $selectedAcademicPeriodId)) {
+            $subjectFormula = GradesFormula::where('subject_id', $subject->id)
+                ->where('scope_level', 'subject')
+                ->orderByDesc('updated_at')
+                ->first();
+        }
+
+        if (! $subjectFormula) {
+            return redirect()
+                ->route('admin.gradesFormula.subject', array_merge([
+                    'subject' => $subject->id,
+                ], $this->formulaQueryParams()))
+                ->with('success', 'Subject already inherits its department formula.');
+        }
+
+        DB::transaction(function () use ($subjectFormula) {
+            $subjectFormula->delete();
+        });
+
+        GradesFormulaService::flushCache();
+
+        return redirect()
+            ->route('admin.gradesFormula.subject', array_merge([
+                'subject' => $subject->id,
+            ], $this->formulaQueryParams()))
+            ->with('success', 'Custom subject formula removed. This subject now inherits department settings.');
     }
 
     /**
@@ -1550,6 +1695,14 @@ class AdminController extends Controller
 
         $academicYears = $periods->pluck('academic_year')->unique()->values();
 
+        $requestedPeriodValue = request()->input('academic_period_id');
+        $forceAllPeriods = $requestedPeriodValue === 'all';
+        $requestedPeriodId = null;
+
+        if (! $forceAllPeriods && $requestedPeriodValue !== null && $requestedPeriodValue !== '') {
+            $requestedPeriodId = (int) $requestedPeriodValue;
+        }
+
         $requestedYear = request()->input('academic_year');
         $requestedSemester = request()->filled('semester') ? request()->input('semester') : null;
         if ($requestedSemester === '') {
@@ -1557,6 +1710,14 @@ class AdminController extends Controller
         }
 
         $selectedPeriod = null;
+
+        if ($requestedPeriodId !== null) {
+            $selectedPeriod = $periods->firstWhere('id', $requestedPeriodId);
+            if ($selectedPeriod) {
+                $requestedYear = $selectedPeriod->academic_year;
+                $requestedSemester = $selectedPeriod->semester;
+            }
+        }
 
         if ($requestedYear && $requestedSemester) {
             $selectedPeriod = $periods->first(function (AcademicPeriod $period) use ($requestedYear, $requestedSemester) {
@@ -1575,11 +1736,11 @@ class AdminController extends Controller
             $selectedPeriod = $periods->firstWhere('semester', $requestedSemester);
         }
 
-        if (! $selectedPeriod && session('active_academic_period_id')) {
+        if (! $selectedPeriod && ! $forceAllPeriods && session('active_academic_period_id')) {
             $selectedPeriod = $periods->firstWhere('id', (int) session('active_academic_period_id'));
         }
 
-        if (! $selectedPeriod && $periods->isNotEmpty()) {
+        if (! $selectedPeriod && ! $forceAllPeriods && $periods->isNotEmpty()) {
             $selectedPeriod = $periods->first();
         }
 
@@ -1587,7 +1748,11 @@ class AdminController extends Controller
         $selectedSemester = $requestedSemester ?? $selectedPeriod?->semester;
         $selectedAcademicPeriodId = $selectedPeriod?->id;
 
-        if ($selectedSemester === null) {
+        if ($forceAllPeriods) {
+            $selectedAcademicYear = null;
+            $selectedSemester = null;
+            $selectedAcademicPeriodId = null;
+        } elseif ($selectedSemester === null) {
             $selectedAcademicPeriodId = null;
         } elseif (! $selectedAcademicPeriodId && $selectedAcademicYear) {
             $matchingPeriod = $periods->first(function (AcademicPeriod $period) use ($selectedAcademicYear, $selectedSemester) {
@@ -1870,6 +2035,8 @@ class AdminController extends Controller
                 'base_score' => $sourceFormula->base_score,
                 'scale_multiplier' => $sourceFormula->scale_multiplier,
                 'passing_grade' => $sourceFormula->passing_grade,
+                'structure_type' => $sourceFormula->structure_type,
+                'structure_config' => $sourceFormula->structure_config,
                 'is_department_fallback' => false,
             ]);
 
@@ -1890,6 +2057,116 @@ class AdminController extends Controller
             }
 
             return $formula->fresh('weights');
+        });
+    }
+
+    protected function applyStructureTypeToSubject(Subject $subject, string $structureType, GradesFormula $baseline): GradesFormula
+    {
+        $structure = FormulaStructure::normalize(FormulaStructure::default($structureType));
+
+        $weights = collect(FormulaStructure::flattenWeights($structure))
+            ->map(function (array $entry) {
+                $activityType = mb_strtolower($entry['activity_type'] ?? $entry['key'] ?? 'component');
+
+                return [
+                    'activity_type' => $activityType,
+                    'weight' => (float) ($entry['weight'] ?? 0),
+                ];
+            })
+            ->values()
+            ->all();
+
+        $label = trim(($subject->subject_code ? $subject->subject_code . ' - ' : '') . ($subject->subject_description ?? 'Subject') . ' Formula');
+        if ($label === '') {
+            $label = 'Subject Formula';
+        }
+
+        return DB::transaction(function () use ($subject, $baseline, $label, $structureType, $structure, $weights) {
+            $requestSemester = request('semester');
+            $requestPeriodId = request('academic_period_id');
+
+            $activePeriodId = null;
+            if ($requestPeriodId !== null && $requestPeriodId !== '') {
+                $activePeriodId = (int) $requestPeriodId;
+            } elseif (session()->has('active_academic_period_id')) {
+                $activePeriodId = (int) session('active_academic_period_id');
+            }
+
+            $periodModel = $activePeriodId ? AcademicPeriod::find($activePeriodId) : null;
+
+            $selectedSemester = $requestSemester !== null && $requestSemester !== ''
+                ? $requestSemester
+                : ($periodModel?->semester ?? null);
+
+            if ($selectedSemester === null && $periodModel) {
+                $selectedSemester = $periodModel->semester;
+            }
+
+            $formula = GradesFormula::firstOrNew([
+                'subject_id' => $subject->id,
+                'semester' => $selectedSemester,
+                'academic_period_id' => $activePeriodId,
+            ]);
+
+            if (! $formula->exists) {
+                $formula->name = $this->generateFormulaName('subject', $subject->department, $subject->course, $subject, $activePeriodId, $selectedSemester);
+                $formula->scope_level = 'subject';
+            }
+
+            $formula->fill([
+                'label' => $label,
+                'scope_level' => 'subject',
+                'department_id' => $subject->department_id,
+                'course_id' => null,
+                'semester' => $selectedSemester,
+                'academic_period_id' => $activePeriodId,
+                'base_score' => $baseline->base_score,
+                'scale_multiplier' => $baseline->scale_multiplier,
+                'passing_grade' => $baseline->passing_grade,
+                'structure_type' => $structureType,
+                'structure_config' => $structure,
+                'is_department_fallback' => false,
+            ]);
+
+            $formula->save();
+
+            $formula->weights()->delete();
+
+            if (! empty($weights)) {
+                $formula->weights()->createMany($weights);
+            }
+
+            return $formula->fresh('weights');
+        });
+    }
+
+    protected function resetSubjectAssessmentsForNewStructure(Subject $subject): void
+    {
+        $actorId = Auth::id();
+
+        DB::transaction(function () use ($subject, $actorId) {
+            $activities = Activity::where('subject_id', $subject->id)
+                ->where('is_deleted', false)
+                ->get();
+
+            if ($activities->isNotEmpty()) {
+                $activityIds = $activities->pluck('id');
+
+                Activity::whereIn('id', $activityIds)->update([
+                    'is_deleted' => true,
+                    'updated_by' => $actorId,
+                ]);
+
+                if ($activityIds->isNotEmpty()) {
+                    Score::whereIn('activity_id', $activityIds)->update([
+                        'is_deleted' => true,
+                        'updated_by' => $actorId,
+                    ]);
+                }
+            }
+
+            TermGrade::where('subject_id', $subject->id)->delete();
+            FinalGrade::where('subject_id', $subject->id)->delete();
         });
     }
 

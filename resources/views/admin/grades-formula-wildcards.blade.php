@@ -27,6 +27,9 @@
                         <small class="text-muted">Select a wildcard to manage its grading scale</small>
                     </div>
                 </div>
+                <a href="{{ route('admin.gradesFormula') }}" class="btn btn-outline-success btn-sm rounded-pill shadow-sm">
+                    <i class="bi bi-calendar-week me-1"></i>Change Academic Period
+                </a>
             </div>
         </div>
     </div>
@@ -119,7 +122,7 @@
                 $status = $summary['status'];
             @endphp
             <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $status }}" data-url="{{ route('admin.gradesFormula.department', array_merge(['department' => $department->id], request()->only('semester'))) }}">
+                <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $status }}" data-url="{{ route('admin.gradesFormula.department', array_merge(['department' => $department->id], request()->only(['semester', 'academic_year', 'academic_period_id']))) }}">
                     <div class="position-relative" style="height: 80px; background: linear-gradient(135deg, #0f5132, #198754);"></div>
                     <div class="wildcard-circle" style="background: linear-gradient(135deg, #23a362, #0b3d23);">
                         <span class="text-white fw-bold">{{ $department->department_code }}</span>
@@ -237,20 +240,36 @@
 }
 
 .wildcard-circle {
-    width: 84px;
-    height: 84px;
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 8px 24px rgba(15, 81, 50, 0.35);
     position: absolute;
-    top: 40px;
+    top: 55px;
     left: 50%;
     transform: translate(-50%, -50%);
+    padding: 0 18px;
+    background: linear-gradient(135deg, #23a362, #0b3d23);
+    max-width: calc(100% - 24px);
+}
+
+.wildcard-circle span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
     text-align: center;
-    padding: 0 12px;
-    word-break: break-word;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 0.03em;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    white-space: normal;
+    font-size: clamp(0.6rem, 0.52rem + 0.45vw, 0.95rem);
 }
 
 .wildcard-filter-btn {
@@ -271,11 +290,25 @@
     color: #0f5132 !important;
 }
 
+
 .badge-formula-label {
     background-color: #ffffff;
     color: #198754;
     border: 1px solid rgba(25, 135, 84, 0.25);
     font-weight: 600;
+}
+
+.wildcard-card .badge-formula-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    width: 100%;
+    line-height: 1.2;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
 }
 
 .wildcard-title {
@@ -292,10 +325,12 @@
     }
 
     .wildcard-circle {
-        width: 72px;
-        height: 72px;
-        top: 36px;
+        width: 90px;
+        height: 90px;
+        top: 44px;
+        padding: 0 14px;
     }
 }
+
 </style>
 @endpush

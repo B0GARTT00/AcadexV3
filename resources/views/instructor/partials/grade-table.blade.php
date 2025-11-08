@@ -1,5 +1,6 @@
 @php
-    $hasData = count($students) > 0 && count($activities) > 0;
+    $activitiesCollection = collect($activities ?? []);
+    $hasData = count($students) > 0 && $activitiesCollection->isNotEmpty();
     if (!isset($courseOutcomes) || empty($courseOutcomes)) {
         $courseOutcomes = collect();
     }
@@ -7,6 +8,31 @@
     $threshold = isset($passingGrade) && is_numeric($passingGrade)
         ? (float) $passingGrade
         : 75.0;
+
+    $orderedActivities = $activitiesCollection
+        ->map(function ($activity, $index) {
+            return [
+                'index' => $index,
+                'activity' => $activity,
+            ];
+        })
+        ->sort(function (array $left, array $right) {
+            $leftType = mb_strtolower($left['activity']->type ?? '');
+            $rightType = mb_strtolower($right['activity']->type ?? '');
+
+            $leftPriority = $leftType === 'exam' ? 1 : 0;
+            $rightPriority = $rightType === 'exam' ? 1 : 0;
+
+            if ($leftPriority === $rightPriority) {
+                return $left['index'] <=> $right['index'];
+            }
+
+            return $leftPriority <=> $rightPriority;
+        })
+        ->map(function (array $payload) {
+            return $payload['activity'];
+        })
+        ->values();
 @endphp
 
 @if ($hasData)
@@ -72,7 +98,7 @@
                                     <span class="fw-semibold">Student</span>
                                 </div>
                             </th>
-                            @foreach ($activities as $activity)
+                            @foreach ($orderedActivities as $activity)
                                 <th class="text-center" style="min-width: 120px; width: 120px;">
                                     <div class="fw-semibold">{{ ucfirst($activity->type) }}</div>
                                     <div class="text-muted">{{ $activity->title }}</div>
@@ -137,7 +163,7 @@
                                     </div>
                                 </td>
 
-                                @foreach ($activities as $activity)
+                                @foreach ($orderedActivities as $activity)
                                     @php
                                         $score = $scores[$student->id][$activity->id] ?? null;
                                     @endphp

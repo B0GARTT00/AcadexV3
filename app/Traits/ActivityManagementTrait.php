@@ -153,6 +153,9 @@ trait ActivityManagementTrait
 
                 $baseType = $detail['base_type'];
                 $label = $detail['label'] ?? FormulaStructure::formatLabel($activityType);
+                $maxAllowed = $maxAssessments[$activityType]
+                    ?? $maxAssessments[$baseType]
+                    ?? null;
 
                 $existing = Activity::where('subject_id', $subject->id)
                     ->where('term', $termName)
@@ -165,6 +168,15 @@ trait ActivityManagementTrait
                 $minRequired = $detail['relative_weight_percent'] > 0 ? 1 : 0;
                 if ($baseType === 'exam') {
                     $minRequired = max(1, $minRequired);
+                }
+
+                if ($this->activityTypeHasKeyword($activityType, ['quiz', 'ocr'])
+                    || $this->activityTypeHasKeyword($baseType, ['quiz', 'ocr'])) {
+                    $minRequired = max(3, $minRequired);
+                }
+
+                if ($maxAllowed !== null) {
+                    $minRequired = min($minRequired, (int) $maxAllowed);
                 }
 
                 if ($existingCount < $minRequired) {
@@ -195,10 +207,6 @@ trait ActivityManagementTrait
                         ->orderBy('created_at')
                         ->get();
                 }
-
-                $maxAllowed = $maxAssessments[$activityType]
-                    ?? $maxAssessments[$baseType]
-                    ?? null;
 
                 if ($maxAllowed !== null && $existing->count() > $maxAllowed) {
                     $excess = $existing->sortByDesc('created_at')
@@ -239,5 +247,32 @@ trait ActivityManagementTrait
         }
 
         return $summary;
+    }
+
+    protected function activityTypeHasKeyword(?string $activityType, array $keywords): bool
+    {
+        if (! $activityType) {
+            return false;
+        }
+
+        $tokens = preg_split('/[^a-z0-9]+/i', $activityType) ?: [];
+        if (empty($tokens)) {
+            return false;
+        }
+
+        $normalizedTokens = array_filter(array_map(static fn ($token) => mb_strtolower($token), $tokens));
+        if (empty($normalizedTokens)) {
+            return false;
+        }
+
+        $normalizedKeywords = array_map(static fn ($keyword) => mb_strtolower($keyword), $keywords);
+
+        foreach ($normalizedTokens as $token) {
+            if (in_array($token, $normalizedKeywords, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 } 
