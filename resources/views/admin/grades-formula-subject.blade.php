@@ -107,9 +107,18 @@
         </div>
     @endif
 
+    @php
+        $requiresPasswordPrompt = ($requiresPasswordConfirmation ?? false) === true;
+        $passwordErrorMessage = $requiresPasswordPrompt ? ($errors->first('current_password') ?? '') : '';
+    @endphp
+
     @if ($errors->has('structure_type') || $errors->has('department_formula_id'))
         <div class="alert alert-danger shadow-sm">
             <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ $errors->first('structure_type') ?? $errors->first('department_formula_id') }}
+        </div>
+    @elseif ($passwordErrorMessage)
+        <div class="alert alert-danger shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ $passwordErrorMessage }}
         </div>
     @endif
 
@@ -220,8 +229,14 @@
                         action="{{ $buildRoute('admin.gradesFormula.subject.apply', ['subject' => $subject->id]) }}"
                         data-has-subject-formula="{{ $hasSubjectFormula ? '1' : '0' }}"
                         data-subject-name="{{ $subjectName }}"
+                        data-requires-password="{{ $requiresPasswordPrompt ? '1' : '0' }}"
+                        data-password-error="{{ $passwordErrorMessage ? '1' : '0' }}"
+                        data-password-error-message="{{ $passwordErrorMessage ? e($passwordErrorMessage) : '' }}"
                     >
                         @csrf
+                        @if ($requiresPasswordPrompt)
+                            <input type="hidden" name="current_password" id="subjectFormulaPasswordField">
+                        @endif
                         @if ($structureBlueprints->isEmpty())
                             <div class="alert alert-warning mb-0">
                                 <i class="bi bi-info-circle me-2"></i>No structure templates available yet. Configure templates before applying them to subjects.
@@ -255,6 +270,12 @@
                                         This subject already has a custom formula. Applying a structure template will replace the current subject override.
                                     </div>
                                 </div>
+                                @if ($requiresPasswordPrompt)
+                                    <div class="alert alert-warning border-0 shadow-sm-sm d-flex align-items-start gap-2 mb-3">
+                                        <i class="bi bi-lock-fill mt-1"></i>
+                                        <div>{{ $subjectName }} already has recorded grades. Confirm your password before applying a new structure template.</div>
+                                    </div>
+                                @endif
                             @else
                                 <div class="alert alert-success d-flex align-items-start shadow-sm formula-alert">
                                     <i class="bi bi-lightning-charge me-2 mt-1"></i>
@@ -351,8 +372,43 @@
                                 <small class="text-muted">Need unique weights? Create a subject formula after applying a template.</small>
                                 <button type="submit" class="btn btn-success btn-apply-formula" data-action="apply">Apply Structure</button>
                             </div>
+                            @if ($requiresPasswordPrompt)
+                                <div class="alert alert-danger mt-3 mb-0 d-none" id="subjectFormulaPasswordServerError"></div>
+                            @endif
                         @endif
                     </form>
+                    @if ($requiresPasswordPrompt)
+                        <div class="modal fade" id="subjectFormulaPasswordModal" tabindex="-1" aria-labelledby="subjectFormulaPasswordModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow-sm">
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title" id="subjectFormulaPasswordModalLabel"><i class="bi bi-lock-fill me-2"></i>Confirm Sensitive Change</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="alert alert-warning border-0 shadow-sm-sm mb-3" style="white-space: pre-wrap; font-size: 0.9rem;">
+Choose Structure Type
+Structure types replace the old department formulas. Pick one to baseline {{ $subjectName }} and refine a subject-specific override afterward.
+
+Custom subject formula active
+Applying a structure template will replace the current override.
+This subject already has a custom formula. Applying a structure template will replace the current subject override.
+                                        </div>
+                                        <p class="text-muted">{{ $subjectName }} already has recorded grades. Enter your password to continue.</p>
+                                        <div class="mb-3">
+                                            <label for="subjectFormulaPasswordInput" class="form-label fw-semibold">Account Password</label>
+                                            <input type="password" class="form-control" id="subjectFormulaPasswordInput" autocomplete="current-password" placeholder="Enter your password">
+                                            <div class="invalid-feedback d-none" id="subjectFormulaPasswordInlineError"></div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-success" id="subjectFormulaPasswordConfirmBtn">Confirm &amp; Apply</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                     @if ($hasSubjectFormula)
                         <div class="modal fade" id="removeSubjectFormulaModal" tabindex="-1" aria-labelledby="removeSubjectFormulaModalLabel" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
@@ -409,6 +465,15 @@
         const applyButton = applyForm.querySelector('[data-action="apply"]');
         const structureFilter = document.getElementById('department-structure-filter');
         const formulaColumns = applyForm.querySelectorAll('.formula-card-column');
+        const passwordHiddenField = document.getElementById('subjectFormulaPasswordField');
+        const passwordServerError = document.getElementById('subjectFormulaPasswordServerError');
+        const requiresPassword = applyForm.dataset.requiresPassword === '1';
+        const passwordModalElement = document.getElementById('subjectFormulaPasswordModal');
+        const passwordInput = document.getElementById('subjectFormulaPasswordInput');
+        const passwordInlineError = document.getElementById('subjectFormulaPasswordInlineError');
+        const passwordConfirmBtn = document.getElementById('subjectFormulaPasswordConfirmBtn');
+        const modalCtor = window.bootstrap && typeof window.bootstrap.Modal === 'function' ? window.bootstrap.Modal : null;
+        let passwordModalInstance = null;
 
         const syncSelectionState = () => {
             let hasSelection = false;
@@ -439,7 +504,10 @@
         optionInputs.forEach((input) => {
             const card = input.nextElementSibling;
 
-            input.addEventListener('change', syncSelectionState);
+            input.addEventListener('change', () => {
+                syncSelectionState();
+                delete applyForm.dataset.overrideConfirmed;
+            });
 
             if (card) {
                 card.addEventListener('animationend', () => {
@@ -468,6 +536,7 @@
             });
 
             syncSelectionState();
+            delete applyForm.dataset.overrideConfirmed;
         };
 
         if (structureFilter) {
@@ -477,11 +546,177 @@
 
         const hasSubjectFormula = applyForm.dataset.hasSubjectFormula === '1';
 
-        if (hasSubjectFormula) {
+        const setServerErrorMessage = (message) => {
+            if (! passwordServerError) {
+                return;
+            }
+
+            if (message) {
+                passwordServerError.textContent = message;
+                passwordServerError.classList.remove('d-none');
+            } else {
+                passwordServerError.textContent = '';
+                passwordServerError.classList.add('d-none');
+            }
+        };
+
+        let existingServerError = applyForm.dataset.passwordError === '1'
+            ? (applyForm.dataset.passwordErrorMessage || '')
+            : '';
+
+        setServerErrorMessage(existingServerError);
+
+        const ensureOverrideConfirmation = () => {
+            if (! hasSubjectFormula) {
+                return true;
+            }
+
+            if (applyForm.dataset.overrideConfirmed === '1') {
+                return true;
+            }
+
+            const subjectName = applyForm.dataset.subjectName || 'this subject';
+            const message = `This will replace the existing custom formula for ${subjectName}. Continue?`;
+            const confirmed = window.confirm(message);
+            if (confirmed) {
+                applyForm.dataset.overrideConfirmed = '1';
+            }
+            return confirmed;
+        };
+
+        if (requiresPassword) {
+            if (modalCtor && passwordModalElement && passwordConfirmBtn) {
+                passwordModalInstance = modalCtor.getOrCreateInstance(passwordModalElement);
+
+                const resetInlineError = () => {
+                    if (passwordInlineError) {
+                        passwordInlineError.textContent = '';
+                        passwordInlineError.classList.add('d-none');
+                    }
+                    if (passwordInput) {
+                        passwordInput.classList.remove('is-invalid');
+                    }
+                };
+
+                const showInlineError = (message) => {
+                    if (! passwordInlineError) {
+                        return;
+                    }
+                    passwordInlineError.textContent = message;
+                    passwordInlineError.classList.remove('d-none');
+                    if (passwordInput) {
+                        passwordInput.classList.add('is-invalid');
+                    }
+                };
+
+                const openModal = () => {
+                    resetInlineError();
+                    setServerErrorMessage(existingServerError);
+                    if (passwordInput) {
+                        passwordInput.value = '';
+                        passwordInput.focus();
+                    }
+                    passwordModalInstance.show();
+                };
+
+                applyForm.addEventListener('submit', (event) => {
+                    if (applyForm.dataset.passwordBypass === '1' || event.defaultPrevented) {
+                        return;
+                    }
+
+                    if (! ensureOverrideConfirmation()) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    event.preventDefault();
+                    openModal();
+                });
+
+                passwordConfirmBtn.addEventListener('click', () => {
+                    const value = passwordInput ? passwordInput.value.trim() : '';
+                    resetInlineError();
+
+                    if (! value) {
+                        showInlineError('Password is required.');
+                        if (passwordInput) {
+                            passwordInput.focus();
+                        }
+                        return;
+                    }
+
+                    if (passwordHiddenField) {
+                        passwordHiddenField.value = value;
+                    }
+                    applyForm.dataset.passwordError = '0';
+                    applyForm.dataset.passwordErrorMessage = '';
+                    setServerErrorMessage('');
+                    existingServerError = '';
+                    applyForm.dataset.passwordBypass = '1';
+                    passwordModalInstance.hide();
+
+                    setTimeout(() => {
+                        applyForm.requestSubmit();
+                        setTimeout(() => {
+                            delete applyForm.dataset.passwordBypass;
+                            if (passwordHiddenField) {
+                                passwordHiddenField.value = '';
+                            }
+                        }, 0);
+                    }, 150);
+                });
+
+                passwordModalElement.addEventListener('hidden.bs.modal', () => {
+                    if (applyForm.dataset.passwordBypass === '1') {
+                        return;
+                    }
+
+                    if (passwordHiddenField) {
+                        passwordHiddenField.value = '';
+                    }
+                    resetInlineError();
+                });
+
+                if (applyForm.dataset.passwordError === '1' && existingServerError) {
+                    setTimeout(() => {
+                        passwordModalInstance.show();
+                        if (passwordInput) {
+                            passwordInput.focus();
+                        }
+                    }, 200);
+                }
+            } else if (passwordHiddenField) {
+                applyForm.addEventListener('submit', (event) => {
+                    if (applyForm.dataset.passwordBypass === '1' || event.defaultPrevented) {
+                        return;
+                    }
+
+                    if (! ensureOverrideConfirmation()) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    event.preventDefault();
+                    const response = window.prompt('Enter your password to confirm this change:');
+                    if (! response || ! response.trim()) {
+                        return;
+                    }
+
+                    passwordHiddenField.value = response.trim();
+                    applyForm.dataset.passwordError = '0';
+                    applyForm.dataset.passwordErrorMessage = '';
+                    existingServerError = '';
+                    applyForm.dataset.passwordBypass = '1';
+                    applyForm.requestSubmit();
+                    setTimeout(() => {
+                        delete applyForm.dataset.passwordBypass;
+                        passwordHiddenField.value = '';
+                    }, 0);
+                });
+            }
+        } else if (hasSubjectFormula) {
             applyForm.addEventListener('submit', (event) => {
-                const subjectName = applyForm.dataset.subjectName || 'this subject';
-                const message = `This will replace the existing custom formula for ${subjectName}. Continue?`;
-                if (! window.confirm(message)) {
+                if (! ensureOverrideConfirmation()) {
                     event.preventDefault();
                 }
             });

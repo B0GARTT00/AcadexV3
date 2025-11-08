@@ -20,7 +20,7 @@
         const itemsInputs = Array.from(document.querySelectorAll('.items-input') || []);
         const courseOutcomeInputs = Array.from(document.querySelectorAll('.course-outcome-select') || []);
         const saveButton = document.getElementById('saveGradesBtn');
-        form = document.querySelector('form'); // Assign to global form variable
+    form = document.getElementById('gradeForm'); // Target grade form explicitly
         const studentSearch = document.getElementById('studentSearch');
 
         // Set up form submission tracking
@@ -139,44 +139,49 @@
         const studentIds = new Set();
 
         // Create and append modal to body
-        const modalHtml = `
-            <div class="modal fade" id="gradeWarningModal" tabindex="-1" aria-labelledby="gradeWarningModalLabel" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header bg-success text-white">
-                            <h5 class="modal-title" id="gradeWarningModalLabel">
-                                <i class="fas fa-exclamation-triangle me-2"></i>Invalid Grades Detected
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p class="text-muted mb-3">The following grades exceed the new maximum score:</p>
-                            <div class="table-responsive">
-                                <table class="table table-sm table-bordered" id="invalidGradesTable">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Student</th>
-                                            <th>Current Grade</th>
-                                            <th>New Maximum</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
+        let warningModalElement = document.getElementById('gradeWarningModal');
+        if (!warningModalElement) {
+            const modalHtml = `
+                <div class="modal fade" id="gradeWarningModal" tabindex="-1" aria-labelledby="gradeWarningModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title" id="gradeWarningModalLabel">
+                                    <i class="fas fa-exclamation-triangle me-2"></i>Invalid Grades Detected
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-                            <p class="text-danger mt-3 mb-0">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Please adjust these grades before changing the number of items.
-                            </p>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            <div class="modal-body">
+                                <p class="text-muted mb-3">The following grades exceed the new maximum score:</p>
+                                <div class="table-responsive">
+                                    <table class="table table-sm table-bordered" id="invalidGradesTable">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Student</th>
+                                                <th>Current Grade</th>
+                                                <th>New Maximum</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+                                <p class="text-danger mt-3 mb-0">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Please adjust these grades before changing the number of items.
+                                </p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>`;
+                </div>`;
 
-        document.body.insertAdjacentHTML('beforeend', modalHtml);
-        const warningModal = new bootstrap.Modal(document.getElementById('gradeWarningModal'));
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            warningModalElement = document.getElementById('gradeWarningModal');
+        }
+
+        const warningModal = new bootstrap.Modal(warningModalElement);
 
         // Function to show warning modal
         function showWarningModal(invalidGrades, newMax) {
@@ -594,44 +599,70 @@
                     method: 'POST',
                     body: formData,
                     headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || ''
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.content || '',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
-                .then(response => {
+                .then(async response => {
                     if (!response.ok) {
-                        throw new Error('Network response was not ok');
+                        const errorData = await response.json().catch(() => null);
+                        const message = errorData?.message || 'Failed to save grades. Please try again.';
+                        throw new Error(message);
                     }
-                    return response.json();
+
+                    const contentType = response.headers.get('content-type') || '';
+                    if (contentType.includes('application/json')) {
+                        return response.json();
+                    }
+
+                    throw new Error('Unexpected server response format.');
                 })
                 .then(data => {
+                    if (!data || data.status !== 'success') {
+                        throw new Error(data?.message || 'Failed to save grades.');
+                    }
+
                     // Update original values after successful save
                     inputs.forEach(input => {
                         originalValues.set(input, input.value);
                     });
-                    
-                    // Hide loading state
+                    updateSaveButtonState();
+
+                    // Hide loading state on the current button instance
                     if (saveButton) {
                         saveButton.disabled = true;
                         saveButton.querySelector('.spinner-border')?.classList.add('d-none');
                     }
 
-                    // Show success message
-                    const successMessage = document.createElement('div');
-                    successMessage.className = 'alert alert-success alert-dismissible fade show';
-                    successMessage.innerHTML = `
-                        <strong>Success!</strong> Grades have been saved successfully.
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    `;
-                    document.querySelector('.container-fluid').insertBefore(successMessage, document.querySelector('.container-fluid').firstChild);
+                    const refreshPromise = typeof window.refreshGradeSection === 'function'
+                        ? window.refreshGradeSection()
+                        : Promise.resolve();
 
-                    // Remove success message after 3 seconds
-                    setTimeout(() => {
-                        successMessage.remove();
-                    }, 3000);
+                    return refreshPromise.then(() => data);
+                })
+                .then(data => {
+                    const message = data?.message || 'Grades have been saved successfully.';
+
+                    const container = document.querySelector('.container-fluid');
+                    if (container) {
+                        const successMessage = document.createElement('div');
+                        successMessage.className = 'alert alert-success alert-dismissible fade show';
+                        successMessage.innerHTML = `
+                            <strong>Success!</strong> ${message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        `;
+                        container.insertBefore(successMessage, container.firstChild);
+
+                        // Remove success message after 3 seconds
+                        setTimeout(() => {
+                            successMessage.remove();
+                        }, 3000);
+                    }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Failed to save grades. Please try again.');
+                    alert(error?.message || 'Failed to save grades. Please try again.');
                     
                     // Reset button state
                     if (saveButton) {
@@ -692,8 +723,11 @@
         });
 
         // Add styles for navigation feedback
-        const navigationStyle = document.createElement('style');
-        navigationStyle.textContent = `
+        let navigationStyle = document.getElementById('gradeNavigationStyle');
+        if (!navigationStyle) {
+            navigationStyle = document.createElement('style');
+            navigationStyle.id = 'gradeNavigationStyle';
+            navigationStyle.textContent = `
             .student-row.navigating {
                 background-color: rgba(25, 135, 84, 0.1) !important;
                 transition: background-color 0.3s ease;
@@ -739,7 +773,8 @@
                 border-radius: 2px;
             }
         `;
-        document.head.appendChild(navigationStyle);
+            document.head.appendChild(navigationStyle);
+        }
 
         // Initial state check
         updateSaveButtonState();
@@ -778,54 +813,6 @@
             initializeCourseOutcomeDropdowns();
         }
     });
-
-    // Re-bind grade input events after term change
-
-    document.addEventListener('DOMContentLoaded', function() {
-        bindGradeInputEvents();
-
-        // Listen for term-stepper button clicks
-        document.querySelectorAll('.term-step').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                // Show loading overlay
-                const overlay = document.getElementById('fadeOverlay');
-                if (overlay) overlay.classList.remove('d-none');
-
-                // Get selected term
-                const term = btn.getAttribute('data-term');
-                const subjectId = document.querySelector('input[name="subject_id"]').value;
-
-                // Fetch new table via AJAX
-                const url = `/instructor/grades?subject_id=${subjectId}&term=${term}`;
-                fetch(url)
-                    .then(response => response.text())
-                    .then(html => {
-                        const parser = new DOMParser();
-                        const doc = parser.parseFromString(html, 'text/html');
-                        const newSection = doc.getElementById('grade-section');
-                        const currentSection = document.getElementById('grade-section');
-                        if (newSection && currentSection) {
-                            currentSection.innerHTML = newSection.innerHTML;
-                            if (typeof bindGradeInputEvents === 'function') {
-                                bindGradeInputEvents();
-                            }
-                            window.history.pushState({}, '', url);
-                        } else {
-                            // Fallback: reload page if AJAX failed
-                            console.error('AJAX reload failed, falling back to full page reload.');
-                            window.location.href = url;
-                        }
-                        if (overlay) overlay.classList.add('d-none');
-                    })
-                    .catch(error => {
-                        if (overlay) overlay.classList.add('d-none');
-                        console.error('Failed to load term data:', error);
-                        alert('Failed to load term data.');
-                    });
-            });
-        });
-    });
-
     // Modify the beforeunload event handler
     window.addEventListener('beforeunload', function(e) {
         // Don't show warning if form is being submitted or no unsaved changes

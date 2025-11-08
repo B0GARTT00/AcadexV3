@@ -14,6 +14,23 @@
     ];
     $structureCatalog = $structureCatalog ?? [];
 
+    $requiresPasswordPrompt = $context === 'subject' && ($requiresPasswordConfirmation ?? false);
+    $passwordErrorMessage = $requiresPasswordPrompt ? ($errors->first('current_password') ?? '') : '';
+
+    $subjectStructureContext = 'this subject';
+    if (($requiresPasswordPrompt || $context === 'subject') && isset($subject)) {
+        $subjectCode = trim($subject->subject_code ?? '');
+        $subjectDescription = trim($subject->subject_description ?? '');
+
+        if ($subjectCode !== '' && $subjectDescription !== '') {
+            $subjectStructureContext = $subjectCode . ' - ' . $subjectDescription;
+        } elseif ($subjectCode !== '') {
+            $subjectStructureContext = $subjectCode;
+        } elseif ($subjectDescription !== '') {
+            $subjectStructureContext = $subjectDescription;
+        }
+    }
+
     $labelSuggestion = $defaultFormula->label ?? 'Grades Formula';
     if ($context === "department" && isset($department)) {
         $labelSuggestion = trim(($department->department_description ?? 'Department') . ' Formula');
@@ -256,6 +273,10 @@
                     x-data="structuredFormulaEditor({ initial: @js($structurePayload), catalog: @js($structureCatalog) })"
                     @submit="handleSubmit"
                     class="row g-4 js-validated-form"
+                    id="gradesFormulaEditorForm"
+                    data-requires-password="{{ $requiresPasswordPrompt ? '1' : '0' }}"
+                    data-password-error="{{ $passwordErrorMessage ? '1' : '0' }}"
+                    data-password-error-message="{{ $passwordErrorMessage ? e($passwordErrorMessage) : '' }}"
                     novalidate
                 >
                     @csrf
@@ -279,6 +300,10 @@
                             <input type="hidden" name="course_id" value="{{ $course->id }}">
                         @endif
                         <input type="hidden" name="subject_id" value="{{ $subject->id }}">
+                    @endif
+
+                    @if ($requiresPasswordPrompt)
+                        <input type="hidden" name="current_password" id="formulaCurrentPasswordField">
                     @endif
 
                     <input type="hidden" name="semester" value="{{ $semester ?? '' }}">
@@ -326,12 +351,66 @@
                         <div class="alert alert-danger py-2 mb-0 validation-error d-none">Please complete all required fields and ensure each component group totals 100%.</div>
                     </div>
 
+                    @if ($requiresPasswordPrompt)
+                        <div class="col-12">
+                            <div class="alert alert-warning border-0 shadow-sm-sm d-flex align-items-center gap-2 mb-0">
+                                <i class="bi bi-lock-fill"></i>
+                                <span>This subject already has recorded grades. Confirm your password before saving changes.</span>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if ($passwordErrorMessage)
+                        <div class="col-12">
+                            <div class="alert alert-danger border-0 shadow-sm-sm d-flex align-items-center gap-2 mb-0">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                <span>{{ $passwordErrorMessage }}</span>
+                            </div>
+                        </div>
+                    @endif
+
                     <div class="col-12 d-flex justify-content-end">
                         <button type="submit" class="btn btn-success btn-lg" :disabled="! formIsValid()">
                             {{ $submitLabel }}
                         </button>
                     </div>
                 </form>
+
+                @if ($requiresPasswordPrompt)
+                    <div class="modal fade" id="formulaPasswordModal" tabindex="-1" aria-labelledby="formulaPasswordModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content border-0 shadow-sm">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title" id="formulaPasswordModalLabel">
+                                        <i class="bi bi-lock-fill me-2"></i>Confirm Sensitive Change
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-muted mb-3">This subject already has recorded grades. Enter your password to continue updating its grading formula.</p>
+                                    <div class="alert alert-warning border-0 shadow-sm-sm mb-3" style="white-space: pre-wrap; font-size: 0.9rem;">
+Choose Structure Type
+Structure types replace the old department formulas. Pick one to baseline {{ $subjectStructureContext }} and refine a subject-specific override afterward.
+
+Custom subject formula active
+Applying a structure template will replace the current override.
+This subject already has a custom formula. Applying a structure template will replace the current subject override.
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="formulaPasswordInput" class="form-label fw-semibold">Account Password</label>
+                                        <input type="password" class="form-control" id="formulaPasswordInput" placeholder="Enter your password" autocomplete="current-password">
+                                        <div class="invalid-feedback" id="formulaPasswordInlineError"></div>
+                                    </div>
+                                    <div class="alert alert-danger d-none" id="formulaPasswordServerError"></div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="button" class="btn btn-success" id="confirmFormulaPasswordBtn">Confirm &amp; Save</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             @endif
         </div>
     </div>
@@ -509,6 +588,161 @@
                 }
             }
         }));
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('gradesFormulaEditorForm');
+        if (!form || form.dataset.requiresPassword !== '1') {
+            return;
+        }
+
+        const hiddenField = document.getElementById('formulaCurrentPasswordField');
+        const modalElement = document.getElementById('formulaPasswordModal');
+        const confirmBtn = document.getElementById('confirmFormulaPasswordBtn');
+        const modalCtor = window.bootstrap && typeof window.bootstrap.Modal === 'function' ? window.bootstrap.Modal : null;
+
+        if (!hiddenField) {
+            return;
+        }
+
+        if (!modalElement || !confirmBtn || !modalCtor) {
+            form.addEventListener('submit', (event) => {
+                if (form.dataset.passwordBypass === '1' || event.defaultPrevented) {
+                    return;
+                }
+
+                event.preventDefault();
+                const response = window.prompt('Enter your password to confirm this change:');
+                if (!response || !response.trim()) {
+                    return;
+                }
+
+                hiddenField.value = response.trim();
+                form.dataset.passwordError = '0';
+                form.dataset.passwordErrorMessage = '';
+                form.dataset.passwordBypass = '1';
+                form.requestSubmit();
+                setTimeout(() => {
+                    delete form.dataset.passwordBypass;
+                    hiddenField.value = '';
+                }, 0);
+            });
+            return;
+        }
+
+        const passwordInput = document.getElementById('formulaPasswordInput');
+        const inlineError = document.getElementById('formulaPasswordInlineError');
+        const serverError = document.getElementById('formulaPasswordServerError');
+        const modal = modalCtor.getOrCreateInstance(modalElement);
+
+        const resetInlineError = () => {
+            if (inlineError) {
+                inlineError.textContent = '';
+                inlineError.classList.remove('d-block');
+            }
+            if (passwordInput) {
+                passwordInput.classList.remove('is-invalid');
+            }
+        };
+
+        const showInlineError = (message) => {
+            if (!inlineError) {
+                return;
+            }
+            inlineError.textContent = message;
+            inlineError.classList.add('d-block');
+            if (passwordInput) {
+                passwordInput.classList.add('is-invalid');
+            }
+        };
+
+        const setServerError = (message) => {
+            if (!serverError) {
+                return;
+            }
+            if (message) {
+                serverError.textContent = message;
+                serverError.classList.remove('d-none');
+            } else {
+                serverError.textContent = '';
+                serverError.classList.add('d-none');
+            }
+        };
+
+        const getServerErrorMessage = () => form.dataset.passwordErrorMessage || '';
+
+        setServerError(getServerErrorMessage());
+
+        const openModal = () => {
+            resetInlineError();
+            if (passwordInput) {
+                passwordInput.value = '';
+                passwordInput.focus();
+            }
+            setServerError(getServerErrorMessage());
+            modal.show();
+        };
+
+        form.addEventListener('submit', (event) => {
+            if (form.dataset.passwordBypass === '1') {
+                return;
+            }
+
+            if (event.defaultPrevented) {
+                return;
+            }
+
+            event.preventDefault();
+            openModal();
+        });
+
+        confirmBtn.addEventListener('click', () => {
+            const password = passwordInput ? passwordInput.value.trim() : '';
+            resetInlineError();
+
+            if (!password) {
+                showInlineError('Password is required.');
+                if (passwordInput) {
+                    passwordInput.focus();
+                }
+                return;
+            }
+
+            hiddenField.value = password;
+            form.dataset.passwordError = '0';
+            form.dataset.passwordErrorMessage = '';
+            setServerError('');
+            form.dataset.passwordBypass = '1';
+            modal.hide();
+
+            setTimeout(() => {
+                form.requestSubmit();
+                setTimeout(() => {
+                    delete form.dataset.passwordBypass;
+                    hiddenField.value = '';
+                }, 0);
+            }, 150);
+        });
+
+        modalElement.addEventListener('hidden.bs.modal', () => {
+            if (form.dataset.passwordBypass === '1') {
+                return;
+            }
+
+            if (hiddenField) {
+                hiddenField.value = '';
+            }
+            resetInlineError();
+        });
+
+        if (form.dataset.passwordError === '1' && getServerErrorMessage()) {
+            setTimeout(() => {
+                modal.show();
+                if (passwordInput) {
+                    passwordInput.focus();
+                }
+            }, 200);
+        }
     });
 </script>
 @endpush

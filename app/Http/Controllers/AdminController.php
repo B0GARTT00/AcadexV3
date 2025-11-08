@@ -976,6 +976,8 @@ class AdminController extends Controller
             );
         }
 
+        $subjectHasExistingGrades = $this->subjectHasRecordedGrades($subject, $selectedAcademicPeriodId);
+
         return view('admin.grades-formula-form', [
             'context' => 'subject',
             'department' => $subject->department,
@@ -992,6 +994,7 @@ class AdminController extends Controller
             'selectedAcademicYear' => $selectedAcademicYear,
             'selectedAcademicPeriodId' => $selectedAcademicPeriodId,
             'availableSemesters' => $periodContext['available_semesters'],
+            'requiresPasswordConfirmation' => $subjectHasExistingGrades,
         ]);
     }
 
@@ -1157,6 +1160,8 @@ class AdminController extends Controller
             ?? ($subjectFormula->structure_type ?? null)
             ?? $baselineStructureType;
 
+        $subjectHasExistingGrades = $this->subjectHasRecordedGrades($subject, $selectedAcademicPeriodId);
+
         return view('admin.grades-formula-subject', [
             'subject' => $subject,
             'course' => $subject->course,
@@ -1177,6 +1182,7 @@ class AdminController extends Controller
             'structureOptions' => $structureOptions,
             'structureBlueprints' => $structureBlueprints,
             'selectedStructureType' => $activeStructureType,
+            'requiresPasswordConfirmation' => $subjectHasExistingGrades,
         ]);
     }
 
@@ -1188,9 +1194,15 @@ class AdminController extends Controller
             abort(404);
         }
 
+        $periodContext = $this->resolveFormulaPeriodContext();
+        $selectedAcademicPeriodId = $periodContext['academic_period_id'];
+
+        $subjectRequiresPassword = $this->subjectHasRecordedGrades($subject, $selectedAcademicPeriodId);
+
         $validated = $request->validate([
             'department_formula_id' => ['nullable', 'integer'],
             'structure_type' => ['nullable', Rule::in(array_keys(FormulaStructure::STRUCTURE_DEFINITIONS))],
+            'current_password' => $subjectRequiresPassword ? ['required', 'current_password'] : ['nullable'],
         ]);
 
         if (empty($validated['department_formula_id']) && empty($validated['structure_type'])) {
@@ -1202,8 +1214,6 @@ class AdminController extends Controller
         $subject->load(['course.department']);
 
         if (! empty($validated['structure_type'])) {
-            $periodContext = $this->resolveFormulaPeriodContext();
-
             $baselineFormula = $subject->department
                 ? $this->ensureDepartmentFallback($subject->department, $periodContext)
                 : $this->getGlobalFormula();
@@ -1448,6 +1458,12 @@ class AdminController extends Controller
             $subject = Subject::with(['course.department'])->findOrFail($validated['subject_id']);
             $course = $subject->course;
             $department = $subject->department ?? $course?->department;
+
+            if ($this->subjectHasRecordedGrades($subject, $selectedAcademicPeriodId)) {
+                $request->validate([
+                    'current_password' => ['required', 'current_password'],
+                ]);
+            }
         }
 
         $label = $validated['label'] ?? match ($scope) {
@@ -1535,6 +1551,10 @@ class AdminController extends Controller
 
         $scope = $formula->scope_level ?? 'department';
 
+        if ($scope === 'subject') {
+            $formula->loadMissing(['subject.course.department']);
+        }
+
         $periodContext = $this->resolveFormulaPeriodContext();
         $selectedSemester = $periodContext['semester'];
         $selectedAcademicPeriodId = $periodContext['academic_period_id'];
@@ -1547,6 +1567,12 @@ class AdminController extends Controller
 
         if ($selectedSemester === null) {
             $selectedAcademicPeriodId = null;
+        }
+
+        if ($scope === 'subject' && $formula->subject && $this->subjectHasRecordedGrades($formula->subject, $selectedAcademicPeriodId)) {
+            $request->validate([
+                'current_password' => ['required', 'current_password'],
+            ]);
         }
 
         $rules = [
@@ -1685,6 +1711,32 @@ class AdminController extends Controller
 
         return redirect()->to($redirectRoute)
             ->with('success', 'Grades formula updated successfully.');
+    }
+
+    protected function subjectHasRecordedGrades(Subject $subject, ?int $academicPeriodId = null): bool
+    {
+        $termGrades = TermGrade::where('subject_id', $subject->id)
+            ->where('is_deleted', false)
+            ->when($academicPeriodId, fn ($query, $periodId) => $query->where('academic_period_id', $periodId));
+
+        if ($termGrades->exists()) {
+            return true;
+        }
+
+        $finalGrades = FinalGrade::where('subject_id', $subject->id)
+            ->where('is_deleted', false)
+            ->when($academicPeriodId, fn ($query, $periodId) => $query->where('academic_period_id', $periodId));
+
+        if ($finalGrades->exists()) {
+            return true;
+        }
+
+        return Score::where('is_deleted', false)
+            ->whereHas('activity', function ($query) use ($subject) {
+                $query->where('subject_id', $subject->id)
+                    ->where('is_deleted', false);
+            })
+            ->exists();
     }
 
     protected function resolveFormulaPeriodContext(): array

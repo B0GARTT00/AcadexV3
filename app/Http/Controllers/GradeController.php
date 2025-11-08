@@ -259,11 +259,20 @@ class GradeController extends Controller
             }
             // --- END NEW ---
         }
-    
+
+        $successMessage = 'Scores saved and grades updated successfully.';
+
+        if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => $successMessage,
+            ]);
+        }
+
         return redirect()->route('instructor.grades.index', [
             'subject_id' => $request->subject_id,
             'term' => $request->term
-        ])->with('success', 'Scores saved and grades updated successfully.');
+        ])->with('success', $successMessage);
     }
 
     public function ajaxSaveScore(Request $request)
