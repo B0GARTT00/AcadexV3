@@ -266,6 +266,7 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::get('/grades-formula/department/{department}/formulas/create', [AdminController::class, 'createDepartmentFormula'])->name('gradesFormula.department.formulas.create');
     Route::get('/grades-formula/department/{department}/formulas/{formula}/edit', [AdminController::class, 'editDepartmentFormulaEntry'])->name('gradesFormula.department.formulas.edit');
     Route::delete('/grades-formula/department/{department}/formulas/{formula}', [AdminController::class, 'destroyDepartmentFormula'])->name('gradesFormula.department.formulas.destroy');
+    Route::post('/grades-formula/department/bulk-apply', [AdminController::class, 'bulkApplyDepartmentFormula'])->name('gradesFormula.department.bulkApply');
     Route::get('/grades-formula/department/{department}/course/{course}', [AdminController::class, 'gradesFormulaCourse'])->name('gradesFormula.course');
     Route::get('/grades-formula/department/{department}/course/{course}/edit', [AdminController::class, 'gradesFormulaEditCourse'])->name('gradesFormula.edit.course');
     Route::get('/grades-formula/subject/{subject}', [AdminController::class, 'gradesFormulaSubject'])->name('gradesFormula.subject');

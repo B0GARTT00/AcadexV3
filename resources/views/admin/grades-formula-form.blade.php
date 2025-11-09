@@ -389,8 +389,8 @@
                                 <div class="modal-body">
                                     <p class="text-muted mb-3">This subject already has recorded grades. Enter your password to continue updating its grading formula.</p>
                                     <div class="alert alert-warning border-0 shadow-sm-sm mb-3" style="white-space: pre-wrap; font-size: 0.9rem;">
-Choose Structure Type
-Structure types replace the old department formulas. Pick one to baseline {{ $subjectStructureContext }} and refine a subject-specific override afterward.
+Choose Department Formula
+Department formulas replace the old department baselines. Pick one to baseline {{ $subjectStructureContext }} and refine a subject-specific override afterward.
 
 Custom subject formula active
 Applying a structure template will replace the current override.

@@ -219,8 +219,8 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 pb-0">
-                    <h5 class="text-success fw-semibold mb-1">Choose Structure Type</h5>
-                    <p class="text-muted mb-0">Structure types replace the old department formulas. Pick one to baseline {{ $subjectName }} and refine a subject-specific override afterward.</p>
+                    <h5 class="text-success fw-semibold mb-1">Choose Department Formula</h5>
+                    <p class="text-muted mb-0">Department formulas replace the old department baselines. Pick one to baseline {{ $subjectName }} and refine a subject-specific override afterward.</p>
                 </div>
                 <div class="card-body">
                     <form
@@ -292,7 +292,7 @@
                             @if ($structureOptionCount > 0)
                                 <div class="row g-3 align-items-end mb-3">
                                     <div class="col-sm-6 col-md-4 col-lg-3">
-                                        <label for="department-structure-filter" class="form-label text-success fw-semibold small mb-1">Structure Type</label>
+                                        <label for="department-structure-filter" class="form-label text-success fw-semibold small mb-1">Department Formula</label>
                                         <select class="form-select form-select-sm" id="department-structure-filter">
                                             <option value="all" selected>All Structures</option>
                                             @foreach ($structureOptions as $option)
@@ -387,8 +387,8 @@
                                     </div>
                                     <div class="modal-body">
                                         <div class="alert alert-warning border-0 shadow-sm-sm mb-3" style="white-space: pre-wrap; font-size: 0.9rem;">
-Choose Structure Type
-Structure types replace the old department formulas. Pick one to baseline {{ $subjectName }} and refine a subject-specific override afterward.
+Choose Department Formula
+Department formulas replace the old department baselines. Pick one to baseline {{ $subjectName }} and refine a subject-specific override afterward.
 
 Custom subject formula active
 Applying a structure template will replace the current override.

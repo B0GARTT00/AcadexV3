@@ -35,4 +35,9 @@ class Activity extends Model
     {
         return $this->belongsTo(CourseOutcomes::class, 'course_outcome_id');
     }
+
+    public function scores()
+    {
+        return $this->hasMany(Score::class);
+    }
 }

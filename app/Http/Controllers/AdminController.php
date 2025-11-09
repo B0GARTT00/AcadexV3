@@ -264,6 +264,58 @@ class AdminController extends Controller
             ->orderBy('department_code')
             ->get();
 
+        $subjectIds = $departments
+            ->flatMap(fn (Department $department) => ($department->courses ?? collect())->flatMap(fn (Course $course) => $course->subjects ?? collect()))
+            ->pluck('id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $subjectsWithGrades = collect();
+
+        if ($subjectIds->isNotEmpty()) {
+            $termGradeSubjects = TermGrade::whereIn('subject_id', $subjectIds)
+                ->where('is_deleted', false)
+                ->when($selectedAcademicPeriodId, fn ($query, $periodId) => $query->where('academic_period_id', $periodId))
+                ->pluck('subject_id');
+
+            $finalGradeSubjects = FinalGrade::whereIn('subject_id', $subjectIds)
+                ->where('is_deleted', false)
+                ->when($selectedAcademicPeriodId, fn ($query, $periodId) => $query->where('academic_period_id', $periodId))
+                ->pluck('subject_id');
+
+            $activitySubjects = Activity::whereIn('subject_id', $subjectIds)
+                ->where('is_deleted', false)
+                ->whereHas('scores', fn ($query) => $query->where('is_deleted', false))
+                ->pluck('subject_id');
+
+            $subjectsWithGrades = collect()
+                ->merge($termGradeSubjects)
+                ->merge($finalGradeSubjects)
+                ->merge($activitySubjects)
+                ->unique()
+                ->values();
+        }
+
+        $subjectsWithGradesMap = $subjectsWithGrades->flip();
+
+        $departments = $departments->map(function (Department $department) use ($subjectsWithGradesMap) {
+            $courses = $department->courses ?? collect();
+
+            $department->setRelation('courses', $courses->map(function (Course $course) use ($subjectsWithGradesMap) {
+                $subjects = $course->subjects ?? collect();
+
+                $course->setRelation('subjects', $subjects->map(function (Subject $subject) use ($subjectsWithGradesMap) {
+                    $subject->setAttribute('has_recorded_grades', $subjectsWithGradesMap->has($subject->id));
+                    return $subject;
+                })->values());
+
+                return $course;
+            })->values());
+
+            return $department;
+        });
+
         $departmentIds = $departments->pluck('id');
 
         $fallbacks = $this->applyPeriodFilters(
@@ -285,12 +337,9 @@ class AdminController extends Controller
             }
         }
 
-        $departmentCatalogs = $this->applyPeriodFilters(
-            GradesFormula::whereIn('department_id', $departmentIds)
-                ->where('scope_level', 'department'),
-            $selectedSemester,
-            $selectedAcademicPeriodId
-        )
+        $departmentCatalogs = GradesFormula::with('weights')
+            ->whereIn('department_id', $departmentIds)
+            ->where('scope_level', 'department')
             ->get()
             ->groupBy('department_id');
 
@@ -311,7 +360,15 @@ class AdminController extends Controller
 
         $globalFormula = $this->getGlobalFormula();
 
-        $departmentsSummary = $departments->map(function (Department $department) use ($fallbacks, $departmentCatalogs, $courseFormulas, $subjectFormulas, $globalFormula) {
+        $departmentsSummary = $departments->map(function (Department $department) use (
+            $fallbacks,
+            $departmentCatalogs,
+            $courseFormulas,
+            $subjectFormulas,
+            $globalFormula,
+            $selectedSemester,
+            $selectedAcademicPeriodId
+        ) {
             $courses = $department->courses;
 
             $courseCount = $courses->count();
@@ -324,15 +381,37 @@ class AdminController extends Controller
             $fallback = $fallbacks->get($department->id) ?? $globalFormula;
             $catalog = $departmentCatalogs->get($department->id, collect());
             $nonFallbackCount = $catalog->filter(fn ($formula) => ! $formula->is_department_fallback)->count();
+            $matchingCatalogCount = $catalog->filter(function ($formula) use ($selectedSemester, $selectedAcademicPeriodId) {
+                if ($formula->is_department_fallback) {
+                    return false;
+                }
 
-            $status = $nonFallbackCount > 0 ? 'custom' : 'default';
-            $scopeText = $nonFallbackCount > 0
-                ? 'Catalog ready with department-specific formulas.'
-                : 'Using baseline department formula.';
+                $semesterMatches = $selectedSemester === null
+                    ? $formula->semester === null
+                    : $formula->semester === $selectedSemester;
+
+                $periodMatches = $selectedAcademicPeriodId === null
+                    ? $formula->academic_period_id === null
+                    : (int) $formula->academic_period_id === (int) $selectedAcademicPeriodId;
+
+                return $semesterMatches && $periodMatches;
+            })->count();
+
+            if ($matchingCatalogCount > 0) {
+                $status = 'custom';
+                $scopeText = 'Catalog ready with formulas for this period.';
+            } elseif ($nonFallbackCount > 0) {
+                $status = 'custom';
+                $scopeText = 'Catalog formulas available in other periods.';
+            } else {
+                $status = 'default';
+                $scopeText = 'Using baseline department formula.';
+            }
 
             return [
                 'department' => $department,
                 'catalog_count' => $nonFallbackCount,
+                'catalog_available_count' => $matchingCatalogCount,
                 'missing_course_count' => max($courseCount - $coursesWithFormula, 0),
                 'missing_subject_count' => max($subjectCount - $subjectsWithFormula, 0),
                 'formula_label' => $fallback->label ?? $globalFormula->label,
@@ -341,6 +420,31 @@ class AdminController extends Controller
                 'scope_text' => $scopeText,
             ];
         });
+
+        $structureCatalog = collect($this->getStructureCatalog())
+            ->map(function (array $entry, string $key) {
+                $normalized = FormulaStructure::fromPercentPayload($entry['structure'] ?? []);
+                $flattened = collect(FormulaStructure::flattenWeights($normalized))
+                    ->map(function (array $node) {
+                        $weight = isset($node['weight']) ? (float) $node['weight'] : 0.0;
+                        $activityType = $node['activity_type'] ?? ($node['key'] ?? 'component');
+
+                        return [
+                            'type' => FormulaStructure::formatLabel($activityType),
+                            'percent' => (int) round($weight * 100),
+                        ];
+                    })
+                    ->values();
+
+                return [
+                    'key' => $key,
+                    'label' => $entry['label'] ?? FormulaStructure::formatLabel($key),
+                    'description' => $entry['description'] ?? '',
+                    'weights' => $flattened->all(),
+                    'structure' => $entry['structure'] ?? [],
+                ];
+            })
+            ->values();
 
         return view('admin.grades-formula-wildcards', [
             'globalFormula' => $globalFormula,
@@ -354,7 +458,106 @@ class AdminController extends Controller
             'selectedAcademicYear' => $selectedAcademicYear,
             'selectedAcademicPeriodId' => $selectedAcademicPeriodId,
             'availableSemesters' => $periodContext['available_semesters'],
+            'structureCatalog' => $structureCatalog,
         ]);
+    }
+
+    public function bulkApplyDepartmentFormula(Request $request)
+    {
+        Gate::authorize('admin');
+
+        $periodContext = $this->resolveFormulaPeriodContext();
+        $selectedSemester = $periodContext['semester'];
+        $selectedAcademicPeriodId = $periodContext['academic_period_id'];
+
+        $validated = $request->validate([
+            'department_id' => ['required', 'integer', 'exists:departments,id'],
+            'department_formula_id' => ['required', 'integer', 'exists:grades_formula,id'],
+            'course_ids' => ['required', 'array', 'min:1'],
+            'course_ids.*' => ['integer'],
+        ], [
+            'course_ids.required' => 'Select at least one course.',
+        ]);
+
+        $department = Department::with(['courses' => function ($query) {
+            $query->where('is_deleted', false)
+                ->select('id', 'department_id', 'course_code', 'course_description', 'is_deleted');
+        }])->find($validated['department_id']);
+
+        if (! $department || $department->is_deleted) {
+            return back()
+                ->withErrors(['department_id' => 'Select a valid department.'])
+                ->withInput();
+        }
+
+        $formula = GradesFormula::with('weights')
+            ->where('id', $validated['department_formula_id'])
+            ->where('scope_level', 'department')
+            ->first();
+
+        if (! $formula || (int) $formula->department_id !== (int) $department->id) {
+            return back()
+                ->withErrors(['department_formula_id' => 'Select a formula from the chosen department.'])
+                ->withInput();
+        }
+
+        $selectedCourseIds = collect($validated['course_ids'])
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values();
+
+        $courses = $department->courses
+            ->filter(fn (Course $course) => $selectedCourseIds->contains($course->id))
+            ->map(function (Course $course) use ($department) {
+                $course->setRelation('department', $department);
+                return $course;
+            })
+            ->values();
+
+        if ($courses->isEmpty() || $courses->count() !== $selectedCourseIds->count()) {
+            return back()
+                ->withErrors(['course_ids' => 'Select at least one course from the chosen department.'])
+                ->withInput();
+        }
+
+        $subjects = Subject::whereIn('course_id', $courses->pluck('id'))
+            ->where('is_deleted', false)
+            ->when($selectedAcademicPeriodId, fn ($query, $periodId) => $query->where('academic_period_id', $periodId))
+            ->get(['id', 'subject_code', 'subject_description', 'course_id']);
+
+        $subjectsRequiringPassword = $subjects
+            ->filter(fn (Subject $subject) => $this->subjectHasRecordedGrades($subject, $selectedAcademicPeriodId))
+            ->values();
+
+        if ($subjectsRequiringPassword->isNotEmpty()) {
+            session()->flash('bulk_formula_conflicts', $subjectsRequiringPassword->map(function (Subject $subject) use ($courses) {
+                $course = $courses->firstWhere('id', $subject->course_id);
+                $courseLabel = $course ? trim(($course->course_code ? $course->course_code . ' - ' : '') . ($course->course_description ?? '')) : null;
+                $subjectLabel = trim(($subject->subject_code ? $subject->subject_code . ' - ' : '') . ($subject->subject_description ?? ''));
+
+                return [
+                    'subject' => $subjectLabel !== '' ? $subjectLabel : 'Unnamed Subject',
+                    'course' => $courseLabel !== '' ? $courseLabel : 'Course',
+                ];
+            })->all());
+            session()->flash('bulk_requires_password', true);
+
+            $request->validate([
+                'current_password' => ['required', 'current_password'],
+            ]);
+        }
+
+        foreach ($courses as $course) {
+            $this->cloneFormulaToCourse($course, $formula);
+        }
+
+        GradesFormulaService::flushCache();
+
+        session()->forget(['bulk_formula_conflicts', 'bulk_requires_password']);
+
+        return redirect()
+            ->route('admin.gradesFormula', $this->formulaQueryParams())
+            ->with('success', 'Formula applied to selected courses.');
     }
 
     public function gradesFormulaDefault()
@@ -2034,6 +2237,82 @@ class AdminController extends Controller
             ->sortKeys();
 
         return $firstWeights->all() === $secondWeights->all();
+    }
+
+    protected function cloneFormulaToCourse(Course $course, GradesFormula $sourceFormula): GradesFormula
+    {
+        $sourceFormula->loadMissing('weights');
+
+        $label = trim(($course->course_code ? $course->course_code . ' - ' : '') . ($course->course_description ?? 'Course') . ' Formula');
+        if ($label === '') {
+            $label = 'Course Formula';
+        }
+
+        return DB::transaction(function () use ($course, $sourceFormula, $label) {
+            $requestSemester = request('semester');
+            $requestPeriodId = request('academic_period_id');
+
+            $activePeriodId = null;
+            if ($requestPeriodId !== null && $requestPeriodId !== '') {
+                $activePeriodId = (int) $requestPeriodId;
+            } elseif (session()->has('active_academic_period_id')) {
+                $activePeriodId = (int) session('active_academic_period_id');
+            }
+
+            $periodModel = $activePeriodId ? AcademicPeriod::find($activePeriodId) : null;
+
+            $selectedSemester = $requestSemester !== null && $requestSemester !== ''
+                ? $requestSemester
+                : ($periodModel?->semester ?? null);
+
+            if ($selectedSemester === null && $periodModel) {
+                $selectedSemester = $periodModel->semester;
+            }
+
+            $formula = GradesFormula::firstOrNew([
+                'course_id' => $course->id,
+                'semester' => $selectedSemester,
+                'academic_period_id' => $activePeriodId,
+            ]);
+
+            if (! $formula->exists) {
+                $formula->name = $this->generateFormulaName('course', $course->department, $course, null, $activePeriodId, $selectedSemester);
+                $formula->scope_level = 'course';
+            }
+
+            $formula->fill([
+                'label' => $label,
+                'scope_level' => 'course',
+                'department_id' => $course->department_id,
+                'subject_id' => null,
+                'semester' => $selectedSemester,
+                'academic_period_id' => $activePeriodId,
+                'base_score' => $sourceFormula->base_score,
+                'scale_multiplier' => $sourceFormula->scale_multiplier,
+                'passing_grade' => $sourceFormula->passing_grade,
+                'structure_type' => $sourceFormula->structure_type,
+                'structure_config' => $sourceFormula->structure_config,
+                'is_department_fallback' => false,
+            ]);
+
+            $formula->save();
+
+            $weights = $sourceFormula->weights
+                ->map(fn ($weight) => [
+                    'activity_type' => $weight->activity_type,
+                    'weight' => (float) $weight->weight,
+                ])
+                ->values()
+                ->all();
+
+            $formula->weights()->delete();
+
+            if (! empty($weights)) {
+                $formula->weights()->createMany($weights);
+            }
+
+            return $formula->fresh('weights');
+        });
     }
 
     protected function cloneFormulaToSubject(Subject $subject, GradesFormula $sourceFormula): GradesFormula
