@@ -44,14 +44,79 @@
         </h1>    
     </div>
 
-    <!-- Right: Profile Dropdown -->
-    @php
-        $nameParts = explode(' ', Auth::user()->name);
-        $firstName = $nameParts[0] ?? '';
-        $lastName = $nameParts[count($nameParts) - 1] ?? '';
-        $displayName = $firstName . ' ' . $lastName;
-    @endphp
-    <div class="dropdown">
+    <!-- Right: Notifications + Profile Dropdown -->
+    <div class="d-flex align-items-center gap-2">
+        @php
+            $user = Auth::user();
+            $showNotifications = in_array($user->role, [1, 4]); // Chairperson=1, GE Coordinator=4
+            $nameParts = explode(' ', Auth::user()->name);
+            $firstName = $nameParts[0] ?? '';
+            $lastName = $nameParts[count($nameParts) - 1] ?? '';
+            $displayName = $firstName . ' ' . $lastName;
+        @endphp
+        
+        <!-- Notification Bell -->
+        @if($showNotifications)
+            <div class="position-relative" x-data="notificationBell" x-init="init()">
+                <button @click="toggleDropdown" type="button" class="btn btn-link text-white position-relative p-2">
+                    <i class="bi bi-bell fs-4"></i>
+                    <span x-show="unreadCount > 0" 
+                          x-text="unreadCount" 
+                          class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                          style="font-size: 0.65rem;">
+                    </span>
+                </button>
+                
+                <!-- Notification Dropdown -->
+                <div x-show="showDropdown" 
+                     @click.away="showDropdown = false"
+                     x-transition
+                     class="position-absolute end-0 mt-2 bg-white rounded-3 shadow-lg"
+                     style="width: 380px; max-height: 500px; overflow-y: auto; z-index: 1050;">
+                    
+                    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 text-dark fw-semibold">Notifications</h6>
+                        <button @click="markAllRead" 
+                                x-show="unreadCount > 0"
+                                class="btn btn-sm btn-link text-primary p-0">
+                            Mark all read
+                        </button>
+                    </div>
+                    
+                    <div x-show="notifications.length === 0" class="p-4 text-center text-muted">
+                        <i class="bi bi-bell-slash fs-1 d-block mb-2"></i>
+                        <small>No new notifications</small>
+                    </div>
+                    
+                    <template x-for="notification in notifications" :key="notification.id">
+                        <div class="notification-item p-3 border-bottom" 
+                             @click="markRead(notification.id)"
+                             style="cursor: pointer;">
+                            <div class="d-flex align-items-start">
+                                <i class="bi bi-check-circle-fill text-success me-2 mt-1"></i>
+                                <div class="flex-grow-1">
+                                    <p class="mb-1 text-dark small" x-text="notification.message"></p>
+                                    <div class="d-flex gap-2 text-muted" style="font-size: 0.75rem;">
+                                        <span><i class="bi bi-book me-1"></i><span x-text="notification.subject_code"></span></span>
+                                        <span><i class="bi bi-calendar me-1"></i><span x-text="notification.term"></span></span>
+                                    </div>
+                                    <small class="text-muted" x-text="notification.created_at"></small>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    
+                    <div class="p-2 text-center border-top">
+                        <a href="{{ route('notifications.index') }}" class="btn btn-sm btn-link text-primary">
+                            View all notifications
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endif
+        
+        <!-- Profile Dropdown -->
+        <div class="dropdown">
         <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle hover-lift" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
             <div class="position-relative">
                 <img src="https://ui-avatars.com/api/?name={{ urlencode($displayName) }}&background=259c59&color=fff"
@@ -94,6 +159,7 @@
             </li>
         </ul>
     </div>
+    </div>
 </header>
 
 {{-- Sign Out Confirmation Modal --}}
@@ -122,3 +188,105 @@
         </div>
     </div>
 </div>
+
+@if($showNotifications ?? false)
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('notificationBell', () => ({
+        notifications: [],
+        unreadCount: 0,
+        showDropdown: false,
+        pollInterval: null,
+        
+        init() {
+            this.fetchNotifications();
+            // Poll every 30 seconds
+            this.pollInterval = setInterval(() => {
+                this.fetchUnreadCount();
+            }, 30000);
+        },
+        
+        destroy() {
+            if (this.pollInterval) {
+                clearInterval(this.pollInterval);
+            }
+        },
+        
+        async fetchNotifications() {
+            try {
+                const response = await fetch('{{ route("notifications.unread") }}');
+                const data = await response.json();
+                this.notifications = data.notifications;
+                this.unreadCount = data.count;
+            } catch (error) {
+                console.error('Error fetching notifications:', error);
+            }
+        },
+        
+        async fetchUnreadCount() {
+            try {
+                const response = await fetch('{{ route("notifications.unread-count") }}');
+                const data = await response.json();
+                if (data.count !== this.unreadCount) {
+                    this.fetchNotifications(); // Refresh if count changed
+                }
+            } catch (error) {
+                console.error('Error fetching count:', error);
+            }
+        },
+        
+        toggleDropdown() {
+            this.showDropdown = !this.showDropdown;
+            if (this.showDropdown) {
+                this.fetchNotifications();
+            }
+        },
+        
+        async markRead(notificationId) {
+            try {
+                const response = await fetch(`/notifications/${notificationId}/read`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                });
+                
+                if (response.ok) {
+                    this.fetchNotifications();
+                }
+            } catch (error) {
+                console.error('Error marking as read:', error);
+            }
+        },
+        
+        async markAllRead() {
+            try {
+                const response = await fetch('{{ route("notifications.read-all") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                });
+                
+                if (response.ok) {
+                    this.fetchNotifications();
+                }
+            } catch (error) {
+                console.error('Error marking all as read:', error);
+            }
+        }
+    }));
+});
+</script>
+
+<style>
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+.notification-item:last-child {
+    border-bottom: none !important;
+}
+</style>
+@endif

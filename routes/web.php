@@ -20,6 +20,7 @@ use App\Http\Controllers\CourseOutcomesController;
 use App\Http\Middleware\EnsureAcademicPeriodSet;
 use App\Http\Controllers\CourseOutcomeAttainmentController;
 use App\Http\Controllers\CourseOutcomeReportsController;
+use App\Http\Controllers\NotificationController;
 
 // Welcome Page
 use Illuminate\Support\Facades\Auth;
@@ -63,6 +64,15 @@ Route::middleware('auth')->group(function () {
 Route::get('/dashboard', [DashboardController::class, 'index'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard');
+
+// Notifications (for chairperson and GE coordinator)
+Route::middleware('auth')->group(function () {
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread-count', [NotificationController::class, 'getUnreadCount'])->name('notifications.unread-count');
+    Route::get('/notifications/unread', [NotificationController::class, 'getUnread'])->name('notifications.unread');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
+    Route::post('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+});
 
 // Chairperson Routes
 Route::prefix('chairperson')

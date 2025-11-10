@@ -12,6 +12,7 @@ use App\Models\FinalGrade;
 use App\Traits\GradeCalculationTrait;
 use App\Traits\ActivityManagementTrait;
 use App\Services\GradesFormulaService;
+use App\Services\GradeNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -259,6 +260,10 @@ class GradeController extends Controller
             }
             // --- END NEW ---
         }
+    
+        // Trigger notification for chairperson and GE coordinator
+        $studentsGraded = count($request->scores);
+        GradeNotificationService::notifyGradeSaved($request->subject_id, $request->term, $studentsGraded);
     
         return redirect()->route('instructor.grades.index', [
             'subject_id' => $request->subject_id,

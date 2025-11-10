@@ -109,6 +109,19 @@
         {{-- Chairperson --}}
         @if ($role === 1)
             <div class="sidebar-section">
+                <h6 class="px-3 mb-2">QUICK ACCESS</h6>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('notifications.index') }}" 
+                           class="nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-bell me-3"></i>
+                            <span>Notifications</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
                 <h6 class="px-3 mb-2">DEPARTMENT MANAGEMENT</h6>
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
@@ -307,6 +320,19 @@
 
         {{-- GE Coordinator --}}
         @if ($role === 4)
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">QUICK ACCESS</h6>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('notifications.index') }}" 
+                           class="nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-bell me-3"></i>
+                            <span>Notifications</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
             <div class="sidebar-section">
                 <h6 class="px-3 mb-2">GE COORDINATION</h6>
                 <ul class="nav nav-pills flex-column">
