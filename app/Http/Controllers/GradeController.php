@@ -261,14 +261,10 @@ class GradeController extends Controller
             // --- END NEW ---
         }
     
-        // Trigger notification for chairperson and GE coordinator
-        $studentsGraded = count($request->scores);
-        GradeNotificationService::notifyGradeSaved($request->subject_id, $request->term, $studentsGraded);
-    
         return redirect()->route('instructor.grades.index', [
             'subject_id' => $request->subject_id,
             'term' => $request->term
-        ])->with('success', 'Scores saved and grades updated successfully.');
+        ])->with('success', $successMessage);
     }
 
     public function ajaxSaveScore(Request $request)

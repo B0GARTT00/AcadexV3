@@ -53,7 +53,7 @@ trait GradeCalculationTrait
         ];
         $allScored = true;
 
-        $termGrade = $this->evaluateStructureNode(
+        $rawPercent = $this->evaluateStructureNode(
             $structure,
             $activitiesByType,
             $scores,
@@ -63,12 +63,16 @@ trait GradeCalculationTrait
             []
         );
 
-        if ($termGrade !== null) {
-            $termGrade = $this->clampGradeValue($termGrade);
+        $termGrade = null;
+
+        if ($rawPercent !== null) {
+            $rawPercent = $this->clampGradeValue($rawPercent);
+            $termGrade = $this->applyTransmutation($rawPercent, $formula);
         }
 
         return [
             'grade' => $termGrade,
+            'raw_percent' => $rawPercent,
             'details' => $details,
             'weights' => $formula['weights'] ?? [],
             'formula' => $formula,
@@ -220,8 +224,8 @@ trait GradeCalculationTrait
             }
 
             $denominator = max($activity->number_of_items, 1);
-            $transmuted = ($score->score / $denominator) * $formula['scale_multiplier'] + $formula['base_score'];
-            $collected[] = $this->clampGradeValue($transmuted);
+            $percentage = ($score->score / $denominator) * 100;
+            $collected[] = $this->clampGradeValue($percentage);
         }
 
         if (empty($collected)) {
@@ -246,5 +250,15 @@ trait GradeCalculationTrait
     protected function clampGradeValue(float $value): float
     {
         return max(0, min(100, round($value, 2)));
+    }
+
+    protected function applyTransmutation(float $rawPercent, array $formula): float
+    {
+        $scale = (float) ($formula['scale_multiplier'] ?? 0);
+        $base = (float) ($formula['base_score'] ?? 0);
+
+        $transmuted = ($rawPercent / 100) * $scale + $base;
+
+        return $this->clampGradeValue($transmuted);
     }
 } 

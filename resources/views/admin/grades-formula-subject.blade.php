@@ -107,9 +107,18 @@
         </div>
     @endif
 
-    @if ($errors->has('department_formula_id'))
+    @php
+        $requiresPasswordPrompt = ($requiresPasswordConfirmation ?? false) === true;
+        $passwordErrorMessage = $requiresPasswordPrompt ? ($errors->first('current_password') ?? '') : '';
+    @endphp
+
+    @if ($errors->has('structure_type') || $errors->has('department_formula_id'))
         <div class="alert alert-danger shadow-sm">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ $errors->first('department_formula_id') }}
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ $errors->first('structure_type') ?? $errors->first('department_formula_id') }}
+        </div>
+    @elseif ($passwordErrorMessage)
+        <div class="alert alert-danger shadow-sm">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ $passwordErrorMessage }}
         </div>
     @endif
 
@@ -142,10 +151,17 @@
         };
 
         $activeWeights = collect($activeMeta['relative_weights'] ?? $activeMeta['weights'] ?? [])
-            ->map(fn ($weight, $type) => [
-                'type' => strtoupper($type),
-                'percent' => number_format($weight, 0),
-            ])
+            ->map(function ($weight, $type) {
+                $numeric = is_numeric($weight) ? (float) $weight : 0;
+                $clamped = max(min($numeric, 100), 0);
+
+                return [
+                    'type' => strtoupper($type),
+                    'percent' => $clamped,
+                    'display' => number_format($clamped, 0),
+                    'progress' => $clamped / 100,
+                ];
+            })
             ->values();
 
         $manageHeadline = $subjectFormula ? 'Fine-tune this subject’s grading scale.' : 'Give this subject its own grading scale.';
@@ -154,6 +170,21 @@
             : 'Start with department or course guidance, then tailor the weights and scaling just for this subject.';
         $manageCta = $subjectFormula ? 'Edit Subject Formula' : 'Create Subject Formula';
         $hasSubjectFormula = (bool) $subjectFormula;
+
+        $structureOptions = collect($structureOptions ?? [])
+            ->map(function ($option) {
+                $key = $option['key'] ?? 'lecture_only';
+                $label = $option['label'] ?? \Illuminate\Support\Str::of($key)->replace('_', ' ')->title()->toString();
+
+                return [
+                    'key' => $key,
+                    'label' => $label,
+                ];
+            })
+            ->values();
+        $structureOptionCount = $structureOptions->count();
+        $structureBlueprints = collect($structureBlueprints ?? []);
+        $selectedStructureType = $selectedStructureType ?? 'lecture_only';
     @endphp
 
     <div class="row g-4">
@@ -173,7 +204,9 @@
                     <hr class="my-3">
                     <div class="d-flex flex-wrap gap-2">
                         @foreach ($activeWeights as $weight)
-                            <span class="badge bg-success-subtle text-success px-3 py-2">{{ $weight['type'] }} {{ $weight['percent'] }}%</span>
+                            <span class="formula-weight-chip" style="--chip-progress: {{ number_format($weight['progress'], 2, '.', '') }};">
+                                <span>{{ $weight['type'] }} {{ $weight['display'] }}%</span>
+                            </span>
                         @endforeach
                         @if ($activeWeights->isEmpty())
                             <span class="text-muted small">No activity weights defined.</span>
@@ -187,7 +220,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white border-0 pb-0">
                     <h5 class="text-success fw-semibold mb-1">Choose Department Formula</h5>
-                    <p class="text-muted mb-0">Apply one of {{ $departmentName }}’s catalog formulas to {{ $subjectName }}. You can still fine-tune a subject-specific override afterward.</p>
+                    <p class="text-muted mb-0">Department formulas replace the old department baselines. Pick one to baseline {{ $subjectName }} and refine a subject-specific override afterward.</p>
                 </div>
                 <div class="card-body">
                     <form
@@ -196,77 +229,211 @@
                         action="{{ $buildRoute('admin.gradesFormula.subject.apply', ['subject' => $subject->id]) }}"
                         data-has-subject-formula="{{ $hasSubjectFormula ? '1' : '0' }}"
                         data-subject-name="{{ $subjectName }}"
+                        data-requires-password="{{ $requiresPasswordPrompt ? '1' : '0' }}"
+                        data-password-error="{{ $passwordErrorMessage ? '1' : '0' }}"
+                        data-password-error-message="{{ $passwordErrorMessage ? e($passwordErrorMessage) : '' }}"
                     >
                         @csrf
-                        @if ($departmentFormulas->isEmpty())
+                        @if ($requiresPasswordPrompt)
+                            <input type="hidden" name="current_password" id="subjectFormulaPasswordField">
+                        @endif
+                        @if ($structureBlueprints->isEmpty())
                             <div class="alert alert-warning mb-0">
-                                <i class="bi bi-info-circle me-2"></i>No department formulas found yet. Create one in the department catalog to proceed.
+                                <i class="bi bi-info-circle me-2"></i>No structure templates available yet. Configure templates before applying them to subjects.
                             </div>
                         @else
+                            <div class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-3 mb-3">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    @if ($hasSubjectFormula)
+                                        <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 shadow-sm-sm">
+                                            <i class="bi bi-stars me-1"></i>Custom subject formula active
+                                        </span>
+                                        <span class="text-muted small">Applying a structure template will replace the current override.</span>
+                                    @else
+                                        <span class="badge bg-light text-success rounded-pill px-3 py-2 shadow-sm-sm">
+                                            <i class="bi bi-brush me-1"></i>No subject override yet
+                                        </span>
+                                        <span class="text-muted small">Pick a structure template to jump-start this subject.</span>
+                                    @endif
+                                </div>
+                                @if ($hasSubjectFormula)
+                                    <button type="button" class="btn btn-outline-danger btn-sm rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#removeSubjectFormulaModal">
+                                        <i class="bi bi-trash me-1"></i>Remove Subject Formula
+                                    </button>
+                                @endif
+                            </div>
+
                             @if ($hasSubjectFormula)
-                                <div class="alert alert-warning d-flex align-items-start">
+                                <div class="alert alert-warning d-flex align-items-start shadow-sm formula-alert">
                                     <i class="bi bi-exclamation-triangle-fill me-2 mt-1"></i>
                                     <div>
-                                        This subject already has a custom formula. Applying a department formula will replace the current subject override.
+                                        This subject already has a custom formula. Applying a structure template will replace the current subject override.
+                                    </div>
+                                </div>
+                                @if ($requiresPasswordPrompt)
+                                    <div class="alert alert-warning border-0 shadow-sm-sm d-flex align-items-start gap-2 mb-3">
+                                        <i class="bi bi-lock-fill mt-1"></i>
+                                        <div>{{ $subjectName }} already has recorded grades. Confirm your password before applying a new structure template.</div>
+                                    </div>
+                                @endif
+                            @else
+                                <div class="alert alert-success d-flex align-items-start shadow-sm formula-alert">
+                                    <i class="bi bi-lightning-charge me-2 mt-1"></i>
+                                    <div>
+                                        Start with a structure template, then fine-tune a subject-specific formula to match unique assessments.
                                     </div>
                                 </div>
                             @endif
-                            <div class="row g-3">
-                                @foreach ($departmentFormulas as $formula)
-                                @php
-                                    $inputId = 'department-formula-' . $formula->id;
-                                    $weights = collect($formula->weight_map ?? [])
-                                        ->map(fn ($weight, $type) => [
-                                            'type' => strtoupper($type),
-                                            'percent' => number_format($weight * 100, 0),
-                                        ])
-                                        ->values();
-                                    $selectedFormulaId = old('department_formula_id', $matchingDepartmentFormulaId);
-                                    $isSelected = (int) $selectedFormulaId === $formula->id;
-                                @endphp
-                                <div class="col-lg-6">
-                                    <label class="w-100">
-                                        <input
-                                            type="radio"
-                                            id="{{ $inputId }}"
-                                            name="department_formula_id"
-                                            value="{{ $formula->id }}"
-                                            class="form-check-input formula-option-input"
-                                            @checked($isSelected)
-                                        >
-                                        <div class="formula-option-card position-relative h-100 p-3">
-                                            <div class="d-flex justify-content-between align-items-start mb-2">
-                                                <div>
-                                                    <h6 class="fw-semibold text-success mb-1">{{ $formula->label }}</h6>
-                                                    <p class="small text-muted mb-0">
-                                                        Base {{ number_format($formula->base_score, 0) }} · Scale ×{{ number_format($formula->scale_multiplier, 0) }} · Passing {{ number_format($formula->passing_grade, 0) }}
-                                                    </p>
-                                                </div>
-                                                @if ($formula->is_department_fallback)
-                                                    <span class="badge bg-success-subtle text-success">Baseline</span>
-                                                @else
-                                                    <span class="badge bg-light text-secondary">Catalog</span>
-                                                @endif
-                                            </div>
-                                            <div class="d-flex flex-wrap gap-2 mt-2">
-                                                @foreach ($weights as $weight)
-                                                    <span class="badge bg-success-subtle text-success">{{ $weight['type'] }} {{ $weight['percent'] }}%</span>
-                                                @endforeach
-                                            </div>
-                                            @if ($isSelected)
-                                                <span class="position-absolute top-0 end-0 translate-middle badge rounded-pill bg-success">Selected</span>
-                                            @endif
-                                        </div>
-                                    </label>
+
+                            @php
+                                $selectedStructureKey = old('structure_type', $selectedStructureType);
+                            @endphp
+
+                            @if ($structureOptionCount > 0)
+                                <div class="row g-3 align-items-end mb-3">
+                                    <div class="col-sm-6 col-md-4 col-lg-3">
+                                        <label for="department-structure-filter" class="form-label text-success fw-semibold small mb-1">Department Formula</label>
+                                        <select class="form-select form-select-sm" id="department-structure-filter">
+                                            <option value="all" selected>All Structures</option>
+                                            @foreach ($structureOptions as $option)
+                                                <option value="{{ $option['key'] }}">{{ $option['label'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
+                            @endif
+
+                            <div class="row g-4 formula-option-grid">
+                                @foreach ($structureBlueprints as $blueprint)
+                                    @php
+                                        $inputId = 'structure-type-' . $blueprint['key'];
+                                        $weights = collect($blueprint['weights']);
+                                        $isSelected = $selectedStructureKey === $blueprint['key'];
+                                        $structureTypeKey = $blueprint['key'];
+                                        $structureTypeLabel = $blueprint['label'];
+                                        $structureTypeDescription = $blueprint['description'] ?? '';
+                                    @endphp
+                                    <div class="col-xl-4 col-lg-6 formula-card-column" data-structure-type="{{ $structureTypeKey }}">
+                                        <label class="w-100 formula-option-wrapper">
+                                            <input
+                                                type="radio"
+                                                id="{{ $inputId }}"
+                                                name="structure_type"
+                                                value="{{ $structureTypeKey }}"
+                                                class="form-check-input formula-option-input"
+                                                @checked($isSelected)
+                                            >
+                                            <div class="formula-option-card position-relative h-100 p-4">
+                                                <div class="formula-card-glow" aria-hidden="true"></div>
+                                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                                    <div>
+                                                        <h6 class="fw-semibold text-success mb-1">{{ $structureTypeLabel }}</h6>
+                                                        <p class="small text-muted mb-0">
+                                                            Base {{ number_format($blueprint['base_score'], 0) }} · Scale ×{{ number_format($blueprint['scale_multiplier'], 0) }} · Passing {{ number_format($blueprint['passing_grade'], 0) }}
+                                                        </p>
+                                                    </div>
+                                                    <div class="d-flex flex-column align-items-end gap-1 text-end">
+                                                        <span class="badge bg-white text-success border border-success border-opacity-25 rounded-pill">{{ $structureTypeLabel }}</span>
+                                                        @if (! empty($blueprint['is_baseline']))
+                                                            <span class="badge bg-success-subtle text-success rounded-pill">Department Baseline</span>
+                                                        @else
+                                                            <span class="badge bg-light text-secondary rounded-pill">Structure Template</span>
+                                                        @endif
+                                                        <span class="small text-muted">Matches {{ $structureTypeLabel }} blueprint</span>
+                                                    </div>
+                                                </div>
+                                                <div class="d-flex flex-wrap gap-2">
+                                                    @foreach ($weights as $weight)
+                                                        <span class="formula-weight-chip" style="--chip-progress: {{ number_format($weight['progress'], 2, '.', '') }};">
+                                                            <span>{{ $weight['type'] }} {{ $weight['display'] }}%</span>
+                                                        </span>
+                                                    @endforeach
+                                                </div>
+                                                @if ($structureTypeDescription)
+                                                    <p class="text-muted small mt-3 mb-0">{{ $structureTypeDescription }}</p>
+                                                @endif
+                                                <div class="formula-card-footer small text-muted d-flex flex-wrap gap-3 mt-4">
+                                                    <span><i class="bi bi-speedometer2 text-success me-1"></i>Base {{ number_format($blueprint['base_score'], 0) }}</span>
+                                                    <span><i class="bi bi-diagram-3 text-success me-1"></i>Scale ×{{ number_format($blueprint['scale_multiplier'], 0) }}</span>
+                                                    <span><i class="bi bi-mortarboard text-success me-1"></i>Passing {{ number_format($blueprint['passing_grade'], 0) }}</span>
+                                                </div>
+                                                <div class="formula-check" aria-hidden="true">
+                                                    <i class="bi bi-check-lg"></i>
+                                                </div>
+                                            </div>
+                                        </label>
+                                    </div>
                                 @endforeach
                             </div>
                         @endif
-                        <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
-                            <small class="text-muted">Need unique weights? Create a subject formula after applying a baseline.</small>
-                            <button type="submit" class="btn btn-success">Apply Formula</button>
-                        </div>
+
+                        @if ($structureBlueprints->isNotEmpty())
+                            <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2">
+                                <small class="text-muted">Need unique weights? Create a subject formula after applying a template.</small>
+                                <button type="submit" class="btn btn-success btn-apply-formula" data-action="apply">Apply Structure</button>
+                            </div>
+                            @if ($requiresPasswordPrompt)
+                                <div class="alert alert-danger mt-3 mb-0 d-none" id="subjectFormulaPasswordServerError"></div>
+                            @endif
+                        @endif
                     </form>
+                    @if ($requiresPasswordPrompt)
+                        <div class="modal fade" id="subjectFormulaPasswordModal" tabindex="-1" aria-labelledby="subjectFormulaPasswordModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content border-0 shadow-sm">
+                                    <div class="modal-header bg-success text-white">
+                                        <h5 class="modal-title" id="subjectFormulaPasswordModalLabel"><i class="bi bi-lock-fill me-2"></i>Confirm Sensitive Change</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="alert alert-warning border-0 shadow-sm-sm mb-3" style="white-space: pre-wrap; font-size: 0.9rem;">
+Choose Department Formula
+Department formulas replace the old department baselines. Pick one to baseline {{ $subjectName }} and refine a subject-specific override afterward.
+
+Custom subject formula active
+Applying a structure template will replace the current override.
+This subject already has a custom formula. Applying a structure template will replace the current subject override.
+                                        </div>
+                                        <p class="text-muted">{{ $subjectName }} already has recorded grades. Enter your password to continue.</p>
+                                        <div class="mb-3">
+                                            <label for="subjectFormulaPasswordInput" class="form-label fw-semibold">Account Password</label>
+                                            <input type="password" class="form-control" id="subjectFormulaPasswordInput" autocomplete="current-password" placeholder="Enter your password">
+                                            <div class="invalid-feedback d-none" id="subjectFormulaPasswordInlineError"></div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="button" class="btn btn-success" id="subjectFormulaPasswordConfirmBtn">Confirm &amp; Apply</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+                    @if ($hasSubjectFormula)
+                        <div class="modal fade" id="removeSubjectFormulaModal" tabindex="-1" aria-labelledby="removeSubjectFormulaModalLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header border-0">
+                                        <h5 class="modal-title text-success" id="removeSubjectFormulaModalLabel">Remove Subject Formula</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <p class="mb-0">Removing the custom formula will restore {{ $subjectName }} to {{ $departmentName }}’s baseline. You can always create a new subject formula afterward.</p>
+                                    </div>
+                                    <div class="modal-footer border-0 d-flex justify-content-between">
+                                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <form method="POST" action="{{ $buildRoute('admin.gradesFormula.subject.remove', ['subject' => $subject->id]) }}" class="d-inline">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-danger">
+                                                <i class="bi bi-trash me-1"></i>Remove Formula
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -294,24 +461,277 @@
             return;
         }
 
-        const hasSubjectFormula = applyForm.dataset.hasSubjectFormula === '1';
-        if (! hasSubjectFormula) {
-            return;
-        }
+        const optionInputs = applyForm.querySelectorAll('.formula-option-input');
+        const applyButton = applyForm.querySelector('[data-action="apply"]');
+        const structureFilter = document.getElementById('department-structure-filter');
+        const formulaColumns = applyForm.querySelectorAll('.formula-card-column');
+        const passwordHiddenField = document.getElementById('subjectFormulaPasswordField');
+        const passwordServerError = document.getElementById('subjectFormulaPasswordServerError');
+        const requiresPassword = applyForm.dataset.requiresPassword === '1';
+        const passwordModalElement = document.getElementById('subjectFormulaPasswordModal');
+        const passwordInput = document.getElementById('subjectFormulaPasswordInput');
+        const passwordInlineError = document.getElementById('subjectFormulaPasswordInlineError');
+        const passwordConfirmBtn = document.getElementById('subjectFormulaPasswordConfirmBtn');
+        const modalCtor = window.bootstrap && typeof window.bootstrap.Modal === 'function' ? window.bootstrap.Modal : null;
+        let passwordModalInstance = null;
 
-        applyForm.addEventListener('submit', (event) => {
-            const subjectName = applyForm.dataset.subjectName || 'this subject';
-            const message = `This will replace the existing custom formula for ${subjectName}. Continue?`;
-            if (! window.confirm(message)) {
-                event.preventDefault();
+        const syncSelectionState = () => {
+            let hasSelection = false;
+
+            optionInputs.forEach((input) => {
+                const card = input.nextElementSibling;
+                const selected = input.checked;
+
+                if (card) {
+                    card.classList.toggle('is-selected', selected);
+                    if (selected) {
+                        card.classList.add('pulse');
+                    }
+                }
+
+                if (selected) {
+                    hasSelection = true;
+                }
+            });
+
+            if (applyButton) {
+                applyButton.disabled = ! hasSelection;
+            }
+        };
+
+        syncSelectionState();
+
+        optionInputs.forEach((input) => {
+            const card = input.nextElementSibling;
+
+            input.addEventListener('change', () => {
+                syncSelectionState();
+                delete applyForm.dataset.overrideConfirmed;
+            });
+
+            if (card) {
+                card.addEventListener('animationend', () => {
+                    card.classList.remove('pulse');
+                });
             }
         });
+
+        const applyStructureFilter = () => {
+            if (! structureFilter) {
+                return;
+            }
+
+            const selectedType = structureFilter.value;
+
+            formulaColumns.forEach((column) => {
+                const matches = selectedType === 'all' || column.dataset.structureType === selectedType;
+                column.classList.toggle('d-none', ! matches);
+
+                if (! matches) {
+                    const input = column.querySelector('.formula-option-input');
+                    if (input && input.checked) {
+                        input.checked = false;
+                    }
+                }
+            });
+
+            syncSelectionState();
+            delete applyForm.dataset.overrideConfirmed;
+        };
+
+        if (structureFilter) {
+            structureFilter.addEventListener('change', applyStructureFilter);
+            applyStructureFilter();
+        }
+
+        const hasSubjectFormula = applyForm.dataset.hasSubjectFormula === '1';
+
+        const setServerErrorMessage = (message) => {
+            if (! passwordServerError) {
+                return;
+            }
+
+            if (message) {
+                passwordServerError.textContent = message;
+                passwordServerError.classList.remove('d-none');
+            } else {
+                passwordServerError.textContent = '';
+                passwordServerError.classList.add('d-none');
+            }
+        };
+
+        let existingServerError = applyForm.dataset.passwordError === '1'
+            ? (applyForm.dataset.passwordErrorMessage || '')
+            : '';
+
+        setServerErrorMessage(existingServerError);
+
+        const ensureOverrideConfirmation = () => {
+            if (! hasSubjectFormula) {
+                return true;
+            }
+
+            if (applyForm.dataset.overrideConfirmed === '1') {
+                return true;
+            }
+
+            const subjectName = applyForm.dataset.subjectName || 'this subject';
+            const message = `This will replace the existing custom formula for ${subjectName}. Continue?`;
+            const confirmed = window.confirm(message);
+            if (confirmed) {
+                applyForm.dataset.overrideConfirmed = '1';
+            }
+            return confirmed;
+        };
+
+        if (requiresPassword) {
+            if (modalCtor && passwordModalElement && passwordConfirmBtn) {
+                passwordModalInstance = modalCtor.getOrCreateInstance(passwordModalElement);
+
+                const resetInlineError = () => {
+                    if (passwordInlineError) {
+                        passwordInlineError.textContent = '';
+                        passwordInlineError.classList.add('d-none');
+                    }
+                    if (passwordInput) {
+                        passwordInput.classList.remove('is-invalid');
+                    }
+                };
+
+                const showInlineError = (message) => {
+                    if (! passwordInlineError) {
+                        return;
+                    }
+                    passwordInlineError.textContent = message;
+                    passwordInlineError.classList.remove('d-none');
+                    if (passwordInput) {
+                        passwordInput.classList.add('is-invalid');
+                    }
+                };
+
+                const openModal = () => {
+                    resetInlineError();
+                    setServerErrorMessage(existingServerError);
+                    if (passwordInput) {
+                        passwordInput.value = '';
+                        passwordInput.focus();
+                    }
+                    passwordModalInstance.show();
+                };
+
+                applyForm.addEventListener('submit', (event) => {
+                    if (applyForm.dataset.passwordBypass === '1' || event.defaultPrevented) {
+                        return;
+                    }
+
+                    if (! ensureOverrideConfirmation()) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    event.preventDefault();
+                    openModal();
+                });
+
+                passwordConfirmBtn.addEventListener('click', () => {
+                    const value = passwordInput ? passwordInput.value.trim() : '';
+                    resetInlineError();
+
+                    if (! value) {
+                        showInlineError('Password is required.');
+                        if (passwordInput) {
+                            passwordInput.focus();
+                        }
+                        return;
+                    }
+
+                    if (passwordHiddenField) {
+                        passwordHiddenField.value = value;
+                    }
+                    applyForm.dataset.passwordError = '0';
+                    applyForm.dataset.passwordErrorMessage = '';
+                    setServerErrorMessage('');
+                    existingServerError = '';
+                    applyForm.dataset.passwordBypass = '1';
+                    passwordModalInstance.hide();
+
+                    setTimeout(() => {
+                        applyForm.requestSubmit();
+                        setTimeout(() => {
+                            delete applyForm.dataset.passwordBypass;
+                            if (passwordHiddenField) {
+                                passwordHiddenField.value = '';
+                            }
+                        }, 0);
+                    }, 150);
+                });
+
+                passwordModalElement.addEventListener('hidden.bs.modal', () => {
+                    if (applyForm.dataset.passwordBypass === '1') {
+                        return;
+                    }
+
+                    if (passwordHiddenField) {
+                        passwordHiddenField.value = '';
+                    }
+                    resetInlineError();
+                });
+
+                if (applyForm.dataset.passwordError === '1' && existingServerError) {
+                    setTimeout(() => {
+                        passwordModalInstance.show();
+                        if (passwordInput) {
+                            passwordInput.focus();
+                        }
+                    }, 200);
+                }
+            } else if (passwordHiddenField) {
+                applyForm.addEventListener('submit', (event) => {
+                    if (applyForm.dataset.passwordBypass === '1' || event.defaultPrevented) {
+                        return;
+                    }
+
+                    if (! ensureOverrideConfirmation()) {
+                        event.preventDefault();
+                        return;
+                    }
+
+                    event.preventDefault();
+                    const response = window.prompt('Enter your password to confirm this change:');
+                    if (! response || ! response.trim()) {
+                        return;
+                    }
+
+                    passwordHiddenField.value = response.trim();
+                    applyForm.dataset.passwordError = '0';
+                    applyForm.dataset.passwordErrorMessage = '';
+                    existingServerError = '';
+                    applyForm.dataset.passwordBypass = '1';
+                    applyForm.requestSubmit();
+                    setTimeout(() => {
+                        delete applyForm.dataset.passwordBypass;
+                        passwordHiddenField.value = '';
+                    }, 0);
+                });
+            }
+        } else if (hasSubjectFormula) {
+            applyForm.addEventListener('submit', (event) => {
+                if (! ensureOverrideConfirmation()) {
+                    event.preventDefault();
+                }
+            });
+        }
     });
 </script>
 @endpush
 
 @push('styles')
 <style>
+.formula-option-wrapper {
+    display: block;
+    position: relative;
+}
+
 .formula-option-input {
     position: absolute;
     opacity: 0;
@@ -319,27 +739,137 @@
 }
 
 .formula-option-card {
-    border: 1px solid #dee2e6;
-    border-radius: 1rem;
+    border: 1px solid rgba(25, 135, 84, 0.18);
+    border-radius: 1.25rem;
     background: #ffffff;
-    transition: all 0.2s ease-in-out;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
     position: relative;
+    overflow: hidden;
 }
 
-label:hover .formula-option-card {
-    border-color: #20c997;
-    box-shadow: 0 10px 25px rgba(33, 150, 83, 0.1);
+.formula-option-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 18px 40px rgba(25, 135, 84, 0.18);
 }
 
-.formula-option-input:checked + .formula-option-card {
+.formula-option-card.is-selected {
     border-color: #198754;
-    box-shadow: 0 12px 28px rgba(25, 135, 84, 0.15);
+    box-shadow: 0 22px 48px rgba(25, 135, 84, 0.22);
 }
 
-.formula-option-input:disabled + .formula-option-card {
+.formula-option-card .formula-card-glow {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.15), rgba(32, 201, 151, 0.12));
+    opacity: 0;
+    transform: scale(0.96);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    pointer-events: none;
+}
+
+.formula-option-card.is-selected .formula-card-glow {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.formula-check {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #198754, #20c997);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    transform: scale(0.4);
+    opacity: 0;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+
+.formula-option-card.is-selected .formula-check {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.formula-option-card.pulse {
+    animation: formulaPulse 0.6s ease;
+}
+
+@keyframes formulaPulse {
+    0% {
+        transform: translateY(-4px) scale(0.99);
+    }
+    40% {
+        transform: translateY(-8px) scale(1.02);
+    }
+    100% {
+        transform: translateY(-4px) scale(1);
+    }
+}
+
+.formula-weight-chip {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.85rem;
+    border-radius: 999px;
+    background: rgba(25, 135, 84, 0.08);
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #0f5132;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.formula-weight-chip::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(25, 135, 84, 0.35), rgba(32, 201, 151, 0.35));
+    transform-origin: left center;
+    transform: scaleX(var(--chip-progress, 0));
+    transition: transform 0.4s ease;
     opacity: 0.6;
-    border-style: dashed;
-    box-shadow: none;
+}
+
+.formula-weight-chip span {
+    position: relative;
+    z-index: 1;
+}
+
+.formula-alert {
+    border-radius: 1rem;
+    border: none;
+}
+
+.shadow-sm-sm {
+    box-shadow: 0 8px 20px rgba(25, 135, 84, 0.12);
+}
+
+.btn-apply-formula {
+    border-radius: 999px;
+    padding: 0.4rem 1.6rem;
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.btn-apply-formula:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-apply-formula:not(:disabled):hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(25, 135, 84, 0.25);
+}
+
+@media (max-width: 576px) {
+    .formula-option-card {
+        border-radius: 1rem;
+    }
 }
 </style>
 @endpush

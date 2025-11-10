@@ -3,7 +3,7 @@
     <p class="text-muted">Select the grading structure and fine-tune component weights. Each component group must total 100%.</p>
 
     <div class="mb-4">
-        <label class="form-label fw-semibold">Structure Type</label>
+    <label class="form-label fw-semibold">Department Formula</label>
         <select class="form-select" x-model="structureType" @change="switchStructure()">
             <template x-for="(definition, key) in catalog" :key="key">
                 <option :value="key" x-text="definition.label"></option>

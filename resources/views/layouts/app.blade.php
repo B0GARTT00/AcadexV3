@@ -308,7 +308,7 @@
     <aside class="sidebar-wrapper">
         @include('layouts.sidebar')
         <div class="version-display">
-            Acadex System v1.4.0
+            Acadex System v1.5.1
         </div>
     </aside>
 

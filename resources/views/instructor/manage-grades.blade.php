@@ -59,7 +59,7 @@
         @else
             @include('instructor.partials.term-stepper')
             @include('instructor.partials.activity-header', ['subject' => $subject, 'term' => $term, 'activityTypes' => $activityTypes])
-            <form method="POST" action="{{ route('instructor.grades.store') }}">
+            <form id="gradeForm" method="POST" action="{{ route('instructor.grades.store') }}">
                 @csrf
                 <input type="hidden" name="subject_id" value="{{ $subject->id }}">
                 <input type="hidden" name="term" value="{{ $term }}">
@@ -238,39 +238,59 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Extract subject navigation logic to reusable function
-    function navigateToSubject(url, overlay) {
-        console.log('Navigating to subject URL:', url);
-        if (overlay) overlay.classList.remove('d-none');
+    function loadGradeSection(url, overlay) {
+        if (!url) {
+            return Promise.reject(new Error('Missing grade section URL.'));
+        }
 
-        fetch(url, {
+        const overlayRef = overlay || window.gradeOverlay || document.getElementById('fadeOverlay');
+        if (overlayRef) overlayRef.classList.remove('d-none');
+
+        return fetch(url, {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .then(res => res.text())
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`Request failed with status ${res.status}`);
+            }
+            return res.text();
+        })
         .then(html => {
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
             const newGradeSection = doc.querySelector('#grade-section');
             const currentSection = document.getElementById('grade-section');
-            
-            if (newGradeSection && currentSection) {
-                currentSection.replaceWith(newGradeSection);
-                if (typeof bindGradeInputEvents === 'function') {
-                    bindGradeInputEvents();
-                }
-                if (typeof initializeCourseOutcomeDropdowns === 'function') {
-                    initializeCourseOutcomeDropdowns();
-                }
-                if (typeof initializeStudentSearch === 'function') {
-                    initializeStudentSearch();
-                }
+
+            if (!newGradeSection || !currentSection) {
+                throw new Error('Grade section markup missing from response.');
             }
-            
-            if (overlay) overlay.classList.add('d-none');
+
+            currentSection.replaceWith(newGradeSection);
+
+            if (typeof bindGradeInputEvents === 'function') {
+                bindGradeInputEvents();
+            }
+            if (typeof initializeCourseOutcomeDropdowns === 'function') {
+                initializeCourseOutcomeDropdowns();
+            }
+            if (typeof initializeStudentSearch === 'function') {
+                initializeStudentSearch();
+            }
+
+            if (overlayRef) overlayRef.classList.add('d-none');
+            return true;
         })
         .catch(error => {
+            if (overlayRef) overlayRef.classList.add('d-none');
+            throw error;
+        });
+    }
+
+    // Extract subject navigation logic to reusable function
+    function navigateToSubject(url, overlay) {
+        console.log('Navigating to subject URL:', url);
+        loadGradeSection(url, overlay).catch(error => {
             console.error('Error loading grades:', error);
-            if (overlay) overlay.classList.add('d-none');
             alert('Failed to load subject grades.');
         });
     }
@@ -305,39 +325,31 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Extract term navigation logic to reusable function
     function navigateToTerm(subjectId, term, overlay) {
-        if (overlay) overlay.classList.remove('d-none');
-
-        fetch(`/instructor/grades/partial?subject_id=${subjectId}&term=${term}`, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(res => res.text())
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newGradeSection = doc.querySelector('#grade-section');
-            const currentSection = document.getElementById('grade-section');
-            
-            if (newGradeSection && currentSection) {
-                currentSection.replaceWith(newGradeSection);
-                if (typeof bindGradeInputEvents === 'function') {
-                    bindGradeInputEvents();
-                }
-                if (typeof initializeCourseOutcomeDropdowns === 'function') {
-                    initializeCourseOutcomeDropdowns();
-                }
-                if (typeof initializeStudentSearch === 'function') {
-                    initializeStudentSearch();
-                }
-            }
-            
-            if (overlay) overlay.classList.add('d-none');
-        })
-        .catch(error => {
+        const url = `/instructor/grades/partial?subject_id=${subjectId}&term=${term}`;
+        loadGradeSection(url, overlay).catch(error => {
             console.error('Error loading term data:', error);
-            if (overlay) overlay.classList.add('d-none');
             alert('Failed to load term data.');
         });
     }
+
+    function refreshGradeSection() {
+        const subjectInput = document.querySelector('input[name="subject_id"]');
+        const termInput = document.querySelector('input[name="term"]');
+
+        if (!subjectInput || !termInput) {
+            return Promise.resolve();
+        }
+
+        const url = `/instructor/grades/partial?subject_id=${encodeURIComponent(subjectInput.value)}&term=${encodeURIComponent(termInput.value)}`;
+
+        return loadGradeSection(url)
+            .catch(error => {
+                console.error('Error refreshing grade section:', error);
+                throw new Error('Grades were saved, but the table could not refresh automatically. Please reload the page.');
+            });
+    }
+
+    window.refreshGradeSection = refreshGradeSection;
     
 });
 </script>

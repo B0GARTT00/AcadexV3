@@ -268,27 +268,57 @@
 }
 
 .wildcard-circle {
-    width: 84px;
-    height: 84px;
+    width: 110px;
+    height: 110px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     box-shadow: 0 8px 24px rgba(15, 81, 50, 0.35);
     position: absolute;
-    top: 40px;
+    top: 55px;
     left: 50%;
     transform: translate(-50%, -50%);
-    text-align: center;
-    padding: 0 12px;
-    word-break: break-word;
+    padding: 0 18px;
+    background: linear-gradient(135deg, #23a362, #0b3d23);
+    max-width: calc(100% - 24px);
 }
+
+.wildcard-circle span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    text-align: center;
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: 0.03em;
+    overflow-wrap: anywhere;
+    word-break: normal;
+    white-space: normal;
+    font-size: clamp(0.6rem, 0.52rem + 0.45vw, 0.95rem);
+}
+
 
 .badge-formula-label {
     background-color: #ffffff;
     color: #198754;
     border: 1px solid rgba(25, 135, 84, 0.25);
     font-weight: 600;
+}
+
+.wildcard-card .badge-formula-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    width: 100%;
+    line-height: 1.2;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
 }
 
 .bg-danger-subtle {
@@ -310,9 +340,10 @@
     }
 
     .wildcard-circle {
-        width: 72px;
-        height: 72px;
-        top: 36px;
+        width: 90px;
+        height: 90px;
+        top: 44px;
+        padding: 0 14px;
     }
 }
 </style>
