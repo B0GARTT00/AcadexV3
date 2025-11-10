@@ -105,6 +105,7 @@
                             <th class="text-center">Final</th>
                             <th class="text-center text-success">Final Average</th>
                             <th class="text-center">Remarks</th>
+                            <th class="text-center">Notes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -121,6 +122,9 @@
                                 $average = $hasAll ? round(($prelim + $midterm + $prefinal + $final) / 4) : null;
 
                                 $remarks = $average !== null ? ($average >= 75 ? 'Passed' : 'Failed') : null;
+                                
+                                $finalGrade = $student->finalGrades->first();
+                                $notes = $finalGrade->notes ?? '';
                             @endphp
                             <tr class="hover:bg-light">
                                 <td>{{ $student->last_name }}, {{ $student->first_name }}</td>
@@ -140,6 +144,21 @@
                                         <span class="text-muted">–</span>
                                     @endif
                                 </td>
+                                <td class="text-center">
+                                    <button 
+                                        class="btn btn-sm btn-outline-primary rounded-pill"
+                                        onclick="openNotesModal({{ $student->id }}, '{{ addslashes($student->last_name) }}, {{ addslashes($student->first_name) }}', '{{ addslashes($notes) }}')"
+                                        data-bs-toggle="tooltip"
+                                        title="{{ $notes ? 'Edit note' : 'Add note' }}">
+                                        <i class="bi {{ $notes ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
+                                        {{ $notes ? 'Edit' : 'Add' }}
+                                    </button>
+                                    @if($notes)
+                                        <div class="small text-muted mt-1" style="max-width: 150px;">
+                                            {{ Str::limit($notes, 30) }}
+                                        </div>
+                                    @endif
+                                </td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -152,4 +171,127 @@
         @endif
     @endif
 </div>
+
+{{-- Notes Modal --}}
+<div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="notesModalLabel">
+                    <i class="bi bi-sticky me-2"></i>Grade Notes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Student:</label>
+                    <p class="text-muted" id="studentName"></p>
+                </div>
+                <div class="mb-3">
+                    <label for="notesTextarea" class="form-label fw-semibold">Notes:</label>
+                    <textarea 
+                        class="form-control" 
+                        id="notesTextarea" 
+                        rows="5" 
+                        maxlength="1000"
+                        placeholder="Enter your notes about this student's performance..."></textarea>
+                    <div class="form-text">
+                        <span id="charCount">0</span>/1000 characters
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveNotes()">
+                    <i class="bi bi-save me-1"></i>Save Notes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
+
+@push('scripts')
+<script>
+let currentStudentId = null;
+const selectedSubjectId = {{ $selectedSubjectId ?? 'null' }};
+
+function openNotesModal(studentId, studentName, notes) {
+    currentStudentId = studentId;
+    document.getElementById('studentName').textContent = studentName;
+    document.getElementById('notesTextarea').value = notes || '';
+    updateCharCount();
+    
+    const modal = new bootstrap.Modal(document.getElementById('notesModal'));
+    modal.show();
+}
+
+function updateCharCount() {
+    const textarea = document.getElementById('notesTextarea');
+    const charCount = document.getElementById('charCount');
+    charCount.textContent = textarea.value.length;
+}
+
+document.getElementById('notesTextarea').addEventListener('input', updateCharCount);
+
+async function saveNotes() {
+    if (!currentStudentId || !selectedSubjectId) {
+        alert('Error: Missing student or subject information');
+        return;
+    }
+
+    const notes = document.getElementById('notesTextarea').value;
+    const saveButton = event.target;
+    saveButton.disabled = true;
+    saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
+
+    try {
+        const response = await fetch('{{ route("chairperson.saveGradeNotes") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+            },
+            body: JSON.stringify({
+                student_id: currentStudentId,
+                subject_id: selectedSubjectId,
+                notes: notes
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+            // Close modal
+            bootstrap.Modal.getInstance(document.getElementById('notesModal')).hide();
+            
+            // Show success message
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: data.message,
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            // Reload page to show updated notes
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        } else {
+            throw new Error(data.error || 'Failed to save notes');
+        }
+    } catch (error) {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: error.message || 'Failed to save notes. Please try again.'
+        });
+    } finally {
+        saveButton.disabled = false;
+        saveButton.innerHTML = '<i class="bi bi-save me-1"></i>Save Notes';
+    }
+}
+</script>
+@endpush

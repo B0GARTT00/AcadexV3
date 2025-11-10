@@ -15,6 +15,7 @@ class FinalGrade extends Model
         'academic_period_id',
         'final_grade',
         'remarks',
+        'notes',
         'is_deleted',
         'created_by',
         'updated_by',

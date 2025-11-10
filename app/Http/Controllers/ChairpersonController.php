@@ -367,9 +367,14 @@ class ChairpersonController extends Controller
             $subject = $subjectQuery->firstOrFail();
     
             $students = $subject->students()
-                ->with(['termGrades' => function ($q) use ($selectedSubjectId) {
-                    $q->where('subject_id', $selectedSubjectId);
-                }])
+                ->with([
+                    'termGrades' => function ($q) use ($selectedSubjectId) {
+                        $q->where('subject_id', $selectedSubjectId);
+                    },
+                    'finalGrades' => function ($q) use ($selectedSubjectId) {
+                        $q->where('subject_id', $selectedSubjectId);
+                    }
+                ])
                 ->get();
         }
     
@@ -414,5 +419,41 @@ class ChairpersonController extends Controller
                 ->get();
         }
         return view('chairperson.students-by-year', compact('students'));
+    }
+
+    // ============================
+    // Save Grade Notes
+    // ============================
+    
+    public function saveGradeNotes(Request $request)
+    {
+        if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'student_id' => 'required|exists:students,id',
+            'subject_id' => 'required|exists:subjects,id',
+            'notes' => 'nullable|string|max:1000',
+        ]);
+
+        $finalGrade = \App\Models\FinalGrade::where('student_id', $request->student_id)
+            ->where('subject_id', $request->subject_id)
+            ->first();
+
+        if (!$finalGrade) {
+            return response()->json(['error' => 'Grade record not found'], 404);
+        }
+
+        $finalGrade->update([
+            'notes' => $request->notes,
+            'updated_by' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notes saved successfully',
+            'notes' => $finalGrade->notes,
+        ]);
     }
 }

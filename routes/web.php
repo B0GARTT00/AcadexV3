@@ -93,6 +93,7 @@ Route::prefix('chairperson')
         Route::post('/assign-subjects/toggle', [ChairpersonController::class, 'toggleAssignedSubject'])->name('toggleAssignedSubject');
 
     Route::get('/grades', [ChairpersonController::class, 'viewGrades'])->name('viewGrades');
+    Route::post('/grades/save-notes', [ChairpersonController::class, 'saveGradeNotes'])->name('saveGradeNotes');
 
     // Reports - Program-level CO compliance for chairperson's department
     Route::get('/reports/co-program', [\App\Http\Controllers\ProgramReportsController::class, 'chairProgram'])->name('reports.co-program');
