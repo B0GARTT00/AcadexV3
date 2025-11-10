@@ -36,7 +36,10 @@
         $buildRoute,
         $semester,
         $selectedAcademicPeriodId,
-        $periodLookup
+        $periodLookup,
+        $courseFormulas,
+        $subjectFormulas,
+        $globalFormula
     ) {
         $formulas = $departmentCatalogs->get($department->id, collect());
 
@@ -71,6 +74,7 @@
             'department_url' => $buildRoute('admin.gradesFormula.department', ['department' => $department->id]),
             'create_formula_url' => $buildRoute('admin.gradesFormula.department.formulas.create', ['department' => $department->id]),
             'edit_fallback_url' => $buildRoute('admin.gradesFormula.edit.department', ['department' => $department->id]),
+            'apply_template_url' => $buildRoute('admin.gradesFormula.department.applyTemplate', ['department' => $department->id]),
             'formulas' => $sortedFormulas->map(function ($formula) use ($department, $buildRoute, $semester, $selectedAcademicPeriodId, $periodLookup) {
                 $weights = collect($formula->weight_map)
                     ->map(function ($weight, $type) {
@@ -80,6 +84,11 @@
                         ];
                     })
                     ->values();
+
+                $structureType = $formula->structure_type ?? 'lecture_only';
+                $structureDefinitions = \App\Support\Grades\FormulaStructure::STRUCTURE_DEFINITIONS;
+                $structureLabel = $structureDefinitions[$structureType]['label']
+                    ?? \App\Support\Grades\FormulaStructure::formatLabel($structureType);
 
                 $editUrl = $formula->is_department_fallback
                     ? $buildRoute('admin.gradesFormula.edit.department', ['department' => $department->id])
@@ -132,25 +141,74 @@
                     'weights' => $weights,
                     'edit_url' => $editUrl,
                     'updated_at' => optional($formula->updated_at)->diffForHumans() ?? 'Recently updated',
+                    'structure_type' => $structureType,
+                    'structure_label' => $structureLabel,
                 ];
             })->values(),
-            'courses' => ($department->courses ?? collect())->map(function ($course) {
+            'courses' => ($department->courses ?? collect())->map(function ($course) use ($department, $departmentFallbacks, $courseFormulas, $subjectFormulas, $globalFormula) {
                 $subjects = $course->subjects ?? collect();
 
-                $subjectPayload = $subjects->map(function ($subject) {
+                $departmentFallback = $departmentFallbacks->get($department->id);
+                $fallbackFormula = $departmentFallback ?? $globalFormula;
+                $fallbackLabel = optional($fallbackFormula)->label ?? 'System Default Formula';
+
+                $courseFormula = $courseFormulas->get($course->id);
+                $hasCourseFormula = $courseFormula !== null;
+
+                $subjectPayload = $subjects->map(function ($subject) use ($subjectFormulas, $courseFormula, $departmentFallback, $globalFormula) {
                     $subjectLabel = trim(($subject->subject_code ? $subject->subject_code . ' - ' : '') . ($subject->subject_description ?? ''));
                     if ($subjectLabel === '') {
                         $subjectLabel = 'Unnamed Subject';
+                    }
+
+                    $subjectFormula = $subjectFormulas->get($subject->id);
+                    $subjectHasFormula = $subjectFormula !== null;
+
+                    if ($subjectHasFormula) {
+                        $formulaScope = 'Subject Formula';
+                        $formulaSource = 'subject';
+                        $formulaLabel = $subjectFormula->label ?? 'Subject Formula';
+                        $formulaId = $subjectFormula->id ?? null;
+                    } elseif ($courseFormula) {
+                        $formulaScope = 'Course Formula';
+                        $formulaSource = 'course';
+                        $formulaLabel = $courseFormula->label ?? 'Course Formula';
+                        $formulaId = $courseFormula->id ?? null;
+                    } elseif ($departmentFallback) {
+                        $formulaScope = 'Department Baseline';
+                        $formulaSource = 'department';
+                        $formulaLabel = $departmentFallback->label ?? 'Department Baseline';
+                        $formulaId = $departmentFallback->id ?? null;
+                    } else {
+                        $formulaScope = 'System Default Formula';
+                        $formulaSource = 'global';
+                        $formulaLabel = optional($globalFormula)->label ?? 'System Default';
+                        $formulaId = optional($globalFormula)->id ?? null;
                     }
 
                     return [
                         'id' => $subject->id,
                         'label' => $subjectLabel,
                         'has_grades' => (bool) $subject->getAttribute('has_recorded_grades'),
+                        'formula_label' => $formulaLabel,
+                        'formula_scope' => $formulaScope,
+                        'formula_source' => $formulaSource,
+                        'formula_id' => $formulaId,
+                        'has_formula' => $subjectHasFormula,
                     ];
                 })->values();
 
                 $courseLabel = trim(($course->course_code ? $course->course_code . ' - ' : '') . ($course->course_description ?? ''));
+
+                $formulaScope = $hasCourseFormula
+                    ? 'Course Formula'
+                    : ($departmentFallback ? 'Department Baseline' : 'System Default');
+                $formulaSource = $hasCourseFormula
+                    ? 'course'
+                    : ($departmentFallback ? 'department' : 'global');
+                $formulaLabel = $hasCourseFormula
+                    ? ($courseFormula->label ?? 'Course Formula')
+                    : $fallbackLabel;
 
                 return [
                     'id' => $course->id,
@@ -158,6 +216,10 @@
                     'name' => $course->course_description,
                     'label' => $courseLabel !== '' ? $courseLabel : 'Course',
                     'subjects' => $subjectPayload,
+                    'formula_label' => $formulaLabel,
+                    'formula_scope' => $formulaScope,
+                    'formula_source' => $formulaSource,
+                    'has_formula' => $hasCourseFormula,
                 ];
             })->values(),
         ];
@@ -448,8 +510,8 @@
                             <i class="bi bi-diagram-3 text-white" style="font-size: 1.25rem;"></i>
                         </div>
                         <div>
-                            <h5 class="fw-semibold mb-1" style="color: #198754;">Bulk apply department formulas</h5>
-                            <p class="text-muted mb-0">Select a department formula and push it to specific courses. Subjects inherit the course formula unless a subject override exists.</p>
+                            <h5 class="fw-semibold mb-1" style="color: #198754;">Bulk apply structure templates</h5>
+                            <p class="text-muted mb-0">Select a structure template and push it to specific courses. Templates define grading weights that will update the department's baseline formula.</p>
                         </div>
                     </div>
                 </div>
@@ -488,8 +550,8 @@
                                 @csrf
                                 <input type="hidden" name="current_password" id="bulk-password-hidden">
 
-                                <div class="row g-4">
-                                    <div class="col-12 col-lg-4">
+                                <div class="row g-4 align-items-stretch">
+                                    <div class="col-12">
                                         <label for="bulk-department-select" class="form-label fw-semibold text-success">Department</label>
                                         <select class="form-select" id="bulk-department-select" name="department_id" required>
                                             <option value="">-- Select Department --</option>
@@ -504,60 +566,71 @@
                                         @enderror
                                         <small class="text-muted d-block mt-2">Pick the department whose formula you want to push to one or more courses.</small>
                                     </div>
-                                    <div class="col-12 col-lg-4">
-                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                                            <label class="form-label fw-semibold text-success mb-0">Department Formulas</label>
-                                            <div class="btn-group btn-group-sm d-none" id="bulk-formula-filter-group" role="group" aria-label="Formula filters">
-                                                <button type="button" class="btn btn-outline-success active" data-formula-filter="all">All</button>
-                                                <button type="button" class="btn btn-outline-success" data-formula-filter="catalog">Catalog</button>
-                                                <button type="button" class="btn btn-outline-success" data-formula-filter="fallback">Fallback</button>
+
+                                    <div class="col-12 col-lg-6">
+                                        <div class="bulk-layout-card h-100 d-flex flex-column gap-3">
+                                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                                <span class="form-label fw-semibold text-success mb-0">Structure Templates</span>
                                             </div>
+                                            <div id="bulk-template-meta" class="text-muted small">Select a structure template to apply to the selected courses.</div>
+                                            <div id="bulk-template-options" class="template-selection-grid flex-grow-1">
+                                                @foreach($structureTemplates as $template)
+                                                    <label class="structure-template-card rounded-4 p-3 border" data-template-key="{{ $template['key'] ?? '' }}">
+                                                        <div class="d-flex align-items-start gap-3">
+                                                            <input class="form-check-input mt-1 flex-shrink-0" type="radio" name="structure_template" value="{{ $template['key'] ?? '' }}" {{ old('structure_template') === ($template['key'] ?? '') ? 'checked' : '' }}>
+                                                            <div class="flex-grow-1">
+                                                                <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-2">
+                                                                    <h6 class="fw-semibold mb-0">{{ $template['label'] ?? 'Template' }}</h6>
+                                                                    <span class="badge bg-success-subtle text-success">Template</span>
+                                                                </div>
+                                                                <p class="text-muted small mb-2">{{ $template['description'] ?? '' }}</p>
+                                                                <div class="d-flex flex-wrap gap-2">
+                                                                    @foreach(($template['weights'] ?? []) as $weight)
+                                                                        <span class="badge bg-success-subtle text-success">{{ $weight['type'] ?? '' }} {{ $weight['percent'] ?? 0 }}%</span>
+                                                                    @endforeach
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                            <small class="text-muted">Select a template to instantly update the department's baseline formula with recommended weights.</small>
+                                            @error('structure_template')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
+                                            <div id="bulk-template-selection-hint" class="text-danger small d-none mt-1">Select a template to continue.</div>
                                         </div>
-                                        <div class="input-group input-group-sm mb-2">
-                                            <span class="input-group-text text-success bg-white"><i class="bi bi-search"></i></span>
-                                            <input type="search" class="form-control" id="bulk-formula-search" placeholder="Search formulas" autocomplete="off" disabled>
-                                            <button class="btn btn-outline-secondary" type="button" id="bulk-formula-search-clear" disabled>
-                                                <span class="visually-hidden">Reset formula search</span>
-                                                <i class="bi bi-x-lg"></i>
-                                            </button>
-                                        </div>
-                                        <div id="bulk-formula-meta" class="text-muted small mb-2">Select a department to load available formulas.</div>
-                                        <div id="bulk-formula-options" class="formula-list border rounded-4 p-3 bg-light bg-opacity-50">
-                                            <div class="text-muted small">Select a department to load available formulas.</div>
-                                        </div>
-                                        <small class="text-muted d-block mt-2">Choose one catalog entry or fallback baseline to apply to the selected courses.</small>
-                                        @error('department_formula_id')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
-                                        <div id="bulk-formula-selection-hint" class="text-danger small mt-2 d-none">Select a formula to continue.</div>
                                     </div>
-                                    <div class="col-12 col-lg-4">
-                                        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-                                            <label class="form-label fw-semibold text-success mb-0">Courses</label>
-                                            <div class="btn-group btn-group-sm" role="group" aria-label="Course selection shortcuts">
-                                                <button class="btn btn-outline-success" type="button" id="bulk-select-all" title="Select all courses currently in view">Select visible</button>
-                                                <button class="btn btn-outline-secondary" type="button" id="bulk-clear-all" title="Clear the current selection">Clear</button>
+
+                                    <div class="col-12 col-lg-6">
+                                        <div class="bulk-layout-card h-100 d-flex flex-column gap-3">
+                                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                                                <span class="form-label fw-semibold text-success mb-0">Courses</span>
+                                                <div class="btn-group btn-group-sm" role="group" aria-label="Course selection shortcuts">
+                                                    <button class="btn btn-outline-success" type="button" id="bulk-select-all" title="Select all courses currently in view">Select visible</button>
+                                                    <button class="btn btn-outline-secondary" type="button" id="bulk-clear-all" title="Clear the current selection">Clear</button>
+                                                </div>
                                             </div>
-                                        </div>
-                                        <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center mb-2">
-                                            <div class="input-group input-group-sm flex-grow-1">
-                                                <span class="input-group-text text-success bg-white"><i class="bi bi-search"></i></span>
-                                                <input type="search" class="form-control" id="bulk-course-search" placeholder="Search courses or subjects" autocomplete="off" disabled>
+                                            <div class="d-flex flex-column flex-sm-row gap-2 align-items-stretch align-items-sm-center">
+                                                <div class="input-group input-group-sm flex-grow-1">
+                                                    <span class="input-group-text text-success bg-white"><i class="bi bi-search"></i></span>
+                                                    <input type="search" class="form-control" id="bulk-course-search" placeholder="Search courses or subjects" autocomplete="off" disabled>
+                                                </div>
+                                                <button class="btn btn-outline-secondary btn-sm flex-shrink-0" type="button" id="bulk-course-search-clear" disabled>
+                                                    <i class="bi bi-x-lg me-1"></i>Reset
+                                                </button>
                                             </div>
-                                            <button class="btn btn-outline-secondary btn-sm flex-shrink-0" type="button" id="bulk-course-search-clear" disabled>
-                                                <i class="bi bi-x-lg me-1"></i>Reset
-                                            </button>
+                                            <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
+                                                <div id="bulk-course-summary" class="text-muted small">No courses selected yet.</div>
+                                                <div id="bulk-course-count" class="text-muted small"></div>
+                                            </div>
+                                            <div id="bulk-course-options" class="bulk-course-scroll rounded-4 p-3 bg-white flex-grow-1">
+                                                <div class="text-muted small">Select a department to load courses.</div>
+                                            </div>
+                                            @error('course_ids')
+                                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                                            @enderror
                                         </div>
-                                        <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-2">
-                                            <div id="bulk-course-summary" class="text-muted small">No courses selected yet.</div>
-                                            <div id="bulk-course-count" class="text-muted small"></div>
-                                        </div>
-                                        <div id="bulk-course-options" class="bulk-course-scroll rounded-4 p-3 bg-light bg-opacity-50">
-                                            <div class="text-muted small">Select a department to load courses.</div>
-                                        </div>
-                                        @error('course_ids')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
-                                        @enderror
                                     </div>
                                 </div>
 
@@ -571,7 +644,7 @@
                                         <i class="bi bi-diagram-3 me-1"></i>Manage Department
                                     </a>
                                     <button type="submit" class="btn btn-success btn-lg" id="bulk-apply-button">
-                                        Apply Formula to Courses
+                                        <i class="bi bi-diagram-3 me-1"></i>Apply Template to Courses
                                     </button>
                                 </div>
                             </form>
@@ -730,18 +803,14 @@
         }
 
         const departmentSelect = document.getElementById('bulk-department-select');
-    const formulaContainer = document.getElementById('bulk-formula-options');
-    const formulaMeta = document.getElementById('bulk-formula-meta');
-    const formulaFilterGroup = document.getElementById('bulk-formula-filter-group');
-    const formulaFilterButtons = formulaFilterGroup ? formulaFilterGroup.querySelectorAll('[data-formula-filter]') : [];
-    const formulaSearchInput = document.getElementById('bulk-formula-search');
-    const formulaSearchClear = document.getElementById('bulk-formula-search-clear');
-    const formulaSelectionHint = document.getElementById('bulk-formula-selection-hint');
-    const courseContainer = document.getElementById('bulk-course-options');
-    const courseSummary = document.getElementById('bulk-course-summary');
-    const courseCountLabel = document.getElementById('bulk-course-count');
-    const courseSearchInput = document.getElementById('bulk-course-search');
-    const courseSearchClear = document.getElementById('bulk-course-search-clear');
+        const templateContainer = document.getElementById('bulk-template-options');
+        const templateMeta = document.getElementById('bulk-template-meta');
+        const templateSelectionHint = document.getElementById('bulk-template-selection-hint');
+        const courseContainer = document.getElementById('bulk-course-options');
+        const courseSummary = document.getElementById('bulk-course-summary');
+        const courseCountLabel = document.getElementById('bulk-course-count');
+        const courseSearchInput = document.getElementById('bulk-course-search');
+        const courseSearchClear = document.getElementById('bulk-course-search-clear');
         const hiddenPasswordInput = document.getElementById('bulk-password-hidden');
         const passwordFormError = document.getElementById('bulk-password-error');
         const passwordModalElement = document.getElementById('bulk-password-modal');
@@ -756,21 +825,19 @@
         const serverConflictWrapper = document.getElementById('bulk-conflict-server');
         const bootstrapModal = window.bootstrap?.Modal;
         const passwordModalInstance = passwordModalElement && bootstrapModal ? new bootstrapModal(passwordModalElement) : null;
-        const structureTemplates = @json($structureTemplatePayload);
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
         const baselinePasswordRequirement = bulkForm.dataset.requiresPassword === '1';
+        const structureTemplates = @json($structureTemplatePayload);
 
         let currentDepartment = null;
-        let currentFormulaId = null;
+        let currentTemplateKey = null;
         const selectedCourses = new Set();
         const expandedCourses = new Set();
-        let availableFormulas = [];
-        let currentFormulaFilter = 'all';
-        let currentFormulaSearch = '';
         let allCourses = [];
         let currentCourseSearch = '';
-    let visibleCourseIds = [];
-    let totalCourseCount = 0;
-    let visibleCourseCount = 0;
+        let visibleCourseIds = [];
+        let totalCourseCount = 0;
+        let visibleCourseCount = 0;
         let departmentBlueprints = @json($departmentBlueprints);
         if (! Array.isArray(departmentBlueprints)) {
             departmentBlueprints = [];
@@ -824,262 +891,75 @@
             return courses.filter((course) => selectedCourses.has(String(course.id)));
         };
 
-        const refreshFormulaSelectionStyles = () => {
-            if (! formulaContainer) {
+        const refreshTemplateSelectionStyles = () => {
+            if (! templateContainer) {
                 return;
             }
-            formulaContainer.querySelectorAll('.formula-card').forEach((card) => {
+            templateContainer.querySelectorAll('.structure-template-card').forEach((card) => {
                 const input = card.querySelector('input[type="radio"]');
                 card.classList.toggle('is-selected', Boolean(input?.checked));
             });
         };
 
         const syncApplyButtonState = () => {
-            const formulaSelected = Boolean(currentFormulaId);
+            const templateSelected = Boolean(currentTemplateKey);
             const coursesSelected = selectedCourses.size > 0;
 
             if (bulkApplyButton) {
-                bulkApplyButton.disabled = ! formulaSelected || ! coursesSelected;
+                bulkApplyButton.disabled = ! templateSelected || ! coursesSelected;
             }
 
-            if (formulaSelectionHint) {
-                const shouldShowHint = ! formulaSelected && availableFormulas.length > 0;
-                formulaSelectionHint.classList.toggle('d-none', ! shouldShowHint);
+            if (templateSelectionHint) {
+                const shouldShowHint = ! templateSelected;
+                templateSelectionHint.classList.toggle('d-none', ! shouldShowHint);
             }
         };
 
-        const renderStructureTemplateMarkup = () => {
-            if (! currentDepartment || ! Array.isArray(structureTemplates) || structureTemplates.length === 0) {
-                return '';
-            }
-
-            const createUrl = currentDepartment.create_formula_url;
-            if (! createUrl) {
-                return '';
-            }
-
-            const cards = structureTemplates.map((template) => {
-                const weightBadges = (template.weights ?? []).map((weight) => `
-                    <span class="badge bg-success-subtle text-success">${escapeHtml(weight.type ?? '')} ${escapeHtml(weight.percent ?? '')}%</span>
-                `).join('');
-
-                return `
-                    <div class="structure-template-card border rounded-4 p-3">
-                        <div class="d-flex justify-content-between align-items-start gap-2">
-                            <div>
-                                <h6 class="fw-semibold mb-1 text-dark">${escapeHtml(template.label ?? 'Structure')}</h6>
-                                <p class="text-muted small mb-2">${escapeHtml(template.description ?? '')}</p>
-                            </div>
-                            <span class="badge bg-light text-secondary">Template</span>
-                        </div>
-                        <div class="d-flex flex-wrap gap-2 mb-3">
-                            ${weightBadges}
-                        </div>
-                        <a class="btn btn-sm btn-outline-success rounded-pill" href="${createUrl}?structure=${encodeURIComponent(template.key)}">
-                            <i class="bi bi-plus-circle me-1"></i>Create from Template
-                        </a>
-                    </div>
-                `;
-            }).join('');
-
-            return `
-                <div class="structure-template-wrapper mt-3">
-                    <div class="text-muted small mb-2">Need a starting point? Use a template to create or update ${escapeHtml(currentDepartment.name ?? 'this department')}'s baseline formula, then select the saved entry above to apply it to courses.</div>
-                    <div class="structure-template-grid">
-                        ${cards}
-                    </div>
-                </div>
-            `;
-        };
-
-        const renderFormulaOptions = (formulas = []) => {
-            if (! formulaContainer) {
+        const initializeTemplateSelection = () => {
+            if (! templateContainer) {
                 return;
             }
 
-            if (! currentFormulaId && bulkForm.dataset.oldFormulaId) {
-                currentFormulaId = String(bulkForm.dataset.oldFormulaId);
-            }
-            bulkForm.dataset.oldFormulaId = '';
-
-            availableFormulas = Array.isArray(formulas) ? formulas : [];
-            const totalCount = availableFormulas.length;
-            const catalogCount = availableFormulas.filter((formula) => ! formula.is_fallback).length;
-            const fallbackCount = totalCount - catalogCount;
-            const matchingCatalogCount = availableFormulas.filter((formula) => ! formula.is_fallback && formula.context_match).length;
-            const matchingTotalCount = availableFormulas.filter((formula) => formula.context_match).length;
-
-            if (formulaSearchInput) {
-                formulaSearchInput.disabled = totalCount === 0;
-                if (totalCount === 0) {
-                    currentFormulaSearch = '';
-                    formulaSearchInput.value = '';
-                }
-            }
-            if (formulaSearchClear) {
-                formulaSearchClear.disabled = totalCount === 0 || currentFormulaSearch === '';
-            }
-
-            if (formulaFilterGroup) {
-                formulaFilterGroup.classList.toggle('d-none', totalCount === 0);
-            }
-
-            const normalizedSearch = currentFormulaSearch.trim().toLowerCase();
-            const filteredFormulas = availableFormulas.filter((formula) => {
-                if (currentFormulaFilter === 'catalog' && formula.is_fallback) {
-                    return false;
-                }
-                if (currentFormulaFilter === 'fallback') {
-                    return true;
+            // Add click handlers to template cards
+            templateContainer.querySelectorAll('.structure-template-card').forEach((card) => {
+                const radio = card.querySelector('input[type="radio"]');
+                if (! radio) {
+                    return;
                 }
 
-                if (normalizedSearch !== '') {
-                    const haystack = [
-                        formula.label ?? '',
-                        formatGradeNumber(formula.base_score),
-                        formatGradeNumber(formula.scale_multiplier),
-                        formatGradeNumber(formula.passing_grade),
-                        ...(formula.weights ?? []).map((weight) => `${weight.type ?? ''} ${weight.percent ?? ''}%`),
-                    ].join(' ').toLowerCase();
-
-                    if (! haystack.includes(normalizedSearch)) {
-                        return false;
+                // Make the entire card clickable
+                card.addEventListener('click', (event) => {
+                    // Don't trigger if clicking directly on radio (it handles itself)
+                    if (event.target === radio) {
+                        return;
                     }
-                }
+                    
+                    radio.checked = true;
+                    currentTemplateKey = radio.value;
+                    refreshTemplateSelectionStyles();
+                    syncApplyButtonState();
+                });
 
-                return true;
-            });
-
-            let selectionExists = false;
-            if (currentFormulaId) {
-                selectionExists = availableFormulas.some((formula) => String(formula.id) === String(currentFormulaId));
-                if (! selectionExists) {
-                    currentFormulaId = null;
-                }
-            }
-
-            let selectionVisible = false;
-            if (currentFormulaId) {
-                selectionVisible = filteredFormulas.some((formula) => String(formula.id) === String(currentFormulaId));
-            }
-
-            const selectionHiddenNotice = (selectionExists && ! selectionVisible && filteredFormulas.length === 0 && (normalizedSearch !== '' || currentFormulaFilter !== 'all'))
-                ? '<div class="alert alert-warning shadow-sm small"><i class="bi bi-info-circle me-1"></i>The selected formula is hidden by the current filters. Adjust or clear the filters to review it.</div>'
-                : '';
-
-            const fallbackHelper = currentFormulaFilter === 'fallback' && totalCount > 0
-                ? '<div class="text-muted small mb-2">All department formulas appear below; the active fallback is highlighted for quick review.</div>'
-                : '';
-
-            let markup = '';
-
-            if (filteredFormulas.length === 0) {
-                const hint = totalCount === 0 ? 'Create one from a template below.' : 'Reset the filters to view all available formulas.';
-                markup = `<div class="text-muted small">No formulas match the current filters. ${escapeHtml(hint)}</div>`;
-            } else {
-                markup = filteredFormulas.map((formula) => {
-                    const formulaId = String(formula.id);
-                    const checked = currentFormulaId && formulaId === String(currentFormulaId);
-                    const weights = (formula.weights ?? []).map((weight) => `
-                        <span class="badge bg-success-subtle text-success">${escapeHtml(weight.type ?? '')} ${escapeHtml(weight.percent ?? '')}%</span>
-                    `).join('');
-
-                    const badgeClass = formula.is_fallback ? 'bg-success-subtle text-success' : 'bg-light text-secondary';
-                    const badgeLabel = formula.is_fallback ? 'Fallback' : 'Catalog';
-                    const mismatchClass = formula.context_match ? '' : 'formula-context-mismatch';
-                    const contextBadge = formula.context_match
-                        ? '<span class="badge bg-success-subtle text-success">Matches active context</span>'
-                        : '<span class="badge bg-warning-subtle text-warning">Other period</span>';
-                    const contextLabel = escapeHtml(formula.context_label ?? 'Applies to all periods');
-                    const mismatchNotice = formula.context_match
-                        ? ''
-                        : '<div class="text-warning small mt-1">Applying this formula will update courses using a different academic period. Double-check before continuing.</div>';
-
-                    return `
-                        <label class="formula-card form-check border rounded-4 p-3 ${formula.is_fallback ? 'formula-fallback' : ''} ${mismatchClass}" data-formula-id="${formulaId}">
-                            <div class="d-flex align-items-start gap-3">
-                                <input class="form-check-input mt-1" type="radio" name="department_formula_id" value="${formulaId}" ${checked ? 'checked' : ''}>
-                                <div class="flex-grow-1">
-                                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
-                                        <div class="min-width-0">
-                                            <span class="fw-semibold d-block formula-card-title" title="${escapeHtml(formula.label ?? '')}">${escapeHtml(formula.label ?? 'Formula')}</span>
-                                            <div class="text-muted small">Base ${formatGradeNumber(formula.base_score)} · Scale ×${formatGradeNumber(formula.scale_multiplier)} · Passing ${formatGradeNumber(formula.passing_grade)}</div>
-                                        </div>
-                                        <span class="badge ${badgeClass}">${badgeLabel}</span>
-                                    </div>
-                                    <div class="d-flex flex-wrap gap-2 mt-2">${weights}</div>
-                                    <div class="d-flex flex-wrap align-items-center gap-2 mt-3 formula-context-row">
-                                        ${contextBadge}
-                                        <span class="text-muted small">${contextLabel}</span>
-                                    </div>
-                                    ${mismatchNotice}
-                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-3 text-muted small">
-                                        <span>Last updated ${escapeHtml(formula.updated_at ?? '—')}</span>
-                                        ${formula.edit_url ? `<a class="text-decoration-none" href="${escapeHtml(formula.edit_url)}"><i class="bi bi-pencil-square me-1"></i>Edit</a>` : ''}
-                                    </div>
-                                </div>
-                            </div>
-                        </label>
-                    `;
-                }).join('');
-            }
-
-            const summaryText = (() => {
-                if (! currentDepartment) {
-                    return 'Select a department to load available formulas.';
-                }
-                if (totalCount === 0) {
-                    return 'No saved formulas yet. Use a template below to create the department baseline.';
-                }
-                const filterText = (() => {
-                    if (currentFormulaFilter === 'catalog') {
-                        return 'Catalog';
-                    }
-                    if (currentFormulaFilter === 'fallback') {
-                        return 'Fallback (highlighting baseline options)';
-                    }
-                    return 'All';
-                })();
-                const pieces = [`${totalCount} formula${totalCount === 1 ? '' : 's'} available`, `${catalogCount} catalog${catalogCount !== matchingCatalogCount ? ` (${matchingCatalogCount} for this selection)` : ''}`, `${fallbackCount} fallback`];
-                if (matchingTotalCount !== totalCount) {
-                    pieces.push(`${matchingTotalCount} match${matchingTotalCount === 1 ? 'es' : ''} current context`);
-                }
-                const selectionSuffix = currentFormulaId ? '' : (totalCount > 0 ? ' · No formula selected' : '');
-                return `${pieces.join(' · ')}${selectionSuffix} · Showing ${filteredFormulas.length} (${filterText}${normalizedSearch ? ` · matching "${escapeHtml(currentFormulaSearch)}"` : ''})`;
-            })();
-
-            if (formulaMeta) {
-                formulaMeta.textContent = summaryText;
-            }
-
-            formulaContainer.innerHTML = `${selectionHiddenNotice}${fallbackHelper}${markup}${renderStructureTemplateMarkup()}`;
-            formulaContainer.classList.toggle('formula-filter-fallback', currentFormulaFilter === 'fallback');
-
-            formulaFilterButtons.forEach((button) => {
-                const matches = button.dataset.formulaFilter === currentFormulaFilter;
-                button.classList.toggle('btn-success', matches);
-                button.classList.toggle('active', matches);
-                button.classList.toggle('btn-outline-success', ! matches);
-            });
-
-            formulaContainer.querySelectorAll('input[type="radio"]').forEach((radio) => {
+                // Also handle radio change directly
                 radio.addEventListener('change', () => {
-                    currentFormulaId = radio.value;
-                    refreshFormulaSelectionStyles();
+                    currentTemplateKey = radio.value;
+                    refreshTemplateSelectionStyles();
                     syncApplyButtonState();
                 });
             });
 
-            const selectedRadio = formulaContainer.querySelector('input[name="department_formula_id"]:checked');
+            // Check if there's a pre-selected template
+            const selectedRadio = templateContainer.querySelector('input[name="structure_template"]:checked');
             if (selectedRadio) {
-                currentFormulaId = selectedRadio.value;
-                syncApplyButtonState();
+                currentTemplateKey = selectedRadio.value;
             }
 
-            refreshFormulaSelectionStyles();
+            refreshTemplateSelectionStyles();
             syncApplyButtonState();
         };
 
+        // Initialize template selection
+        initializeTemplateSelection();
         syncApplyButtonState();
 
         const drawCourseList = () => {
@@ -1146,17 +1026,82 @@
                 const autoExpanded = searchActive && totalSubjects > 0;
                 const isExpanded = totalSubjects === 0 || manuallyExpanded || autoExpanded;
 
+                const formulaSourceRaw = typeof course.formula_source === 'string' ? course.formula_source : '';
+                const formulaSource = ['course', 'department', 'global'].includes(formulaSourceRaw)
+                    ? formulaSourceRaw
+                    : 'global';
+                const formulaChipClass = formulaSource === 'course'
+                    ? 'course-formula-chip course-formula-chip-course'
+                    : (formulaSource === 'department'
+                        ? 'course-formula-chip course-formula-chip-department'
+                        : 'course-formula-chip course-formula-chip-global');
+                const formulaIcon = formulaSource === 'course'
+                    ? 'bi-stars'
+                    : (formulaSource === 'department' ? 'bi-diagram-3' : 'bi-globe2');
+                const formulaScope = course.formula_scope ? escapeHtml(course.formula_scope) : '';
+                const formulaLabel = course.formula_label ? escapeHtml(course.formula_label) : '';
+                const formulaChip = (formulaScope || formulaLabel)
+                    ? `<div class="course-formula-meta">
+                            <span class="${formulaChipClass}"><i class="bi ${formulaIcon} me-1"></i>${formulaScope || 'Formula'}</span>
+                            ${formulaLabel ? `<span class="course-formula-label text-muted">${formulaLabel}</span>` : ''}
+                        </div>`
+                    : '';
+
                 const subjectMarkup = subjects.length === 0
                     ? '<div class="text-muted small">No subjects assigned yet.</div>'
                     : subjects.map((subject) => {
                         const label = subject.label ?? 'Subject';
                         const pillClass = subject.has_grades ? 'subject-pill subject-pill-warning' : 'subject-pill';
                         const icon = subject.has_grades ? 'bi-exclamation-triangle-fill text-danger' : 'bi-journal-text text-success';
+
+                        const formulaSourceRaw = typeof subject.formula_source === 'string' ? subject.formula_source : 'global';
+                        const allowedSources = ['subject', 'course', 'department', 'global'];
+                        const formulaSource = allowedSources.includes(formulaSourceRaw) ? formulaSourceRaw : 'global';
+
+                        const subjectFormulaChipClass = (() => {
+                            switch (formulaSource) {
+                                case 'subject':
+                                    return 'subject-formula-chip subject-formula-chip-subject';
+                                case 'course':
+                                    return 'subject-formula-chip subject-formula-chip-course';
+                                case 'department':
+                                    return 'subject-formula-chip subject-formula-chip-department';
+                                default:
+                                    return 'subject-formula-chip subject-formula-chip-global';
+                            }
+                        })();
+
+                        const subjectFormulaIcon = (() => {
+                            switch (formulaSource) {
+                                case 'subject':
+                                    return 'bi-bullseye';
+                                case 'course':
+                                    return 'bi-stars';
+                                case 'department':
+                                    return 'bi-diagram-3';
+                                default:
+                                    return 'bi-globe2';
+                            }
+                        })();
+
+                        const formulaScope = subject.formula_scope ? escapeHtml(subject.formula_scope) : '';
+                        const formulaLabel = subject.formula_label ? escapeHtml(subject.formula_label) : '';
+
+                        const formulaChip = (formulaScope || formulaLabel)
+                            ? `<div class="subject-formula-meta">
+                                    <span class="${subjectFormulaChipClass}"><i class="bi ${subjectFormulaIcon} me-1"></i>${formulaScope || 'Formula'}</span>
+                                    ${formulaLabel ? `<span class="subject-formula-label text-muted">${formulaLabel}</span>` : ''}
+                                </div>`
+                            : '';
+
                         return `
-                            <span class="${pillClass}" title="${escapeHtml(label)}">
-                                <i class="bi ${icon}"></i>
-                                <span class="subject-pill-text">${escapeHtml(label)}</span>
-                            </span>
+                            <div class="subject-chip-card">
+                                <span class="${pillClass}" title="${escapeHtml(label)}">
+                                    <i class="bi ${icon}"></i>
+                                    <span class="subject-pill-text">${escapeHtml(label)}</span>
+                                </span>
+                                ${formulaChip}
+                            </div>
                         `;
                     }).join('');
 
@@ -1175,6 +1120,7 @@
                                 <div class="text-muted small course-meta">
                                     ${totalSubjects} subject${totalSubjects === 1 ? '' : 's'}${gradedCount > 0 ? ` · ${gradedCount} with recorded grades` : ''}
                                 </div>
+                                ${formulaChip}
                             </div>
                             ${totalSubjects > 0 ? `
                                 <button type="button" class="btn btn-outline-success btn-sm bulk-course-toggle" data-course-id="${courseId}" aria-expanded="${isExpanded ? 'true' : 'false'}">
@@ -1287,32 +1233,6 @@
             drawCourseList();
         };
 
-        formulaFilterButtons.forEach((button) => {
-            button.addEventListener('click', () => {
-                const filter = button.dataset.formulaFilter ?? 'all';
-                if (filter === currentFormulaFilter) {
-                    return;
-                }
-                currentFormulaFilter = filter;
-                renderFormulaOptions(availableFormulas);
-            });
-        });
-
-        formulaSearchInput?.addEventListener('input', (event) => {
-            currentFormulaSearch = event.target.value;
-            renderFormulaOptions(availableFormulas);
-        });
-
-        formulaSearchClear?.addEventListener('click', () => {
-            if (! formulaSearchInput) {
-                return;
-            }
-            currentFormulaSearch = '';
-            formulaSearchInput.value = '';
-            formulaSearchInput.focus();
-            renderFormulaOptions(availableFormulas);
-        });
-
         courseSearchInput?.addEventListener('input', (event) => {
             currentCourseSearch = event.target.value;
             drawCourseList();
@@ -1409,25 +1329,6 @@
 
             if (! blueprint) {
                 currentDepartment = null;
-                availableFormulas = [];
-                currentFormulaFilter = 'all';
-                currentFormulaSearch = '';
-                if (formulaMeta) {
-                    formulaMeta.textContent = 'Select a department to load available formulas.';
-                }
-                if (formulaFilterGroup) {
-                    formulaFilterGroup.classList.add('d-none');
-                }
-                if (formulaSearchInput) {
-                    formulaSearchInput.value = '';
-                    formulaSearchInput.disabled = true;
-                }
-                if (formulaSearchClear) {
-                    formulaSearchClear.disabled = true;
-                }
-                if (formulaContainer) {
-                    formulaContainer.innerHTML = '<div class="text-muted small">No formulas available for this department.</div>';
-                }
                 allCourses = [];
                 totalCourseCount = 0;
                 visibleCourseIds = [];
@@ -1461,16 +1362,6 @@
             }
 
             currentDepartment = blueprint;
-            currentFormulaId = null;
-            availableFormulas = [];
-            currentFormulaFilter = 'all';
-            currentFormulaSearch = '';
-            if (formulaSearchInput) {
-                formulaSearchInput.value = '';
-            }
-            if (formulaSearchClear) {
-                formulaSearchClear.disabled = true;
-            }
             hasServerConflicts = serverConflictEntries.length > 0;
             passwordRequired = baselinePasswordRequirement || hasServerConflicts;
             syncServerConflictVisibility();
@@ -1482,7 +1373,6 @@
                 manageLink.classList.remove('d-none');
             }
 
-            renderFormulaOptions(blueprint.formulas ?? []);
             renderCourseOptions(blueprint.courses ?? []);
         };
 
@@ -1560,12 +1450,10 @@
         };
 
         bulkForm.addEventListener('submit', (event) => {
-            if (! currentFormulaId) {
-                if (availableFormulas.length > 0) {
-                    event.preventDefault();
-                    syncApplyButtonState();
-                    formulaContainer?.querySelector('input[type="radio"]')?.focus();
-                }
+            if (! currentTemplateKey) {
+                event.preventDefault();
+                syncApplyButtonState();
+                templateContainer?.querySelector('input[type="radio"]')?.focus();
                 return;
             }
 
@@ -1654,72 +1542,48 @@
 @push('styles')
 <style>
 .section-scroll {
-    max-height: calc(100vh - 220px);
-    overflow-y: auto;
-    padding-right: 0.5rem;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(25, 135, 84, 0.35) transparent;
+    padding: 0.5rem 0.75rem 1.25rem;
 }
 
-.section-scroll::-webkit-scrollbar {
-    width: 8px;
+.bulk-layout-card {
+    background: #ffffff;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(25, 135, 84, 0.12);
+    box-shadow: 0 14px 32px rgba(25, 135, 84, 0.08);
+    padding: 1.5rem;
 }
 
-.section-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(25, 135, 84, 0.35);
-    border-radius: 999px;
-}
-
-.section-scroll:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(25, 135, 84, 0.55);
+@media (max-width: 576px) {
+    .bulk-layout-card {
+        padding: 1.15rem;
+        border-radius: 1rem;
+    }
 }
 
 .bulk-course-scroll {
-    max-height: 260px;
-    overflow-y: auto;
-    background: rgba(25, 135, 84, 0.04);
+    background: #ffffff;
     border: 1px solid rgba(25, 135, 84, 0.12);
-    scrollbar-width: thin;
-    scrollbar-color: rgba(25, 135, 84, 0.35) transparent;
-}
-
-.bulk-course-scroll::-webkit-scrollbar {
-    width: 8px;
-}
-
-.bulk-course-scroll::-webkit-scrollbar-thumb {
-    background-color: rgba(25, 135, 84, 0.35);
-    border-radius: 999px;
-}
-
-.bulk-course-scroll:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(25, 135, 84, 0.55);
+    box-shadow: 0 10px 26px rgba(25, 135, 84, 0.07);
 }
 
 .bulk-course-scroll {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.9rem;
+    padding: 0.85rem 0.95rem 1.15rem;
+    flex: 1 1 auto;
 }
 
 .formula-list {
-    max-height: 320px;
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(25, 135, 84, 0.35) transparent;
-}
-
-.formula-list::-webkit-scrollbar {
-    width: 8px;
-}
-
-.formula-list::-webkit-scrollbar-thumb {
-    background-color: rgba(25, 135, 84, 0.35);
-    border-radius: 999px;
-}
-
-.formula-list:hover::-webkit-scrollbar-thumb {
-    background-color: rgba(25, 135, 84, 0.55);
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 0.85rem 0.95rem;
+    flex: 1 1 auto;
+    background: #ffffff;
+    border: 1px solid rgba(25, 135, 84, 0.12) !important;
+    border-radius: 1rem;
+    box-shadow: 0 8px 22px rgba(25, 135, 84, 0.08);
 }
 
 .bulk-course-card {
@@ -1767,6 +1631,47 @@
     gap: 0.5rem;
 }
 
+.course-formula-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+}
+
+.course-formula-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.course-formula-chip-course {
+    background: rgba(25, 135, 84, 0.18);
+    color: #0f5132;
+    border: 1px solid rgba(25, 135, 84, 0.25);
+}
+
+.course-formula-chip-department {
+    background: rgba(13, 110, 253, 0.12);
+    color: #0a58ca;
+    border: 1px solid rgba(13, 110, 253, 0.24);
+}
+
+.course-formula-chip-global {
+    background: rgba(108, 117, 125, 0.12);
+    color: #495057;
+    border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+.course-formula-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
 .subject-pill {
     display: inline-flex;
     align-items: center;
@@ -1788,7 +1693,110 @@
     word-break: break-word;
 }
 
+.subject-chip-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.45rem 0.6rem;
+    border-radius: 0.85rem;
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(25, 135, 84, 0.14);
+    box-shadow: 0 6px 16px rgba(25, 135, 84, 0.05);
+    min-width: 180px;
+}
+
+.subject-chip-card .subject-pill {
+    width: 100%;
+}
+
+.subject-formula-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.subject-formula-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.subject-formula-chip-subject {
+    background: rgba(111, 66, 193, 0.18);
+    color: #4b2a86;
+    border: 1px solid rgba(111, 66, 193, 0.26);
+}
+
+.subject-formula-chip-course {
+    background: rgba(25, 135, 84, 0.18);
+    color: #0f5132;
+    border: 1px solid rgba(25, 135, 84, 0.25);
+}
+
+.subject-formula-chip-department {
+    background: rgba(13, 110, 253, 0.14);
+    color: #0a58ca;
+    border: 1px solid rgba(13, 110, 253, 0.24);
+}
+
+.subject-formula-chip-global {
+    background: rgba(108, 117, 125, 0.14);
+    color: #495057;
+    border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+.subject-formula-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.template-selection-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 0.85rem 0.95rem;
+    background: #ffffff;
+    border: 1px solid rgba(25, 135, 84, 0.12) !important;
+    border-radius: 1rem;
+    box-shadow: 0 8px 22px rgba(25, 135, 84, 0.08);
+}
+
+.structure-template-card {
+    display: block;
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    border-radius: 1rem;
+    background: #ffffff;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+    cursor: pointer;
+}
+
+.structure-template-card:hover,
+.structure-template-card:focus-within {
+    border-color: rgba(25, 135, 84, 0.45);
+    box-shadow: 0 14px 32px rgba(25, 135, 84, 0.12);
+    transform: translateY(-2px);
+}
+
+.structure-template-card.is-selected {
+    border-color: rgba(25, 135, 84, 0.6);
+    box-shadow: 0 18px 34px rgba(25, 135, 84, 0.16);
+    transform: translateY(-2px);
+    background: rgba(25, 135, 84, 0.02);
+}
+
+.structure-template-card input[type="radio"] {
+    cursor: pointer;
+}
+
 .formula-card {
+    display: block;
+    border: 1px solid rgba(25, 135, 84, 0.2);
+    border-radius: 1rem;
     background: #ffffff;
     transition: border-color 0.2s ease, box-shadow 0.2s ease;
     cursor: pointer;
@@ -1954,14 +1962,17 @@
 }
 
 .structure-template-wrapper {
-    border-top: 1px dashed rgba(25, 135, 84, 0.25);
-    padding-top: 1rem;
-    margin-top: 1rem;
+    margin-top: 1.25rem;
+    padding: 1.25rem;
+    border-radius: 1.1rem;
+    border: 1px dashed rgba(25, 135, 84, 0.25);
+    background: rgba(25, 135, 84, 0.05);
+    box-shadow: 0 12px 28px rgba(25, 135, 84, 0.08);
 }
 
 .structure-template-grid {
     display: grid;
-    gap: 0.75rem;
+    gap: 1.1rem;
 }
 
 @media (min-width: 768px) {
@@ -1973,13 +1984,15 @@
 @media (max-width: 768px) {
     .section-scroll {
         max-height: none;
-        padding-right: 0;
+        padding: 0.5rem 0 1rem;
     }
 }
 
 .structure-template-card {
+    position: relative;
     background: #f8fff9;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    border: 1px solid rgba(25, 135, 84, 0.18);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease, opacity 0.2s ease;
 }
 
 .structure-template-card:hover {
@@ -1988,8 +2001,59 @@
     border-color: rgba(25, 135, 84, 0.45);
 }
 
+.structure-template-card.is-active {
+    border-color: rgba(25, 135, 84, 0.6);
+    box-shadow: 0 18px 40px rgba(25, 135, 84, 0.18);
+}
+
+.structure-template-card.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
 .structure-template-card .badge {
     font-weight: 500;
+}
+
+.structure-template-card .template-status-badge {
+    align-self: flex-start;
+}
+
+.structure-template-card.is-active .template-status-badge {
+    background: rgba(25, 135, 84, 0.18) !important;
+    color: #0f5132 !important;
+}
+
+.structure-template-card .js-template-apply {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.structure-template-card .js-template-apply:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(25, 135, 84, 0.18);
+}
+
+.structure-template-card .js-template-apply:disabled {
+    transform: none;
+    box-shadow: none;
+    opacity: 0.75;
+}
+
+.structure-template-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: rgba(25, 135, 84, 0.1);
+    color: #198754;
+    font-weight: 600;
+}
+
+.structure-template-chip .bi {
+    font-size: 0.8rem;
+}
+
+.template-feedback {
+    font-size: 0.85rem;
 }
 
 @media (max-width: 576px) {

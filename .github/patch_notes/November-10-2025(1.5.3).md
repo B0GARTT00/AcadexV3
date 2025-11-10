@@ -8,15 +8,5 @@
 - Included AJAX functionality with SweetAlert confirmation
 - Character limit of 1000 characters with counter
 - Separate from auto-generated Passed/Failed remarks"
-- Added read-only notes modal for instructors
-- Implemented saveInstructorGradeNotes() method in InstructorController
-- Added POST route for instructors to save grade notes
-- Updated instructor/view-grades.blade.php with Notes column
-- Included modal interface for instructors to add/edit student grade notes
-- AJAX functionality with SweetAlert confirmation for instructors
-- Character limit of 1000 characters with counter for instructors
-- Separate from auto-generated Passed/Failed remarks for instructors
-- Added read-only notes modal for students
-- Updated student/view-grades.blade.php with Notes column
-- Implemented modal interface for students to view grade notes
-- added login feature where only the first user that login can use the account, if someone else try to login using the same account, it will show an error message "This account is already in use."
+**IMPROVEMENTS**
+- Modified GradeController to only increment graded student counter for new or changed scores

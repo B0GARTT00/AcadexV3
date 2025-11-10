@@ -16,6 +16,7 @@ use App\Services\GradeNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class GradeController extends Controller
 {
@@ -212,16 +213,35 @@ class GradeController extends Controller
 
         $studentsGraded = 0; // Track students who actually had grades saved
         foreach ($request->scores as $studentId => $activityScores) {
-            $hasScores = false; // Track if this student has any scores entered
+            $hasNewOrChangedScores = false; // Track if this student has any new or changed scores
             
             // Save individual scores
             foreach ($activityScores as $activityId => $score) {
-                if ($score !== null && $score !== '') {
-                    Score::updateOrCreate(
-                        ['student_id' => $studentId, 'activity_id' => $activityId],
-                        ['score' => $score, 'updated_by' => Auth::id()]
-                    );
-                    $hasScores = true; // Mark that this student has at least one score
+                // Only process if score is not null, not empty string, and not just whitespace
+                if ($score !== null && $score !== '' && trim($score) !== '') {
+                    // Check if this is a new score or a changed score
+                    $existingScore = Score::where('student_id', $studentId)
+                        ->where('activity_id', $activityId)
+                        ->first();
+                    
+                    // If no existing score, or if the score changed, mark as having changes
+                    if (!$existingScore || $existingScore->score != $score) {
+                        Score::updateOrCreate(
+                            ['student_id' => $studentId, 'activity_id' => $activityId],
+                            ['score' => $score, 'updated_by' => Auth::id()]
+                        );
+                        $hasNewOrChangedScores = true;
+                    }
+                } elseif ($score === '' || $score === null) {
+                    // Check if we need to delete an existing score (user cleared it)
+                    $existingScore = Score::where('student_id', $studentId)
+                        ->where('activity_id', $activityId)
+                        ->first();
+                    
+                    if ($existingScore) {
+                        $existingScore->delete();
+                        $hasNewOrChangedScores = true;
+                    }
                 }
             }
 
@@ -264,8 +284,8 @@ class GradeController extends Controller
             }
             // --- END NEW ---
             
-            // Increment counter only if this student had scores saved
-            if ($hasScores) {
+            // Increment counter only if this student had new or changed scores
+            if ($hasNewOrChangedScores) {
                 $studentsGraded++;
             }
         }
@@ -284,10 +304,10 @@ class GradeController extends Controller
                 'message' => $successMessage,
             ]);
         }
-
+    
         return redirect()->route('instructor.grades.index', [
             'subject_id' => $request->subject_id,
-            'term' => $request->term
+            'term' => $request->term,
         ])->with('success', $successMessage);
     }
 
