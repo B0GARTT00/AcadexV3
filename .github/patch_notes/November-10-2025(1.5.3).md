@@ -10,3 +10,4 @@
 - Separate from auto-generated Passed/Failed remarks"
 **IMPROVEMENTS**
 - Modified GradeController to only increment graded student counter for new or changed scores
+- implemented login security where one user can only be logged in on one device at a time
