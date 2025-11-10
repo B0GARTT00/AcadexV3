@@ -45,6 +45,11 @@ class FinalGradeController extends Controller
             }
 
             foreach ($students as $student) {
+                // Get final grade record for notes
+                $finalGradeRecord = FinalGrade::where('student_id', $student->id)
+                    ->where('subject_id', $subjectId)
+                    ->first();
+
                 $row = [
                     'student' => $student,
                     'prelim' => data_get($termGrades, "prelim.{$student->id}.term_grade"),
@@ -53,6 +58,8 @@ class FinalGradeController extends Controller
                     'final' => data_get($termGrades, "final.{$student->id}.term_grade"),
                     'final_average' => null,
                     'remarks' => null,
+                    'notes' => $finalGradeRecord->notes ?? '',
+                    'has_notes' => !empty($finalGradeRecord->notes ?? ''),
                 ];                
 
                 if (

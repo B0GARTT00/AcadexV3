@@ -8,6 +8,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
@@ -45,6 +46,19 @@ class AuthenticatedSessionController extends Controller
             // Redirect to login with an error message
             return redirect()->route('login')->withErrors([
                 'email' => 'Your account has been deactivated. Please contact the admin or your chairperson.',
+            ]);
+        }
+
+        // Check if user already has an active session on another device
+        if ($this->hasActiveSession($user->id)) {
+            // Log out the current attempt
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+            
+            // Redirect back to login with error message
+            return redirect()->route('login')->withErrors([
+                'email' => 'This account is already logged in on another device. Please logout from the other device first or contact your administrator.',
             ]);
         }
 
@@ -92,6 +106,22 @@ class AuthenticatedSessionController extends Controller
         }
 
         return Str::startsWith($path, 'admin');
+    }
+
+    /**
+     * Check if user already has an active session.
+     *
+     * @param int $userId The user ID to check
+     * @return bool True if user has an active session, false otherwise
+     */
+    private function hasActiveSession(int $userId): bool
+    {
+        // Check if there are any active sessions for this user
+        $activeSessionCount = DB::table('sessions')
+            ->where('user_id', $userId)
+            ->count();
+        
+        return $activeSessionCount > 0;
     }
 
     /**

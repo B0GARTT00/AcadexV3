@@ -105,7 +105,7 @@
                             <th class="text-center">Final</th>
                             <th class="text-center text-success">Final Average</th>
                             <th class="text-center">Remarks</th>
-                            <th class="text-center">Notes</th>
+                            <th class="text-center" style="min-width: 200px;">Notes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -123,8 +123,10 @@
 
                                 $remarks = $average !== null ? ($average >= 75 ? 'Passed' : 'Failed') : null;
                                 
-                                $finalGrade = $student->finalGrades->first();
-                                $notes = $finalGrade->notes ?? '';
+                                // Get final grade record for notes
+                                $finalGradeRecord = $student->finalGrades->first();
+                                $notes = $finalGradeRecord->notes ?? '';
+                                $finalGradeId = $finalGradeRecord->id ?? null;
                             @endphp
                             <tr class="hover:bg-light">
                                 <td>{{ $student->last_name }}, {{ $student->first_name }}</td>
@@ -145,18 +147,23 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    <button 
-                                        class="btn btn-sm btn-outline-primary rounded-pill"
-                                        onclick="openNotesModal({{ $student->id }}, '{{ addslashes($student->last_name) }}, {{ addslashes($student->first_name) }}', '{{ addslashes($notes) }}')"
-                                        data-bs-toggle="tooltip"
-                                        title="{{ $notes ? 'Edit note' : 'Add note' }}">
-                                        <i class="bi {{ $notes ? 'bi-pencil-square' : 'bi-plus-circle' }}"></i>
-                                        {{ $notes ? 'Edit' : 'Add' }}
-                                    </button>
-                                    @if($notes)
-                                        <div class="small text-muted mt-1" style="max-width: 150px;">
-                                            {{ Str::limit($notes, 30) }}
-                                        </div>
+                                    @if($finalGradeId)
+                                        <button 
+                                            class="btn btn-sm btn-outline-primary open-notes-modal"
+                                            data-final-grade-id="{{ $finalGradeId }}"
+                                            data-student-name="{{ $student->last_name }}, {{ $student->first_name }}"
+                                            data-notes="{{ $notes }}"
+                                            title="View/Edit notes"
+                                        >
+                                            <i class="bi bi-sticky"></i>
+                                            @if($notes)
+                                                <span class="badge bg-success ms-1">Has Notes</span>
+                                            @else
+                                                Add Notes
+                                            @endif
+                                        </button>
+                                    @else
+                                        <span class="text-muted fst-italic">No final grade yet</span>
                                     @endif
                                 </td>
                             </tr>
@@ -174,124 +181,201 @@
 
 {{-- Notes Modal --}}
 <div class="modal fade" id="notesModal" tabindex="-1" aria-labelledby="notesModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="notesModalLabel">
-                    <i class="bi bi-sticky me-2"></i>Grade Notes
+                    <i class="bi bi-sticky me-2"></i>
+                    Student Notes
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
                 <div class="mb-3">
-                    <label class="form-label fw-semibold">Student:</label>
-                    <p class="text-muted" id="studentName"></p>
+                    <label class="form-label fw-semibold">Student Name:</label>
+                    <p class="text-muted" id="studentNameDisplay"></p>
                 </div>
                 <div class="mb-3">
-                    <label for="notesTextarea" class="form-label fw-semibold">Notes:</label>
+                    <label for="notesTextarea" class="form-label fw-semibold">Notes/Remarks:</label>
                     <textarea 
                         class="form-control" 
                         id="notesTextarea" 
-                        rows="5" 
+                        rows="6" 
                         maxlength="1000"
-                        placeholder="Enter your notes about this student's performance..."></textarea>
+                        placeholder="Enter notes or remarks for this student..."
+                    ></textarea>
                     <div class="form-text">
-                        <span id="charCount">0</span>/1000 characters
+                        <span id="charCount">0</span> / 1000 characters
                     </div>
+                </div>
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Note:</strong> The "Passed/Failed" remarks are automatically calculated based on grades and will not be affected by these notes.
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary" onclick="saveNotes()">
-                    <i class="bi bi-save me-1"></i>Save Notes
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Cancel
+                </button>
+                <button type="button" class="btn btn-success" id="saveNotesBtn">
+                    <i class="bi bi-check-circle me-1"></i>
+                    Save Notes
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-@endsection
-
 @push('scripts')
 <script>
-let currentStudentId = null;
-const selectedSubjectId = {{ $selectedSubjectId ?? 'null' }};
-
-function openNotesModal(studentId, studentName, notes) {
-    currentStudentId = studentId;
-    document.getElementById('studentName').textContent = studentName;
-    document.getElementById('notesTextarea').value = notes || '';
-    updateCharCount();
-    
-    const modal = new bootstrap.Modal(document.getElementById('notesModal'));
-    modal.show();
-}
-
-function updateCharCount() {
-    const textarea = document.getElementById('notesTextarea');
+document.addEventListener('DOMContentLoaded', function() {
+    const notesModal = new bootstrap.Modal(document.getElementById('notesModal'));
+    const notesTextarea = document.getElementById('notesTextarea');
+    const studentNameDisplay = document.getElementById('studentNameDisplay');
+    const saveNotesBtn = document.getElementById('saveNotesBtn');
     const charCount = document.getElementById('charCount');
-    charCount.textContent = textarea.value.length;
-}
+    let currentFinalGradeId = null;
+    let currentButton = null;
 
-document.getElementById('notesTextarea').addEventListener('input', updateCharCount);
+    // Update character count
+    notesTextarea.addEventListener('input', function() {
+        charCount.textContent = this.value.length;
+    });
 
-async function saveNotes() {
-    if (!currentStudentId || !selectedSubjectId) {
-        alert('Error: Missing student or subject information');
-        return;
-    }
-
-    const notes = document.getElementById('notesTextarea').value;
-    const saveButton = event.target;
-    saveButton.disabled = true;
-    saveButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Saving...';
-
-    try {
-        const response = await fetch('{{ route("chairperson.saveGradeNotes") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-            },
-            body: JSON.stringify({
-                student_id: currentStudentId,
-                subject_id: selectedSubjectId,
-                notes: notes
-            })
-        });
-
-        const data = await response.json();
-
-        if (response.ok && data.success) {
-            // Close modal
-            bootstrap.Modal.getInstance(document.getElementById('notesModal')).hide();
+    // Handle open notes modal button click
+    document.querySelectorAll('.open-notes-modal').forEach(button => {
+        button.addEventListener('click', function() {
+            currentFinalGradeId = this.dataset.finalGradeId;
+            currentButton = this;
+            const studentName = this.dataset.studentName;
+            const notes = this.dataset.notes || '';
             
-            // Show success message
-            Swal.fire({
-                icon: 'success',
-                title: 'Success!',
-                text: data.message,
-                timer: 2000,
-                showConfirmButton: false
-            });
-
-            // Reload page to show updated notes
-            setTimeout(() => {
-                location.reload();
-            }, 2000);
-        } else {
-            throw new Error(data.error || 'Failed to save notes');
-        }
-    } catch (error) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Error',
-            text: error.message || 'Failed to save notes. Please try again.'
+            // Populate modal
+            studentNameDisplay.textContent = studentName;
+            notesTextarea.value = notes;
+            charCount.textContent = notes.length;
+            
+            // Show modal
+            notesModal.show();
         });
-    } finally {
-        saveButton.disabled = false;
-        saveButton.innerHTML = '<i class="bi bi-save me-1"></i>Save Notes';
+    });
+
+    // Handle save notes button click
+    saveNotesBtn.addEventListener('click', async function() {
+        if (!currentFinalGradeId) return;
+        
+        const notes = notesTextarea.value.trim();
+        
+        // Disable button during save
+        this.disabled = true;
+        const originalHTML = this.innerHTML;
+        this.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Saving...';
+        
+        try {
+            const response = await fetch('{{ route('chairperson.saveGradeNotes') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    final_grade_id: currentFinalGradeId,
+                    notes: notes
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.status === 'success') {
+                // Update button appearance
+                if (currentButton) {
+                    const badgeExists = currentButton.querySelector('.badge');
+                    if (notes) {
+                        if (!badgeExists) {
+                            currentButton.innerHTML = `
+                                <i class="bi bi-sticky"></i>
+                                <span class="badge bg-success ms-1">Has Notes</span>
+                            `;
+                        }
+                    } else {
+                        currentButton.innerHTML = `
+                            <i class="bi bi-sticky"></i>
+                            Add Notes
+                        `;
+                    }
+                    // Update data attribute for next time
+                    currentButton.dataset.notes = notes;
+                }
+                
+                // Show success feedback
+                this.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i> Saved!';
+                
+                // Show toast notification
+                showToast('Success', data.message, 'success');
+                
+                // Close modal after short delay
+                setTimeout(() => {
+                    notesModal.hide();
+                    this.innerHTML = originalHTML;
+                    this.disabled = false;
+                }, 1000);
+            } else {
+                throw new Error(data.message || 'Failed to save notes');
+            }
+        } catch (error) {
+            console.error('Error saving notes:', error);
+            this.innerHTML = originalHTML;
+            this.disabled = false;
+            showToast('Error', error.message || 'Failed to save notes. Please try again.', 'error');
+        }
+    });
+
+    // Reset modal when closed
+    document.getElementById('notesModal').addEventListener('hidden.bs.modal', function() {
+        currentFinalGradeId = null;
+        currentButton = null;
+        notesTextarea.value = '';
+        charCount.textContent = '0';
+        studentNameDisplay.textContent = '';
+    });
+    
+    // Helper function to show toast notifications
+    function showToast(title, message, type = 'info') {
+        // Create toast element
+        const toastHTML = `
+            <div class="toast align-items-center text-white bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong>${title}:</strong> ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        
+        // Get or create toast container
+        let toastContainer = document.querySelector('.toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Add toast to container
+        toastContainer.insertAdjacentHTML('beforeend', toastHTML);
+        const toastElement = toastContainer.lastElementChild;
+        const toast = new bootstrap.Toast(toastElement);
+        toast.show();
+        
+        // Remove toast element after it's hidden
+        toastElement.addEventListener('hidden.bs.toast', () => {
+            toastElement.remove();
+        });
     }
-}
+});
 </script>
 @endpush
+@endsection

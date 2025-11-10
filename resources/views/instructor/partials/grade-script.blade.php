@@ -605,6 +605,9 @@
                     }
                 })
                 .then(async response => {
+                    console.log('Response status:', response.status);
+                    console.log('Response headers:', response.headers);
+                    
                     if (!response.ok) {
                         const errorData = await response.json().catch(() => null);
                         const message = errorData?.message || 'Failed to save grades. Please try again.';
@@ -612,6 +615,8 @@
                     }
 
                     const contentType = response.headers.get('content-type') || '';
+                    console.log('Content-Type:', contentType);
+                    
                     if (contentType.includes('application/json')) {
                         return response.json();
                     }
@@ -619,6 +624,8 @@
                     throw new Error('Unexpected server response format.');
                 })
                 .then(data => {
+                    console.log('Response data:', data);
+                    
                     if (!data || data.status !== 'success') {
                         throw new Error(data?.message || 'Failed to save grades.');
                     }
@@ -642,9 +649,12 @@
                     return refreshPromise.then(() => data);
                 })
                 .then(data => {
+                    console.log('Showing notification with data:', data);
                     const message = data?.message || 'Grades have been saved successfully.';
 
                     const container = document.querySelector('.container-fluid');
+                    console.log('Container found:', container);
+                    
                     if (container) {
                         const successMessage = document.createElement('div');
                         successMessage.className = 'alert alert-success alert-dismissible fade show';
@@ -653,11 +663,18 @@
                             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                         `;
                         container.insertBefore(successMessage, container.firstChild);
+                        console.log('Notification element inserted');
 
-                        // Remove success message after 3 seconds
+                        // Scroll to top to show the notification
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+                        // Remove success message after 5 seconds
                         setTimeout(() => {
                             successMessage.remove();
-                        }, 3000);
+                            console.log('Notification removed');
+                        }, 5000);
+                    } else {
+                        console.error('Container .container-fluid not found!');
                     }
                 })
                 .catch(error => {

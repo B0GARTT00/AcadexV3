@@ -50,6 +50,7 @@
                             <th>Final</th>
                             <th class="text-primary">Final Average</th>
                             <th>Remarks</th>
+                            <th>Notes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -77,6 +78,20 @@
                                     @else
                                         <span class="text-muted">–</span>
                                     @endif
+                                </td>
+                                <td class="text-center">
+                                    @if($data['has_notes'])
+                                        <button 
+                                            class="btn btn-sm btn-outline-info view-notes-btn"
+                                            data-student-name="{{ $data['student']->last_name }}, {{ $data['student']->first_name }}"
+                                            data-notes="{{ $data['notes'] }}"
+                                            title="View notes from chairperson/coordinator"
+                                        >
+                                            <i class="bi bi-eye"></i> View Notes
+                                        </button>
+                                    @else
+                                        <span class="text-muted fst-italic">No notes</span>
+                                    @endif
                                 </td>                                
                             </tr>
                         @endforeach
@@ -92,10 +107,68 @@
         @endif
     @endif
 </div>
+
+{{-- View Notes Modal (Read-Only for Instructors) --}}
+<div class="modal fade" id="viewNotesModal" tabindex="-1" aria-labelledby="viewNotesModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="viewNotesModalLabel">
+                    <i class="bi bi-sticky me-2"></i>
+                    Chairperson/Coordinator Notes
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Student Name:</label>
+                    <p class="text-muted" id="viewStudentNameDisplay"></p>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Notes/Remarks:</label>
+                    <div class="border rounded p-3 bg-light" id="viewNotesContent" style="min-height: 100px; white-space: pre-wrap;"></div>
+                </div>
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-2"></i>
+                    <strong>Note:</strong> These notes are added by your chairperson or GE coordinator. You cannot edit them.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('scripts')
 <script>
+    // View Notes Modal Handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const viewNotesModal = new bootstrap.Modal(document.getElementById('viewNotesModal'));
+        const viewStudentNameDisplay = document.getElementById('viewStudentNameDisplay');
+        const viewNotesContent = document.getElementById('viewNotesContent');
+
+        // Handle view notes button click
+        document.querySelectorAll('.view-notes-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const studentName = this.dataset.studentName;
+                const notes = this.dataset.notes || 'No notes available.';
+                
+                // Populate modal
+                viewStudentNameDisplay.textContent = studentName;
+                viewNotesContent.textContent = notes;
+                
+                // Show modal
+                viewNotesModal.show();
+            });
+        });
+    });
+
+    // Print Table Function
     function printTable() {
         const content = document.getElementById('print-area').innerHTML;
         const subject = document.querySelector("select[name='subject_id']").selectedOptions[0].text;

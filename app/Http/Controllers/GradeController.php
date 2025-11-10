@@ -210,7 +210,10 @@ class GradeController extends Controller
             }
         }
 
+        $studentsGraded = 0; // Track students who actually had grades saved
         foreach ($request->scores as $studentId => $activityScores) {
+            $hasScores = false; // Track if this student has any scores entered
+            
             // Save individual scores
             foreach ($activityScores as $activityId => $score) {
                 if ($score !== null && $score !== '') {
@@ -218,6 +221,7 @@ class GradeController extends Controller
                         ['student_id' => $studentId, 'activity_id' => $activityId],
                         ['score' => $score, 'updated_by' => Auth::id()]
                     );
+                    $hasScores = true; // Mark that this student has at least one score
                 }
             }
 
@@ -259,8 +263,28 @@ class GradeController extends Controller
                 );
             }
             // --- END NEW ---
+            
+            // Increment counter only if this student had scores saved
+            if ($hasScores) {
+                $studentsGraded++;
+            }
         }
-    
+        
+        // Only notify if at least one student was graded
+        if ($studentsGraded > 0) {
+            GradeNotificationService::notifyGradeSaved($subject->id, $request->term, $studentsGraded);
+        }
+        
+        // Build success message and respond appropriately based on the request type
+        $successMessage = 'Grades have been saved successfully.';
+
+        if ($request->expectsJson() || $request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return response()->json([
+                'status' => 'success',
+                'message' => $successMessage,
+            ]);
+        }
+
         return redirect()->route('instructor.grades.index', [
             'subject_id' => $request->subject_id,
             'term' => $request->term

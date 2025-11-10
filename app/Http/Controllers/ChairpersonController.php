@@ -7,6 +7,7 @@ use App\Models\Subject;
 use App\Models\User;
 use App\Models\Department;
 use App\Models\Course;
+use App\Models\FinalGrade;
 use App\Models\UnverifiedUser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -424,36 +425,32 @@ class ChairpersonController extends Controller
     // ============================
     // Save Grade Notes
     // ============================
-    
+
     public function saveGradeNotes(Request $request)
     {
         if (!(Auth::user()->role === 1 || Auth::user()->role === 4)) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            abort(403);
         }
 
         $request->validate([
-            'student_id' => 'required|exists:students,id',
-            'subject_id' => 'required|exists:subjects,id',
+            'final_grade_id' => 'required|exists:final_grades,id',
             'notes' => 'nullable|string|max:1000',
         ]);
 
-        $finalGrade = \App\Models\FinalGrade::where('student_id', $request->student_id)
-            ->where('subject_id', $request->subject_id)
-            ->first();
+        $finalGrade = FinalGrade::findOrFail($request->final_grade_id);
+        
+        // Update the notes
+        $finalGrade->notes = $request->notes;
+        $finalGrade->updated_by = Auth::id();
+        $finalGrade->save();
 
-        if (!$finalGrade) {
-            return response()->json(['error' => 'Grade record not found'], 404);
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Notes saved successfully.',
+            ]);
         }
 
-        $finalGrade->update([
-            'notes' => $request->notes,
-            'updated_by' => Auth::id(),
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Notes saved successfully',
-            'notes' => $finalGrade->notes,
-        ]);
+        return redirect()->back()->with('success', 'Notes saved successfully.');
     }
 }
