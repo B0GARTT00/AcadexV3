@@ -8,3 +8,4 @@
 - Included AJAX functionality with SweetAlert confirmation
 - Character limit of 1000 characters with counter
 - Separate from auto-generated Passed/Failed remarks"
+- Department Baseline can be changed through all the courses or just a select few

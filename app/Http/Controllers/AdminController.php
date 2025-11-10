@@ -349,14 +349,23 @@ class AdminController extends Controller
             $selectedSemester,
             $selectedAcademicPeriodId
         )
-            ->pluck('id', 'course_id');
+            ->get(['id', 'course_id', 'label'])
+            ->keyBy('course_id');
+
+        $subjectFormulaQuery = GradesFormula::where('scope_level', 'subject')
+            ->whereNotNull('subject_id');
+
+        if ($subjectIds->isNotEmpty()) {
+            $subjectFormulaQuery->whereIn('subject_id', $subjectIds);
+        }
+
         $subjectFormulas = $this->applyPeriodFilters(
-            GradesFormula::whereNotNull('subject_id')
-                ->where('scope_level', 'subject'),
+            $subjectFormulaQuery,
             $selectedSemester,
             $selectedAcademicPeriodId
         )
-            ->pluck('id', 'subject_id');
+            ->get(['id', 'subject_id', 'label'])
+            ->keyBy('subject_id');
 
         $globalFormula = $this->getGlobalFormula();
 
@@ -452,6 +461,8 @@ class AdminController extends Controller
             'departments' => $departments,
             'departmentFallbacks' => $fallbacks,
             'departmentCatalogs' => $departmentCatalogs,
+            'courseFormulas' => $courseFormulas,
+            'subjectFormulas' => $subjectFormulas,
             'semester' => $selectedSemester,
             'academicPeriods' => $academicPeriods,
             'academicYears' => $academicYears,
@@ -470,13 +481,16 @@ class AdminController extends Controller
         $selectedSemester = $periodContext['semester'];
         $selectedAcademicPeriodId = $periodContext['academic_period_id'];
 
+        $templateKeys = array_keys(FormulaStructure::STRUCTURE_DEFINITIONS);
+
         $validated = $request->validate([
             'department_id' => ['required', 'integer', 'exists:departments,id'],
-            'department_formula_id' => ['required', 'integer', 'exists:grades_formula,id'],
+            'structure_template' => ['required', 'string', Rule::in($templateKeys)],
             'course_ids' => ['required', 'array', 'min:1'],
             'course_ids.*' => ['integer'],
         ], [
             'course_ids.required' => 'Select at least one course.',
+            'structure_template.required' => 'Select a structure template.',
         ]);
 
         $department = Department::with(['courses' => function ($query) {
@@ -490,16 +504,43 @@ class AdminController extends Controller
                 ->withInput();
         }
 
-        $formula = GradesFormula::with('weights')
-            ->where('id', $validated['department_formula_id'])
-            ->where('scope_level', 'department')
-            ->first();
+        // Get or create the department fallback formula
+        $fallback = $this->ensureDepartmentFallback($department, $periodContext);
+        $fallback->loadMissing('weights');
 
-        if (! $formula || (int) $formula->department_id !== (int) $department->id) {
+        // Apply the template to the department fallback
+        $structureKey = $validated['structure_template'];
+        $structure = FormulaStructure::default($structureKey);
+        $structureErrors = FormulaStructure::validate($structure);
+
+        if (! empty($structureErrors)) {
             return back()
-                ->withErrors(['department_formula_id' => 'Select a formula from the chosen department.'])
+                ->withErrors(['structure_template' => implode(' ', $structureErrors)])
                 ->withInput();
         }
+
+        $weightInserts = collect(FormulaStructure::flattenWeights($structure))
+            ->map(fn (array $node) => [
+                'activity_type' => $node['activity_type'],
+                'weight' => $node['weight'],
+            ])
+            ->values();
+
+        // Update the department fallback with the new template
+        DB::transaction(function () use ($fallback, $structureKey, $structure, $weightInserts) {
+            $fallback->structure_type = $structureKey;
+            $fallback->structure_config = $structure;
+            $fallback->save();
+
+            $fallback->weights()->delete();
+
+            if ($weightInserts->isNotEmpty()) {
+                $fallback->weights()->createMany($weightInserts->all());
+            }
+        });
+
+        // Reload the formula with weights
+        $formula = $fallback->fresh('weights');
 
         $selectedCourseIds = collect($validated['course_ids'])
             ->map(fn ($id) => (int) $id)
@@ -547,6 +588,7 @@ class AdminController extends Controller
             ]);
         }
 
+        // Apply the updated department fallback to all selected courses
         foreach ($courses as $course) {
             $this->cloneFormulaToCourse($course, $formula);
         }
@@ -555,9 +597,152 @@ class AdminController extends Controller
 
         session()->forget(['bulk_formula_conflicts', 'bulk_requires_password']);
 
+        $templateLabel = FormulaStructure::STRUCTURE_DEFINITIONS[$structureKey]['label'] ?? $structureKey;
+
         return redirect()
             ->route('admin.gradesFormula', $this->formulaQueryParams())
-            ->with('success', 'Formula applied to selected courses.');
+            ->with('success', "Applied {$templateLabel} template to selected courses.");
+    }
+
+    public function applyDepartmentTemplate(Request $request, Department $department)
+    {
+        Gate::authorize('admin');
+
+        if ($department->is_deleted) {
+            abort(404);
+        }
+
+        $templateKeys = array_keys(FormulaStructure::STRUCTURE_DEFINITIONS);
+
+        $validated = $request->validate([
+            'template_key' => ['required', 'string', Rule::in($templateKeys)],
+        ]);
+
+        $periodContext = $this->resolveFormulaPeriodContext();
+        $selectedSemester = $periodContext['semester'];
+        $selectedAcademicPeriodId = $periodContext['academic_period_id'];
+        $academicPeriods = $periodContext['academic_periods'];
+
+        $structureKey = $validated['template_key'];
+        $structure = FormulaStructure::default($structureKey);
+        $structureErrors = FormulaStructure::validate($structure);
+
+        if (! empty($structureErrors)) {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => implode(' ', $structureErrors),
+                ], 422);
+            }
+
+            return back()
+                ->withErrors(['template_key' => implode(' ', $structureErrors)])
+                ->withInput();
+        }
+
+        $weightInserts = collect(FormulaStructure::flattenWeights($structure))
+            ->map(fn (array $node) => [
+                'activity_type' => $node['activity_type'],
+                'weight' => $node['weight'],
+            ])
+            ->values();
+
+        $fallback = $this->ensureDepartmentFallback($department, $periodContext);
+        $fallback->loadMissing('weights');
+
+        DB::transaction(function () use ($fallback, $structureKey, $structure, $weightInserts) {
+            $fallback->structure_type = $structureKey;
+            $fallback->structure_config = $structure;
+            $fallback->save();
+
+            $fallback->weights()->delete();
+
+            if ($weightInserts->isNotEmpty()) {
+                $fallback->weights()->createMany($weightInserts->all());
+            }
+        });
+
+        GradesFormulaService::flushCache();
+
+        $fallback = $fallback->fresh('weights');
+
+        $periodLookup = collect($academicPeriods ?? [])->keyBy('id');
+
+        $contextParts = [];
+        if ($fallback->academic_period_id) {
+            $period = $periodLookup->get($fallback->academic_period_id);
+            if ($period) {
+                $contextParts[] = trim($period->academic_year ?? '') !== ''
+                    ? $period->academic_year
+                    : 'Academic Period #' . $fallback->academic_period_id;
+                if (! empty($period->semester)) {
+                    $contextParts[] = trim($period->semester) . ' Semester';
+                }
+            } else {
+                $contextParts[] = 'Academic Period #' . $fallback->academic_period_id;
+            }
+        }
+
+        if ($fallback->academic_period_id === null && $fallback->semester) {
+            $contextParts[] = trim($fallback->semester) . ' Semester';
+        }
+
+        if (empty($contextParts)) {
+            $contextParts[] = 'Applies to all periods';
+        }
+
+        $contextLabel = implode(' · ', array_filter($contextParts));
+
+        $weightDisplay = collect($fallback->weight_map)
+            ->map(fn ($weight, $type) => [
+                'type' => strtoupper($type),
+                'percent' => number_format($weight * 100, 0),
+            ])
+            ->values()
+            ->all();
+
+        $structureDefinitions = FormulaStructure::STRUCTURE_DEFINITIONS;
+        $structureLabel = $structureDefinitions[$fallback->structure_type]['label']
+            ?? FormulaStructure::formatLabel($fallback->structure_type ?? 'template');
+
+        $payload = [
+            'id' => $fallback->id,
+            'label' => $fallback->label,
+            'base_score' => $fallback->base_score,
+            'scale_multiplier' => $fallback->scale_multiplier,
+            'passing_grade' => $fallback->passing_grade,
+            'is_fallback' => true,
+            'context_match' => $this->formulaMatchesContext($fallback, $selectedSemester, $selectedAcademicPeriodId),
+            'context_label' => $contextLabel,
+            'semester' => $fallback->semester,
+            'academic_period_id' => $fallback->academic_period_id,
+            'weights' => $weightDisplay,
+            'edit_url' => route('admin.gradesFormula.edit.department', array_merge([
+                'department' => $department->id,
+            ], $this->formulaQueryParams())),
+            'updated_at' => optional($fallback->updated_at)->diffForHumans() ?? 'Just now',
+            'structure_type' => $fallback->structure_type,
+            'structure_label' => $structureLabel,
+        ];
+
+        $departmentLabel = trim($department->department_description ?? 'Department');
+        $message = sprintf(
+            'Applied the %s template to %s\'s baseline formula.',
+            $structureLabel,
+            $departmentLabel !== '' ? $departmentLabel : 'the department'
+        );
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'ok',
+                'message' => $message,
+                'formula' => $payload,
+            ]);
+        }
+
+        return redirect()
+            ->route('admin.gradesFormula', $this->formulaQueryParams())
+            ->with('success', $message);
     }
 
     public function gradesFormulaDefault()

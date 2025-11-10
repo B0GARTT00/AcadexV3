@@ -16,6 +16,7 @@ use App\Services\GradeNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 
 class GradeController extends Controller
 {
@@ -261,9 +262,25 @@ class GradeController extends Controller
             // --- END NEW ---
         }
     
+        $termLabel = Str::of($request->term)->replace('_', ' ')->title();
+        $subjectLabel = trim(collect([
+            $subject->subject_code,
+            $subject->subject_description,
+        ])->filter()->implode(' - '));
+        $successMessage = $subjectLabel === ''
+            ? "{$termLabel} grades have been saved successfully."
+            : "{$termLabel} grades for {$subjectLabel} have been saved successfully.";
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => $successMessage,
+            ]);
+        }
+
         return redirect()->route('instructor.grades.index', [
             'subject_id' => $request->subject_id,
-            'term' => $request->term
+            'term' => $request->term,
         ])->with('success', $successMessage);
     }
 
