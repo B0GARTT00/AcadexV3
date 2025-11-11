@@ -28,8 +28,10 @@ class AccountApprovalController extends Controller
         $geDepartment = Department::where('department_code', 'GE')->first();
         
         // Eager-load related department and course for display, filtered by GE department
+        // Only show verified email accounts
         $pendingAccounts = UnverifiedUser::with(['department', 'course'])
             ->where('department_id', $geDepartment->id)
+            ->whereNotNull('email_verified_at')
             ->get();
 
         return view('gecoordinator.manage-instructors', compact('pendingAccounts'));
@@ -52,6 +54,7 @@ class AccountApprovalController extends Controller
 
         $pending = UnverifiedUser::where('id', $id)
             ->where('department_id', $geDepartment->id)
+            ->whereNotNull('email_verified_at')
             ->firstOrFail();
 
         // Transfer to the main users table

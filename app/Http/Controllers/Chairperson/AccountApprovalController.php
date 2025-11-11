@@ -26,10 +26,12 @@ class AccountApprovalController extends Controller
 
         // Eager-load related department and course for display, filtered by chairperson's department and course
         // Exclude GE department instructors
+        // Only show verified email accounts
         $pendingAccounts = UnverifiedUser::with(['department', 'course'])
             ->where('department_id', Auth::user()->department_id)
             ->where('course_id', Auth::user()->course_id)
             ->where('department_id', '!=', $geDepartment->id)
+            ->whereNotNull('email_verified_at')
             ->get();
 
         return view('chairperson.manage-instructors', compact('pendingAccounts'));
@@ -52,6 +54,7 @@ class AccountApprovalController extends Controller
             ->where('department_id', Auth::user()->department_id)
             ->where('course_id', Auth::user()->course_id)
             ->where('department_id', '!=', $geDepartment->id)
+            ->whereNotNull('email_verified_at')
             ->firstOrFail();
 
         // Transfer to the main users table
