@@ -289,7 +289,7 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::get('/grades-formula/department/{department}/formulas/create', [AdminController::class, 'createDepartmentFormula'])->name('gradesFormula.department.formulas.create');
     Route::get('/grades-formula/department/{department}/formulas/{formula}/edit', [AdminController::class, 'editDepartmentFormulaEntry'])->name('gradesFormula.department.formulas.edit');
     Route::delete('/grades-formula/department/{department}/formulas/{formula}', [AdminController::class, 'destroyDepartmentFormula'])->name('gradesFormula.department.formulas.destroy');
-    Route::post('/grades-formula/department/bulk-apply', [AdminController::class, 'bulkApplyDepartmentFormula'])->name('gradesFormula.department.bulkApply');
+    // REMOVED: Route::post('/grades-formula/department/bulk-apply') - Departments tab deprecated
     Route::post('/grades-formula/department/{department}/apply-template', [AdminController::class, 'applyDepartmentTemplate'])->name('gradesFormula.department.applyTemplate');
     Route::get('/grades-formula/department/{department}/course/{course}', [AdminController::class, 'gradesFormulaCourse'])->name('gradesFormula.course');
     Route::get('/grades-formula/department/{department}/course/{course}/edit', [AdminController::class, 'gradesFormulaEditCourse'])->name('gradesFormula.edit.course');
@@ -307,9 +307,9 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
 
     // Structure Template Requests (from chairpersons)
     Route::get('/structure-template-requests', [AdminController::class, 'indexStructureTemplateRequests'])->name('structureTemplateRequests.index');
-    Route::get('/structure-template-requests/{request}', [AdminController::class, 'showStructureTemplateRequest'])->name('structureTemplateRequests.show');
-    Route::post('/structure-template-requests/{request}/approve', [AdminController::class, 'approveStructureTemplateRequest'])->name('structureTemplateRequests.approve');
-    Route::post('/structure-template-requests/{request}/reject', [AdminController::class, 'rejectStructureTemplateRequest'])->name('structureTemplateRequests.reject');
+    Route::get('/structure-template-requests/{templateRequest}', [AdminController::class, 'showStructureTemplateRequest'])->name('structureTemplateRequests.show');
+    Route::post('/structure-template-requests/{templateRequest}/approve', [AdminController::class, 'approveStructureTemplateRequest'])->name('structureTemplateRequests.approve');
+    Route::post('/structure-template-requests/{templateRequest}/reject', [AdminController::class, 'rejectStructureTemplateRequest'])->name('structureTemplateRequests.reject');
 
     Route::get('/users', [AdminController::class, 'viewUsers'])->name('users');
     Route::post('/users/confirm-password', [AdminController::class, 'adminConfirmUserCreationWithPassword'])->name('confirmUserCreationWithPassword');
