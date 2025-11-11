@@ -21,9 +21,14 @@ use App\Http\Middleware\EnsureAcademicPeriodSet;
 use App\Http\Controllers\CourseOutcomeAttainmentController;
 use App\Http\Controllers\CourseOutcomeReportsController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\Auth\GoogleAuthController;
 
 // Welcome Page
 use Illuminate\Support\Facades\Auth;
+
+// Google OAuth routes
+Route::get('/auth/google', [GoogleAuthController::class, 'redirectToGoogle'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleAuthController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 
 Route::get('/', function () {
     if (Auth::check()) {

@@ -12,6 +12,7 @@ use Illuminate\Notifications\Notifiable;
  * @property string|null $middle_name
  * @property string $last_name
  * @property string $email
+ * @property string|null $google_id
  * @property int $role
  * @property int|null $department_id
  * @property int|null $course_id
@@ -35,6 +36,7 @@ class User extends Authenticatable
         'middle_name',
         'last_name',
         'email',
+        'google_id',
         'password',
         'role',
         'is_active',
