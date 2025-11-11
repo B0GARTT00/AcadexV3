@@ -12,6 +12,7 @@ use App\Models\Subject;
 use App\Models\UserLog;
 use App\Models\User;
 use App\Models\GradesFormula;
+use App\Models\StructureTemplate;
 use App\Models\TermGrade;
 use App\Services\GradesFormulaService;
 use App\Support\Grades\FormulaStructure;
@@ -23,6 +24,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class AdminController extends Controller
 {
@@ -433,30 +435,36 @@ class AdminController extends Controller
         $structureCatalog = collect($this->getStructureCatalog())
             ->map(function (array $entry, string $key) {
                 $normalized = FormulaStructure::fromPercentPayload($entry['structure'] ?? []);
-                $flattened = collect(FormulaStructure::flattenWeights($normalized))
-                    ->map(function (array $node) {
-                        $weight = isset($node['weight']) ? (float) $node['weight'] : 0.0;
-                        $activityType = $node['activity_type'] ?? ($node['key'] ?? 'component');
-
-                        return [
-                            'type' => FormulaStructure::formatLabel($activityType),
-                            'percent' => (int) round($weight * 100),
-                        ];
-                    })
-                    ->values();
+                
+                // Build a better weight display that shows hierarchical structure
+                $weights = $this->buildStructureWeightDisplay($normalized);
 
                 return [
+                    'id' => $entry['id'] ?? null,
+                    'template_key' => $entry['template_key'] ?? $key,
                     'key' => $key,
                     'label' => $entry['label'] ?? FormulaStructure::formatLabel($key),
                     'description' => $entry['description'] ?? '',
-                    'weights' => $flattened->all(),
+                    'weights' => $weights,
                     'structure' => $entry['structure'] ?? [],
+                    'is_custom' => (bool) ($entry['is_custom'] ?? false),
+                    'is_system_default' => (bool) ($entry['is_system_default'] ?? false),
                 ];
             })
             ->values();
 
+        // Fetch global formulas
+        $globalFormulasList = GradesFormula::with('weights')
+            ->where('scope_level', 'global')
+            ->whereNull('department_id')
+            ->whereNull('course_id')
+            ->whereNull('subject_id')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         return view('admin.grades-formula-wildcards', [
             'globalFormula' => $globalFormula,
+            'globalFormulasList' => $globalFormulasList,
             'departmentsSummary' => $departmentsSummary,
             'departments' => $departments,
             'departmentFallbacks' => $fallbacks,
@@ -481,7 +489,7 @@ class AdminController extends Controller
         $selectedSemester = $periodContext['semester'];
         $selectedAcademicPeriodId = $periodContext['academic_period_id'];
 
-        $templateKeys = array_keys(FormulaStructure::STRUCTURE_DEFINITIONS);
+        $templateKeys = array_keys(FormulaStructure::getAllStructureDefinitions());
 
         $validated = $request->validate([
             'department_id' => ['required', 'integer', 'exists:departments,id'],
@@ -597,7 +605,8 @@ class AdminController extends Controller
 
         session()->forget(['bulk_formula_conflicts', 'bulk_requires_password']);
 
-        $templateLabel = FormulaStructure::STRUCTURE_DEFINITIONS[$structureKey]['label'] ?? $structureKey;
+        $allDefinitions = FormulaStructure::getAllStructureDefinitions();
+        $templateLabel = $allDefinitions[$structureKey]['label'] ?? $structureKey;
 
         return redirect()
             ->route('admin.gradesFormula', $this->formulaQueryParams())
@@ -612,7 +621,7 @@ class AdminController extends Controller
             abort(404);
         }
 
-        $templateKeys = array_keys(FormulaStructure::STRUCTURE_DEFINITIONS);
+        $templateKeys = array_keys(FormulaStructure::getAllStructureDefinitions());
 
         $validated = $request->validate([
             'template_key' => ['required', 'string', Rule::in($templateKeys)],
@@ -701,7 +710,7 @@ class AdminController extends Controller
             ->values()
             ->all();
 
-        $structureDefinitions = FormulaStructure::STRUCTURE_DEFINITIONS;
+        $structureDefinitions = FormulaStructure::getAllStructureDefinitions();
         $structureLabel = $structureDefinitions[$fallback->structure_type]['label']
             ?? FormulaStructure::formatLabel($fallback->structure_type ?? 'template');
 
@@ -1232,9 +1241,23 @@ class AdminController extends Controller
         ]);
     }
 
-    public function destroyDepartmentFormula(Department $department, GradesFormula $formula)
+    public function destroyDepartmentFormula(Department $department, GradesFormula $formula, Request $request)
     {
         Gate::authorize('admin');
+
+        // Validate password first
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        // Verify the password matches the authenticated user
+        if (!Hash::check($request->input('password'), Auth::user()->password)) {
+            return back()
+                ->withErrors(['password' => 'The provided password is incorrect.'])
+                ->withInput()
+                ->with('reopen_structure_template_modal', true)
+                ->with('structure_template_error', true);
+        }
 
         if (
             $department->is_deleted
@@ -1262,6 +1285,362 @@ class AdminController extends Controller
                 'department' => $department->id,
             ], $this->formulaQueryParams()))
             ->with('success', 'Formula deleted successfully.');
+    }
+
+    public function destroyGlobalFormula(GradesFormula $formula, Request $request)
+    {
+        Gate::authorize('admin');
+
+        // Validate password first
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        // Verify the password matches the authenticated user
+        if (!Hash::check($request->input('password'), Auth::user()->password)) {
+            return back()
+                ->withErrors(['password' => 'The provided password is incorrect.'])
+                ->withInput();
+        }
+
+        if ($formula->scope_level !== 'global') {
+            abort(404, 'This formula is not a global formula.');
+        }
+
+        DB::transaction(function () use ($formula) {
+            $formula->weights()->delete();
+            $formula->delete();
+        });
+
+        GradesFormulaService::flushCache();
+
+        return redirect()
+            ->route('admin.gradesFormula', array_merge($this->formulaQueryParams(), ['view' => 'formulas']))
+            ->with('success', 'Global formula deleted successfully.');
+    }
+
+    public function storeStructureTemplate(Request $request)
+    {
+        Gate::authorize('admin');
+
+        $validated = $request->validate([
+            'password' => ['required', 'string'],
+            'template_label' => ['required', 'string', 'max:100'],
+            'template_key' => ['required', 'string', 'max:50', 'unique:structure_templates,template_key'],
+            'template_description' => ['nullable', 'string', 'max:500'],
+            'components' => ['required', 'array', 'min:1'],
+            'components.*.activity_type' => ['required', 'string', 'max:100'],
+            'components.*.weight' => ['required', 'numeric', 'min:0', 'max:100'],
+            'components.*.label' => ['required', 'string', 'max:100'],
+            'components.*.is_main' => ['nullable', 'boolean'],
+            'components.*.parent_id' => ['nullable', 'integer'],
+        ]);
+
+        if (! Hash::check($request->input('password'), Auth::user()->password)) {
+            return back()
+                ->withErrors(['password' => 'The provided password is incorrect.'])
+                ->withInput()
+                ->with('reopen_structure_template_modal', true)
+                ->with('structure_template_error', true)
+                ->with('structure_template_mode', 'create');
+        }
+
+        try {
+            $structureConfig = $this->buildStructureTemplateConfig($validated['components']);
+        } catch (ValidationException $exception) {
+            return back()
+                ->withErrors($exception->errors())
+                ->withInput()
+                ->with('reopen_structure_template_modal', true)
+                ->with('structure_template_error', true)
+                ->with('structure_template_mode', 'create');
+        }
+
+        DB::beginTransaction();
+
+        try {
+            $template = new StructureTemplate();
+            $template->template_key = $validated['template_key'];
+            $template->label = $validated['template_label'];
+            $template->description = $validated['template_description'] !== '' ? $validated['template_description'] : null;
+            $template->structure_config = $structureConfig;
+            $template->is_system_default = false;
+            $template->is_deleted = false;
+            $template->created_by = Auth::id();
+            $template->updated_by = Auth::id();
+            $template->save();
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.gradesFormula', array_merge($this->formulaQueryParams(), ['view' => 'formulas']))
+                ->with('success', "Structure template '{$template->label}' created successfully.");
+        } catch (\Throwable $exception) {
+            DB::rollBack();
+
+            return back()
+                ->withErrors(['error' => 'Failed to create structure template: ' . $exception->getMessage()])
+                ->withInput()
+                ->with('reopen_structure_template_modal', true)
+                ->with('structure_template_error', true)
+                ->with('structure_template_mode', 'create');
+        }
+    }
+
+    public function updateStructureTemplate(Request $request, StructureTemplate $template)
+    {
+        Gate::authorize('admin');
+
+        if ($template->is_deleted) {
+            abort(404);
+        }
+
+        if ($template->is_system_default) {
+            abort(403, 'System templates cannot be modified.');
+        }
+
+        $validated = $request->validate([
+            'password' => ['required', 'string'],
+            'template_label' => ['required', 'string', 'max:100'],
+            'template_key' => [
+                'required',
+                'string',
+                'max:50',
+                Rule::unique('structure_templates', 'template_key')->ignore($template->id),
+            ],
+            'template_description' => ['nullable', 'string', 'max:500'],
+            'components' => ['required', 'array', 'min:1'],
+            'components.*.activity_type' => ['required', 'string', 'max:100'],
+            'components.*.weight' => ['required', 'numeric', 'min:0', 'max:100'],
+            'components.*.label' => ['required', 'string', 'max:100'],
+            'components.*.is_main' => ['nullable', 'boolean'],
+            'components.*.parent_id' => ['nullable', 'integer'],
+        ]);
+
+        if (! Hash::check($request->input('password'), Auth::user()->password)) {
+            return back()
+                ->withErrors(['password' => 'The provided password is incorrect.'])
+                ->withInput()
+                ->with('reopen_structure_template_modal', true)
+                ->with('structure_template_error', true)
+                ->with('structure_template_mode', 'edit')
+                ->with('structure_template_edit_id', $template->id);
+        }
+
+        try {
+            $structureConfig = $this->buildStructureTemplateConfig($validated['components']);
+        } catch (ValidationException $exception) {
+            return back()
+                ->withErrors($exception->errors())
+                ->withInput()
+                ->with('reopen_structure_template_modal', true)
+                ->with('structure_template_error', true)
+                ->with('structure_template_mode', 'edit')
+                ->with('structure_template_edit_id', $template->id);
+        }
+
+        $template->template_key = $validated['template_key'];
+        $template->label = $validated['template_label'];
+        $template->description = $validated['template_description'] !== '' ? $validated['template_description'] : null;
+        $template->structure_config = $structureConfig;
+        $template->updated_by = Auth::id();
+        $template->save();
+
+        return redirect()
+            ->route('admin.gradesFormula', array_merge($this->formulaQueryParams(), ['view' => 'formulas']))
+            ->with('success', "Structure template '{$template->label}' updated successfully.");
+    }
+
+    public function destroyStructureTemplate(Request $request, StructureTemplate $template)
+    {
+        Gate::authorize('admin');
+
+        if ($template->is_deleted) {
+            abort(404);
+        }
+
+        if ($template->is_system_default) {
+            abort(403, 'System templates cannot be deleted.');
+        }
+
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        if (! Hash::check($request->input('password'), Auth::user()->password)) {
+            return back()
+                ->withErrors(['password' => 'The provided password is incorrect.'])
+                ->withInput()
+                ->with('reopen_structure_template_delete_modal', $template->id);
+        }
+
+        $template->is_deleted = true;
+        $template->updated_by = Auth::id();
+        $template->save();
+
+        return redirect()
+            ->route('admin.gradesFormula', array_merge($this->formulaQueryParams(), ['view' => 'formulas']))
+            ->with('success', "Structure template '{$template->label}' deleted successfully.");
+    }
+
+    private function buildStructureTemplateConfig(array $components): array
+    {
+        if (empty($components)) {
+            throw ValidationException::withMessages([
+                'components' => 'Add at least one main component before saving the template.',
+            ]);
+        }
+
+        $mainComponents = [];
+        $subComponents = [];
+
+        foreach ($components as $id => $component) {
+            $component = is_array($component) ? $component : [];
+            $activityType = trim((string) ($component['activity_type'] ?? ''));
+            $label = trim((string) ($component['label'] ?? ''));
+            $weight = (float) ($component['weight'] ?? 0);
+            $isMain = ! empty($component['is_main']);
+            $parentId = $component['parent_id'] ?? null;
+
+            $normalized = [
+                'activity_type' => $activityType,
+                'label' => $label,
+                'weight' => $weight,
+                'is_main' => $isMain,
+                'parent_id' => $parentId,
+            ];
+
+            if ($isMain) {
+                $mainComponents[$id] = $normalized;
+            } elseif ($parentId !== null && $parentId !== '') {
+                $subComponents[$parentId] ??= [];
+                $subComponents[$parentId][] = $normalized;
+            }
+        }
+
+        if (empty($mainComponents)) {
+            throw ValidationException::withMessages([
+                'components' => 'Add at least one main component before saving the template.',
+            ]);
+        }
+
+        foreach ($subComponents as $parentId => $subs) {
+            if (! isset($mainComponents[$parentId])) {
+                throw ValidationException::withMessages([
+                    'components' => 'All sub-components must belong to a valid main component.',
+                ]);
+            }
+        }
+
+        $totalMainWeight = array_sum(array_column($mainComponents, 'weight'));
+        if (abs($totalMainWeight - 100) > 0.1) {
+            throw ValidationException::withMessages([
+                'components' => "Total weight of main components must equal 100%. Current total: {$totalMainWeight}%",
+            ]);
+        }
+
+        foreach ($subComponents as $parentId => $subs) {
+            $subTotal = array_sum(array_column($subs, 'weight'));
+            if (abs($subTotal - 100) > 0.1) {
+                $parentLabel = $mainComponents[$parentId]['label'] ?? "Component {$parentId}";
+                throw ValidationException::withMessages([
+                    'components' => "Sub-components of '{$parentLabel}' must total 100%. Current: {$subTotal}%",
+                ]);
+            }
+        }
+
+        foreach ($mainComponents as $id => &$mainComponent) {
+            $identifierSource = $mainComponent['activity_type'] ?: $mainComponent['label'];
+            $mainComponent['normalized_identifier'] = $this->normalizeTemplateIdentifier($identifierSource, 'component_' . $id);
+        }
+        unset($mainComponent);
+
+        foreach ($subComponents as $parentId => &$subs) {
+            foreach ($subs as $index => &$subComponent) {
+                $identifierSource = $subComponent['activity_type'] ?: $subComponent['label'];
+                $subComponent['normalized_identifier'] = $this->normalizeTemplateIdentifier(
+                    $identifierSource,
+                    'component_' . $parentId . '_child_' . ($index + 1)
+                );
+            }
+            unset($subComponent);
+        }
+        unset($subs);
+
+        $structureConfig = [
+            'key' => 'period_grade',
+            'type' => 'composite',
+            'label' => 'Period Grade',
+            'children' => [],
+        ];
+
+        foreach ($mainComponents as $id => $mainComponent) {
+            $mainWeight = $mainComponent['weight'] / 100;
+            $mainIdentifier = $mainComponent['normalized_identifier'];
+            $label = $mainComponent['label'];
+
+            if (isset($subComponents[$id]) && count($subComponents[$id]) > 0) {
+                $children = [];
+
+                foreach ($subComponents[$id] as $subComponent) {
+                    $childIdentifier = $subComponent['normalized_identifier'];
+                    $compositeActivityType = $mainIdentifier . '.' . $childIdentifier;
+
+                    $children[] = [
+                        'key' => $compositeActivityType,
+                        'type' => 'activity',
+                        'label' => $subComponent['label'],
+                        'activity_type' => $compositeActivityType,
+                        'weight' => $subComponent['weight'] / 100,
+                    ];
+                }
+
+                $structureConfig['children'][] = [
+                    'key' => $mainIdentifier,
+                    'type' => 'composite',
+                    'label' => $label,
+                    'weight' => $mainWeight,
+                    'children' => $children,
+                ];
+            } else {
+                $structureConfig['children'][] = [
+                    'key' => $mainIdentifier,
+                    'type' => 'activity',
+                    'label' => $label,
+                    'activity_type' => $mainIdentifier,
+                    'weight' => $mainWeight,
+                ];
+            }
+        }
+
+        return $structureConfig;
+    }
+
+    public function editGlobalFormula(GradesFormula $formula)
+    {
+        Gate::authorize('admin');
+
+        if ($formula->scope_level !== 'global') {
+            abort(404, 'This formula is not a global formula.');
+        }
+
+        $formula->loadMissing('weights');
+
+        $periodContext = $this->resolveFormulaPeriodContext();
+        $selectedSemester = $periodContext['semester'];
+        $selectedAcademicPeriodId = $periodContext['academic_period_id'];
+        $selectedAcademicYear = $periodContext['academic_year'];
+        $academicPeriods = $periodContext['academic_periods'];
+        $academicYears = $periodContext['academic_years'];
+
+        return view('admin.grades-formula-edit-global', compact(
+            'formula',
+            'selectedSemester',
+            'selectedAcademicPeriodId',
+            'selectedAcademicYear',
+            'academicPeriods',
+            'academicYears'
+        ));
     }
 
     public function gradesFormulaEditSubject(Request $request, Subject $subject)
@@ -1494,7 +1873,7 @@ class AdminController extends Controller
         $courseFormulaForView = $exactCourseFormula ?? $courseFormula;
         $subjectFallback = $subjectFallbackCandidates->first() ?? $globalFormula;
 
-        $structureDefinitions = collect(FormulaStructure::STRUCTURE_DEFINITIONS);
+        $structureDefinitions = collect(FormulaStructure::getAllStructureDefinitions());
 
         $structureOptions = $structureDefinitions
             ->map(function (array $definition, string $key) {
@@ -1589,7 +1968,7 @@ class AdminController extends Controller
 
         $validated = $request->validate([
             'department_formula_id' => ['nullable', 'integer'],
-            'structure_type' => ['nullable', Rule::in(array_keys(FormulaStructure::STRUCTURE_DEFINITIONS))],
+            'structure_type' => ['nullable', Rule::in(array_keys(FormulaStructure::getAllStructureDefinitions()))],
             'current_password' => $subjectRequiresPassword ? ['required', 'current_password'] : ['nullable'],
         ]);
 
@@ -1709,13 +2088,25 @@ class AdminController extends Controller
     {
         Gate::authorize('admin');
 
+        // Validate password first
+        $request->validate([
+            'password' => ['required', 'string'],
+        ]);
+
+        // Verify the password matches the authenticated user
+        if (!Hash::check($request->input('password'), Auth::user()->password)) {
+            return back()
+                ->withErrors(['password' => 'The provided password is incorrect.'])
+                ->withInput();
+        }
+
         $scopeRules = [
-            'scope_level' => ['required', Rule::in(['department', 'course', 'subject'])],
+            'scope_level' => ['required', Rule::in(['global', 'department', 'course', 'subject'])],
             'label' => ['nullable', 'string', 'max:255'],
             'base_score' => ['required', 'numeric', 'min:0', 'max:100'],
             'scale_multiplier' => ['required', 'numeric', 'min:0', 'max:100'],
             'passing_grade' => ['required', 'numeric', 'min:0', 'max:100'],
-            'structure_type' => ['required', Rule::in(array_keys(FormulaStructure::STRUCTURE_DEFINITIONS))],
+            'structure_type' => ['required', Rule::in(array_keys(FormulaStructure::getAllStructureDefinitions()))],
             'structure_config' => ['required', 'string'],
         ];
 
@@ -1724,7 +2115,10 @@ class AdminController extends Controller
         $selectedSemester = $periodContext['semester'];
         $selectedAcademicPeriodId = $periodContext['academic_period_id'];
 
-        if ($scope === 'department') {
+        if ($scope === 'global') {
+            // Global formulas are department-independent
+            // No additional validation needed
+        } elseif ($scope === 'department') {
             $scopeRules['department_id'] = [
                 'required',
                 'exists:departments,id',
@@ -1837,7 +2231,9 @@ class AdminController extends Controller
         $course = null;
         $subject = null;
 
-        if ($scope === 'department') {
+        if ($scope === 'global') {
+            // Global formulas don't have department, course, or subject associations
+        } elseif ($scope === 'department') {
             $department = Department::findOrFail($validated['department_id']);
         } elseif ($scope === 'course') {
             $course = Course::with('department')->findOrFail($validated['course_id']);
@@ -1855,6 +2251,7 @@ class AdminController extends Controller
         }
 
         $label = $validated['label'] ?? match ($scope) {
+            'global' => 'Custom Global Formula',
             'department' => ($department?->department_description ?? 'Department') . ' Formula',
             'course' => ($course?->course_code ? $course->course_code . ' · ' : '') . ($course?->course_description ?? 'Course') . ' Formula',
             'subject' => ($subject?->subject_code ? $subject->subject_code . ' · ' : '') . ($subject?->subject_description ?? 'Subject') . ' Formula',
@@ -1916,6 +2313,12 @@ class AdminController extends Controller
 
         GradesFormulaService::flushCache();
 
+        if ($scope === 'global') {
+            return redirect()
+                ->route('admin.gradesFormula', array_merge($this->formulaQueryParams(), ['view' => 'formulas']))
+                ->with('success', 'Global formula saved successfully.');
+        }
+
         $redirectRoute = match ($scope) {
             'department' => $department
                 ? route('admin.gradesFormula.department', array_merge(['department' => $department->id], $this->formulaQueryParams()))
@@ -1938,6 +2341,19 @@ class AdminController extends Controller
         Gate::authorize('admin');
 
         $scope = $formula->scope_level ?? 'department';
+
+        // Validate password for global formulas
+        if ($scope === 'global') {
+            $request->validate([
+                'password' => ['required', 'string'],
+            ]);
+
+            if (!Hash::check($request->input('password'), Auth::user()->password)) {
+                return back()
+                    ->withErrors(['password' => 'The provided password is incorrect.'])
+                    ->withInput();
+            }
+        }
 
         if ($scope === 'subject') {
             $formula->loadMissing(['subject.course.department']);
@@ -1968,7 +2384,7 @@ class AdminController extends Controller
             'base_score' => ['required', 'numeric', 'min:0', 'max:100'],
             'scale_multiplier' => ['required', 'numeric', 'min:0', 'max:100'],
             'passing_grade' => ['required', 'numeric', 'min:0', 'max:100'],
-            'structure_type' => ['required', Rule::in(array_keys(FormulaStructure::STRUCTURE_DEFINITIONS))],
+            'structure_type' => ['required', Rule::in(array_keys(FormulaStructure::getAllStructureDefinitions()))],
             'structure_config' => ['required', 'string'],
         ];
 
@@ -2083,6 +2499,12 @@ class AdminController extends Controller
         $formula->loadMissing(['department', 'course', 'subject']);
 
         $queryParams = $this->formulaQueryParams();
+
+        if ($scope === 'global') {
+            return redirect()
+                ->route('admin.gradesFormula', array_merge($queryParams, ['view' => 'formulas']))
+                ->with('success', 'Global formula updated successfully.');
+        }
 
         $redirectRoute = match ($scope) {
             'department' => $formula->department
@@ -2757,17 +3179,122 @@ class AdminController extends Controller
 
     private function getStructureCatalog(): array
     {
-        return collect(FormulaStructure::STRUCTURE_DEFINITIONS)
+        return collect(FormulaStructure::getAllStructureDefinitions())
             ->mapWithKeys(function ($meta, $key) {
+                // Handle custom templates differently
+                if (isset($meta['is_custom']) && $meta['is_custom']) {
+                    $structureConfig = $meta['structure_config'] ?? [];
+
+                    if (is_string($structureConfig)) {
+                        $decoded = json_decode($structureConfig, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $structureConfig = $decoded;
+                        } else {
+                            $structureConfig = [];
+                        }
+                    }
+
+                    if (! is_array($structureConfig) || empty($structureConfig)) {
+                        $structureConfig = FormulaStructure::default('lecture_only');
+                    }
+
+                    try {
+                        $structurePayload = FormulaStructure::toPercentPayload($structureConfig);
+                    } catch (\Throwable $exception) {
+                        $structurePayload = FormulaStructure::toPercentPayload(FormulaStructure::default('lecture_only'));
+                    }
+
+                    return [
+                        $key => [
+                            'id' => $meta['id'] ?? null,
+                            'template_key' => $meta['template_key'] ?? $key,
+                            'label' => $meta['label'],
+                            'description' => $meta['description'],
+                            'structure' => $structurePayload,
+                            'is_custom' => true,
+                            'is_system_default' => (bool) ($meta['is_system_default'] ?? false),
+                        ],
+                    ];
+                }
+
+                // Handle hardcoded templates
                 return [
                     $key => [
+                        'id' => null,
+                        'template_key' => $key,
                         'label' => $meta['label'],
                         'description' => $meta['description'],
                         'structure' => FormulaStructure::toPercentPayload(FormulaStructure::default($key)),
+                        'is_custom' => false,
+                        'is_system_default' => true,
                     ],
                 ];
             })
             ->toArray();
+    }
+
+    private function normalizeTemplateIdentifier(?string $value, string $fallback): string
+    {
+        $candidate = Str::slug((string) $value, '_');
+
+        if ($candidate === '') {
+            $candidate = Str::slug($fallback, '_');
+        }
+
+        return $candidate !== '' ? $candidate : 'component_' . Str::random(6);
+    }
+
+    /**
+     * Build a hierarchical weight display that better represents nested structures
+     */
+    private function buildStructureWeightDisplay(array $structure): array
+    {
+        $weights = [];
+        $children = $structure['children'] ?? [];
+
+        foreach ($children as $child) {
+            $childType = $child['type'] ?? 'activity';
+            $childWeight = isset($child['weight']) ? (float) $child['weight'] : 0.0;
+            $childLabel = $child['label'] ?? FormulaStructure::formatLabel($child['key'] ?? 'component');
+            $childPercent = (int) round($childWeight * 100);
+
+            if ($childType === 'composite' && !empty($child['children'])) {
+                // This is a composite node (e.g., "Lecture Component 60%")
+                // Add the main component weight
+                $weights[] = [
+                    'type' => $childLabel,
+                    'percent' => $childPercent,
+                    'is_composite' => true,
+                ];
+
+                // Add sub-components with relative weights
+                foreach ($child['children'] as $subChild) {
+                    $subWeight = isset($subChild['weight']) ? (float) $subChild['weight'] : 0.0;
+                    $subActivityType = $subChild['activity_type'] ?? $subChild['key'] ?? 'component';
+                    $subLabel = $subChild['label'] ?? FormulaStructure::formatLabel($subActivityType);
+                    $subPercent = (int) round($subWeight * 100);
+
+                    $weights[] = [
+                        'type' => $subLabel,
+                        'percent' => $subPercent,
+                        'is_sub' => true,
+                        'parent_label' => $childLabel,
+                    ];
+                }
+            } else {
+                // This is a simple activity node
+                $activityType = $child['activity_type'] ?? $child['key'] ?? 'component';
+                $label = $childLabel;
+
+                $weights[] = [
+                    'type' => $label,
+                    'percent' => $childPercent,
+                    'is_composite' => false,
+                ];
+            }
+        }
+
+        return $weights;
     }
 
 
@@ -2864,6 +3391,7 @@ class AdminController extends Controller
         return redirect()->route('admin.users')->with('success', 'User created successfully.');
     }
 
+<<<<<<< HEAD
     /**
      * Force logout a user from all devices by clearing their sessions
      */
@@ -2886,10 +3414,117 @@ class AdminController extends Controller
                 'success' => false,
                 'message' => 'Failed to logout user. Please try again.'
             ], 500);
+=======
+    // ============================
+    // Structure Template Requests
+    // ============================
+
+    /**
+     * Display a listing of structure template requests from chairpersons.
+     */
+    public function indexStructureTemplateRequests(Request $request)
+    {
+        Gate::authorize('admin');
+
+        $status = $request->query('status', 'all');
+
+        $query = \App\Models\StructureTemplateRequest::with(['chairperson', 'reviewer']);
+
+        if ($status === 'pending') {
+            $query->pending();
+        } elseif ($status === 'approved') {
+            $query->approved();
+        } elseif ($status === 'rejected') {
+            $query->rejected();
+        }
+
+        $requests = $query->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
+            ->orderByDesc('created_at')
+            ->get();
+
+        $pendingCount = \App\Models\StructureTemplateRequest::pending()->count();
+
+        return view('admin.structure-template-requests', compact('requests', 'status', 'pendingCount'));
+    }
+
+    /**
+     * Display the specified structure template request.
+     */
+    public function showStructureTemplateRequest(\App\Models\StructureTemplateRequest $request)
+    {
+        Gate::authorize('admin');
+
+        $request->load(['chairperson', 'reviewer']);
+        $structureCatalog = \App\Support\Grades\FormulaStructure::getAllStructureDefinitions();
+
+        return view('admin.structure-template-request-show', compact('request', 'structureCatalog'));
+    }
+
+    /**
+     * Approve a structure template request and create the template.
+     */
+    public function approveStructureTemplateRequest(Request $request, \App\Models\StructureTemplateRequest $templateRequest)
+    {
+        Gate::authorize('admin');
+
+        if ($templateRequest->status !== 'pending') {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Only pending requests can be approved.']);
+        }
+
+        $request->validate([
+            'admin_notes' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Generate a unique template key
+            $baseKey = Str::slug($templateRequest->label);
+            $templateKey = $baseKey;
+            $counter = 1;
+
+            while (StructureTemplate::where('template_key', $templateKey)->where('is_deleted', false)->exists()) {
+                $templateKey = $baseKey . '-' . $counter;
+                $counter++;
+            }
+
+            // Create the structure template
+            StructureTemplate::create([
+                'template_key' => $templateKey,
+                'label' => $templateRequest->label,
+                'description' => $templateRequest->description,
+                'structure_config' => $templateRequest->structure_config,
+                'is_system_default' => false,
+                'is_deleted' => false,
+                'created_by' => Auth::id(),
+                'updated_by' => Auth::id(),
+            ]);
+
+            // Update the request status
+            $templateRequest->status = 'approved';
+            $templateRequest->admin_notes = $request->input('admin_notes');
+            $templateRequest->reviewed_by = Auth::id();
+            $templateRequest->reviewed_at = now();
+            $templateRequest->save();
+
+            DB::commit();
+
+            return redirect()
+                ->route('admin.structureTemplateRequests.index')
+                ->with('success', "Structure template '{$templateRequest->label}' approved and added to the catalog.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to approve template request: ' . $e->getMessage()]);
+>>>>>>> 8fb0fef (Grade Formula Request, Grades Formula Management)
         }
     }
 
     /**
+<<<<<<< HEAD
      * Get active session count for a user
      */
     public function getUserSessionCount(User $user)
@@ -2904,5 +3539,32 @@ class AdminController extends Controller
             'success' => true,
             'count' => $sessionCount
         ]);
+=======
+     * Reject a structure template request.
+     */
+    public function rejectStructureTemplateRequest(Request $request, \App\Models\StructureTemplateRequest $templateRequest)
+    {
+        Gate::authorize('admin');
+
+        if ($templateRequest->status !== 'pending') {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Only pending requests can be rejected.']);
+        }
+
+        $request->validate([
+            'admin_notes' => 'required|string|max:1000',
+        ]);
+
+        $templateRequest->status = 'rejected';
+        $templateRequest->admin_notes = $request->input('admin_notes');
+        $templateRequest->reviewed_by = Auth::id();
+        $templateRequest->reviewed_at = now();
+        $templateRequest->save();
+
+        return redirect()
+            ->route('admin.structureTemplateRequests.index')
+            ->with('success', "Structure template request from {$templateRequest->chairperson->first_name} {$templateRequest->chairperson->last_name} has been rejected.");
+>>>>>>> 8fb0fef (Grade Formula Request, Grades Formula Management)
     }
 }

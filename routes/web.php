@@ -121,6 +121,13 @@ Route::prefix('chairperson')
         Route::get('/approvals', [AccountApprovalController::class, 'index'])->name('accounts.index');
         Route::post('/approvals/{id}/approve', [AccountApprovalController::class, 'approve'])->name('accounts.approve');
         Route::post('/approvals/{id}/reject', [AccountApprovalController::class, 'reject'])->name('accounts.reject');
+        
+        // Structure Template Requests
+        Route::get('/structure-templates', [ChairpersonController::class, 'indexTemplateRequests'])->name('structureTemplates.index');
+        Route::get('/structure-templates/create', [ChairpersonController::class, 'createTemplateRequest'])->name('structureTemplates.create');
+        Route::post('/structure-templates', [ChairpersonController::class, 'storeTemplateRequest'])->name('structureTemplates.store');
+        Route::get('/structure-templates/{request}', [ChairpersonController::class, 'showTemplateRequest'])->name('structureTemplates.show');
+        Route::delete('/structure-templates/{request}', [ChairpersonController::class, 'destroyTemplateRequest'])->name('structureTemplates.destroy');
     });
 
 // GE Coordinator Routes
@@ -292,6 +299,17 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::delete('/grades-formula/subject/{subject}/custom', [AdminController::class, 'removeSubjectFormula'])->name('gradesFormula.subject.remove');
     Route::post('/grades-formula/store', [AdminController::class, 'storeGradesFormula'])->name('gradesFormula.store');
     Route::put('/grades-formula/{formula}', [AdminController::class, 'updateGradesFormula'])->name('gradesFormula.update');
+    Route::delete('/grades-formula/{formula}', [AdminController::class, 'destroyGlobalFormula'])->name('gradesFormula.destroy');
+    Route::get('/grades-formula/{formula}/edit', [AdminController::class, 'editGlobalFormula'])->name('gradesFormula.edit');
+    Route::post('/grades-formula/structure-template/store', [AdminController::class, 'storeStructureTemplate'])->name('gradesFormula.structureTemplate.store');
+    Route::put('/grades-formula/structure-template/{template}', [AdminController::class, 'updateStructureTemplate'])->name('gradesFormula.structureTemplate.update');
+    Route::delete('/grades-formula/structure-template/{template}', [AdminController::class, 'destroyStructureTemplate'])->name('gradesFormula.structureTemplate.destroy');
+
+    // Structure Template Requests (from chairpersons)
+    Route::get('/structure-template-requests', [AdminController::class, 'indexStructureTemplateRequests'])->name('structureTemplateRequests.index');
+    Route::get('/structure-template-requests/{request}', [AdminController::class, 'showStructureTemplateRequest'])->name('structureTemplateRequests.show');
+    Route::post('/structure-template-requests/{request}/approve', [AdminController::class, 'approveStructureTemplateRequest'])->name('structureTemplateRequests.approve');
+    Route::post('/structure-template-requests/{request}/reject', [AdminController::class, 'rejectStructureTemplateRequest'])->name('structureTemplateRequests.reject');
 
     Route::get('/users', [AdminController::class, 'viewUsers'])->name('users');
     Route::post('/users/confirm-password', [AdminController::class, 'adminConfirmUserCreationWithPassword'])->name('confirmUserCreationWithPassword');

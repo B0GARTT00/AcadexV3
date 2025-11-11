@@ -159,6 +159,22 @@
                             <span>Manage Course Outcome</span>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        @php
+                            $myTemplateRequests = \App\Models\StructureTemplateRequest::where('chairperson_id', Auth::id())->count();
+                            $myPendingRequests = \App\Models\StructureTemplateRequest::where('chairperson_id', Auth::id())->pending()->count();
+                        @endphp
+                        <a href="{{ route('chairperson.structureTemplates.index') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.structureTemplates.*') ? 'active' : '' }} d-flex align-items-center justify-content-between sidebar-link">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-diagram-3 me-3"></i>
+                                <span>Template Requests</span>
+                            </div>
+                            @if ($myPendingRequests > 0)
+                                <span class="badge bg-warning text-dark rounded-pill">{{ $myPendingRequests }}</span>
+                            @endif
+                        </a>
+                    </li>
                 </ul>
             </div>
 
@@ -298,6 +314,21 @@
                            class="nav-link {{ request()->routeIs('admin.gradesFormula') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-sliders me-3"></i>
                             <span>Grades Formula</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        @php
+                            $pendingTemplateRequests = \App\Models\StructureTemplateRequest::pending()->count();
+                        @endphp
+                        <a href="{{ route('admin.structureTemplateRequests.index') }}" 
+                           class="nav-link {{ request()->routeIs('admin.structureTemplateRequests.*') ? 'active' : '' }} d-flex align-items-center justify-content-between sidebar-link">
+                            <div class="d-flex align-items-center">
+                                <i class="bi bi-clipboard-check me-3"></i>
+                                <span>Template Requests</span>
+                            </div>
+                            @if ($pendingTemplateRequests > 0)
+                                <span class="badge bg-warning text-dark rounded-pill">{{ $pendingTemplateRequests }}</span>
+                            @endif
                         </a>
                     </li>
                     <li class="nav-item">

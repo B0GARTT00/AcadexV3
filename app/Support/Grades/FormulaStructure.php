@@ -459,4 +459,30 @@ class FormulaStructure
             }
         }
     }
+
+    /**
+     * Get all structure definitions including custom templates from the database.
+     */
+    public static function getAllStructureDefinitions(): array
+    {
+        $definitions = self::STRUCTURE_DEFINITIONS;
+
+        // Load custom templates from database
+        $customTemplates = \App\Models\StructureTemplate::where('is_deleted', false)
+            ->get();
+
+        foreach ($customTemplates as $template) {
+            $definitions[$template->template_key] = [
+                'id' => $template->id,
+                'template_key' => $template->template_key,
+                'label' => $template->label,
+                'description' => $template->description ?? '',
+                'is_custom' => true,
+                'is_system_default' => (bool) $template->is_system_default,
+                'structure_config' => $template->structure_config,
+            ];
+        }
+
+        return $definitions;
+    }
 }
