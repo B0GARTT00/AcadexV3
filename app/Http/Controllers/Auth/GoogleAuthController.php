@@ -29,7 +29,15 @@ class GoogleAuthController extends Controller
     public function handleGoogleCallback(): RedirectResponse
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+            // Log the incoming request for debugging
+            Log::info('Google OAuth Callback Received', [
+                'has_state' => request()->has('state'),
+                'has_code' => request()->has('code'),
+                'session_id' => session()->getId(),
+            ]);
+
+            // Use stateless mode to avoid session state mismatch issues
+            $googleUser = Socialite::driver('google')->stateless()->user();
             
             $email = $googleUser->getEmail();
             $googleId = $googleUser->getId();
