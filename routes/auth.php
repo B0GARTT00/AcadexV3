@@ -9,6 +9,10 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Controllers\Auth\UnverifiedEmailVerificationPromptController;
+use App\Http\Controllers\Auth\UnverifiedVerifyEmailController;
+use App\Http\Controllers\Auth\UnverifiedEmailVerificationNotificationController;
+use App\Http\Controllers\Auth\UnverifiedLogoutController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -56,4 +60,22 @@ Route::middleware('auth')->group(function () {
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');
+});
+
+// Unverified user email verification routes
+// Verification link route - no auth required (clicked from email)
+Route::get('unverified/verify-email/{id}/{hash}', UnverifiedVerifyEmailController::class)
+    ->middleware(['signed', 'throttle:6,1'])
+    ->name('unverified.verification.verify');
+
+Route::middleware('auth:unverified')->group(function () {
+    Route::get('unverified/verify-email', UnverifiedEmailVerificationPromptController::class)
+        ->name('unverified.verification.notice');
+
+    Route::post('unverified/email/verification-notification', [UnverifiedEmailVerificationNotificationController::class, 'store'])
+        ->middleware('throttle:6,1')
+        ->name('unverified.verification.send');
+
+    Route::post('unverified/logout', [UnverifiedLogoutController::class, 'destroy'])
+        ->name('unverified.logout');
 });
