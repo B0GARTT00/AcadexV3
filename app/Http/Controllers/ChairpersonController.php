@@ -453,4 +453,115 @@ class ChairpersonController extends Controller
 
         return redirect()->back()->with('success', 'Notes saved successfully.');
     }
+
+    // ============================
+    // Structure Template Requests
+    // ============================
+
+    /**
+     * Display a listing of structure template requests for the chairperson.
+     */
+    public function indexTemplateRequests()
+    {
+        if (Auth::user()->role !== 1) {
+            abort(403);
+        }
+
+        $requests = \App\Models\StructureTemplateRequest::where('chairperson_id', Auth::id())
+            ->with('reviewer')
+            ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('chairperson.structure-template-requests', compact('requests'));
+    }
+
+    /**
+     * Show the form for creating a new structure template request.
+     */
+    public function createTemplateRequest()
+    {
+        if (Auth::user()->role !== 1) {
+            abort(403);
+        }
+
+        $structureCatalog = \App\Support\Grades\FormulaStructure::getAllStructureDefinitions();
+
+        return view('chairperson.structure-template-create', compact('structureCatalog'));
+    }
+
+    /**
+     * Store a newly created structure template request.
+     */
+    public function storeTemplateRequest(\Illuminate\Http\Request $request)
+    {
+        if (Auth::user()->role !== 1) {
+            abort(403);
+        }
+
+        $request->validate([
+            'label' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'structure_type' => 'required|string',
+            'structure' => 'required|array',
+        ]);
+
+        try {
+            \App\Models\StructureTemplateRequest::create([
+                'chairperson_id' => Auth::id(),
+                'label' => $request->label,
+                'description' => $request->description,
+                'structure_config' => [
+                    'type' => $request->structure_type,
+                    'structure' => $request->structure,
+                ],
+                'status' => 'pending',
+            ]);
+
+            return redirect()
+                ->route('chairperson.structureTemplates.index')
+                ->with('success', 'Structure template request submitted successfully. It will be reviewed by an administrator.');
+        } catch (\Exception $e) {
+            return redirect()
+                ->back()
+                ->withInput()
+                ->withErrors(['error' => 'Failed to submit structure template request: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Display the specified structure template request.
+     */
+    public function showTemplateRequest(\App\Models\StructureTemplateRequest $request)
+    {
+        if (Auth::user()->role !== 1 || $request->chairperson_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $structureCatalog = \App\Support\Grades\FormulaStructure::getAllStructureDefinitions();
+
+        return view('chairperson.structure-template-show', compact('request', 'structureCatalog'));
+    }
+
+    /**
+     * Remove the specified structure template request (only if pending).
+     */
+    public function destroyTemplateRequest(\App\Models\StructureTemplateRequest $request)
+    {
+        if (Auth::user()->role !== 1 || $request->chairperson_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($request->status !== 'pending') {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Only pending requests can be deleted.']);
+        }
+
+        $request->delete();
+
+        return redirect()
+            ->route('chairperson.structureTemplates.index')
+            ->with('success', 'Structure template request deleted successfully.');
+    }
 }
