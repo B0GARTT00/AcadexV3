@@ -10,8 +10,46 @@
     };
     
     $structureConfig = $request->structure_config;
-    $structureType = $structureConfig['type'] ?? 'unknown';
-    $structureData = $structureConfig['structure'] ?? [];
+    $structureType = $structureConfig['type'] ?? 'custom';
+    $structureData = is_array($structureConfig['structure'] ?? null) ? $structureConfig['structure'] : [];
+    $structureTypeLabel = data_get($structureCatalog, "$structureType.label", 'Custom');
+
+    $groupedComponents = [];
+    $componentLookup = [];
+    $lastGroupIndex = null;
+
+    foreach ($structureData as $entry) {
+        $isMain = (bool) data_get($entry, 'is_main', false);
+
+        if ($isMain) {
+            $groupedComponents[] = [
+                'component' => $entry,
+                'sub_components' => [],
+            ];
+
+            $lastGroupIndex = array_key_last($groupedComponents);
+            $componentKey = data_get($entry, 'component_id') ?? data_get($entry, 'id');
+
+            if ($componentKey !== null) {
+                $componentLookup[$componentKey] = $lastGroupIndex;
+            }
+
+            continue;
+        }
+
+        if ($lastGroupIndex === null) {
+            continue;
+        }
+
+        $targetIndex = $lastGroupIndex;
+        $parentKey = data_get($entry, 'parent_id');
+
+        if ($parentKey !== null && array_key_exists($parentKey, $componentLookup)) {
+            $targetIndex = $componentLookup[$parentKey];
+        }
+
+        $groupedComponents[$targetIndex]['sub_components'][] = $entry;
+    }
 @endphp
 
 <div class="container-fluid px-3 py-3" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
@@ -69,13 +107,7 @@
                     <div class="mb-3">
                         <label class="fw-semibold text-muted small">Structure Type</label>
                         <p class="mb-0">
-                            <span class="badge bg-info text-dark">
-                                @foreach ($structureCatalog as $def)
-                                    @if ($def['key'] === $structureType)
-                                        {{ $def['label'] }}
-                                    @endif
-                                @endforeach
-                            </span>
+                            <span class="badge bg-info text-dark">{{ $structureTypeLabel }}</span>
                         </p>
                     </div>
                 </div>
@@ -86,16 +118,15 @@
                     <h5 class="mb-0 fw-bold">Grading Structure</h5>
                 </div>
                 <div class="card-body">
-                    @php
-                        $mainComponents = collect($structureData)->where('is_main', true);
-                        $subComponents = collect($structureData)->where('is_main', false)->groupBy('parent_id');
-                    @endphp
-
-                    @if ($mainComponents->isEmpty())
+                    @if (empty($groupedComponents))
                         <p class="text-muted mb-0">No components defined.</p>
                     @else
                         <div class="structure-preview">
-                            @foreach ($mainComponents as $main)
+                            @foreach ($groupedComponents as $group)
+                                @php
+                                    $main = $group['component'];
+                                    $subComponents = $group['sub_components'];
+                                @endphp
                                 <div class="card mb-3 border-success">
                                     <div class="card-body">
                                         <div class="d-flex justify-content-between align-items-start mb-2">
@@ -104,25 +135,20 @@
                                                 <span class="badge bg-success-subtle text-success">{{ $main['activity_type'] ?? 'other' }}</span>
                                             </div>
                                             <div class="text-end">
-                                                <div class="fw-bold text-success" style="font-size: 1.25rem;">{{ number_format($main['weight'] ?? 0, 2) }}%</div>
+                                                <div class="fw-bold text-success" style="font-size: 1.25rem;">{{ number_format((float) ($main['weight'] ?? 0), 2) }}%</div>
                                             </div>
                                         </div>
 
-                                        @php
-                                            $parentId = $main['parent_id'] ?? null;
-                                            $subs = $subComponents->get($parentId) ?? collect();
-                                        @endphp
-
-                                        @if ($subs->isNotEmpty())
+                                        @if (! empty($subComponents))
                                             <div class="mt-3 ps-3 border-start border-success border-2">
-                                                @foreach ($subs as $sub)
+                                                @foreach ($subComponents as $sub)
                                                     <div class="d-flex justify-content-between align-items-center mb-2">
                                                         <div class="small">
                                                             <i class="bi bi-arrow-return-right text-muted me-1"></i>
                                                             <strong>{{ $sub['label'] ?? 'Unnamed' }}</strong>
                                                             <span class="badge bg-light text-dark ms-1">{{ $sub['activity_type'] ?? 'other' }}</span>
                                                         </div>
-                                                        <span class="small fw-semibold text-success">{{ number_format($sub['weight'] ?? 0, 2) }}%</span>
+                                                        <span class="small fw-semibold text-success">{{ number_format((float) ($sub['weight'] ?? 0), 2) }}%</span>
                                                     </div>
                                                 @endforeach
                                             </div>

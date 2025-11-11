@@ -485,9 +485,7 @@ class ChairpersonController extends Controller
             abort(403);
         }
 
-        $structureCatalog = \App\Support\Grades\FormulaStructure::getAllStructureDefinitions();
-
-        return view('chairperson.structure-template-create', compact('structureCatalog'));
+        return view('chairperson.structure-template-create');
     }
 
     /**
@@ -500,20 +498,22 @@ class ChairpersonController extends Controller
         }
 
         $request->validate([
+            'template_name' => 'required|string|max:255',
             'label' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
-            'structure_type' => 'required|string',
-            'structure' => 'required|array',
+            'structure' => 'required|json',
         ]);
 
         try {
+            $structureArray = json_decode($request->structure, true);
+            
             \App\Models\StructureTemplateRequest::create([
                 'chairperson_id' => Auth::id(),
                 'label' => $request->label,
                 'description' => $request->description,
                 'structure_config' => [
-                    'type' => $request->structure_type,
-                    'structure' => $request->structure,
+                    'type' => 'custom',
+                    'structure' => $structureArray,
                 ],
                 'status' => 'pending',
             ]);

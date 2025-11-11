@@ -481,137 +481,9 @@ class AdminController extends Controller
         ]);
     }
 
-    public function bulkApplyDepartmentFormula(Request $request)
-    {
-        Gate::authorize('admin');
-
-        $periodContext = $this->resolveFormulaPeriodContext();
-        $selectedSemester = $periodContext['semester'];
-        $selectedAcademicPeriodId = $periodContext['academic_period_id'];
-
-        $templateKeys = array_keys(FormulaStructure::getAllStructureDefinitions());
-
-        $validated = $request->validate([
-            'department_id' => ['required', 'integer', 'exists:departments,id'],
-            'structure_template' => ['required', 'string', Rule::in($templateKeys)],
-            'course_ids' => ['required', 'array', 'min:1'],
-            'course_ids.*' => ['integer'],
-        ], [
-            'course_ids.required' => 'Select at least one course.',
-            'structure_template.required' => 'Select a structure template.',
-        ]);
-
-        $department = Department::with(['courses' => function ($query) {
-            $query->where('is_deleted', false)
-                ->select('id', 'department_id', 'course_code', 'course_description', 'is_deleted');
-        }])->find($validated['department_id']);
-
-        if (! $department || $department->is_deleted) {
-            return back()
-                ->withErrors(['department_id' => 'Select a valid department.'])
-                ->withInput();
-        }
-
-        // Get or create the department fallback formula
-        $fallback = $this->ensureDepartmentFallback($department, $periodContext);
-        $fallback->loadMissing('weights');
-
-        // Apply the template to the department fallback
-        $structureKey = $validated['structure_template'];
-        $structure = FormulaStructure::default($structureKey);
-        $structureErrors = FormulaStructure::validate($structure);
-
-        if (! empty($structureErrors)) {
-            return back()
-                ->withErrors(['structure_template' => implode(' ', $structureErrors)])
-                ->withInput();
-        }
-
-        $weightInserts = collect(FormulaStructure::flattenWeights($structure))
-            ->map(fn (array $node) => [
-                'activity_type' => $node['activity_type'],
-                'weight' => $node['weight'],
-            ])
-            ->values();
-
-        // Update the department fallback with the new template
-        DB::transaction(function () use ($fallback, $structureKey, $structure, $weightInserts) {
-            $fallback->structure_type = $structureKey;
-            $fallback->structure_config = $structure;
-            $fallback->save();
-
-            $fallback->weights()->delete();
-
-            if ($weightInserts->isNotEmpty()) {
-                $fallback->weights()->createMany($weightInserts->all());
-            }
-        });
-
-        // Reload the formula with weights
-        $formula = $fallback->fresh('weights');
-
-        $selectedCourseIds = collect($validated['course_ids'])
-            ->map(fn ($id) => (int) $id)
-            ->unique()
-            ->values();
-
-        $courses = $department->courses
-            ->filter(fn (Course $course) => $selectedCourseIds->contains($course->id))
-            ->map(function (Course $course) use ($department) {
-                $course->setRelation('department', $department);
-                return $course;
-            })
-            ->values();
-
-        if ($courses->isEmpty() || $courses->count() !== $selectedCourseIds->count()) {
-            return back()
-                ->withErrors(['course_ids' => 'Select at least one course from the chosen department.'])
-                ->withInput();
-        }
-
-        $subjects = Subject::whereIn('course_id', $courses->pluck('id'))
-            ->where('is_deleted', false)
-            ->when($selectedAcademicPeriodId, fn ($query, $periodId) => $query->where('academic_period_id', $periodId))
-            ->get(['id', 'subject_code', 'subject_description', 'course_id']);
-
-        $subjectsRequiringPassword = $subjects
-            ->filter(fn (Subject $subject) => $this->subjectHasRecordedGrades($subject, $selectedAcademicPeriodId))
-            ->values();
-
-        if ($subjectsRequiringPassword->isNotEmpty()) {
-            session()->flash('bulk_formula_conflicts', $subjectsRequiringPassword->map(function (Subject $subject) use ($courses) {
-                $course = $courses->firstWhere('id', $subject->course_id);
-                $courseLabel = $course ? trim(($course->course_code ? $course->course_code . ' - ' : '') . ($course->course_description ?? '')) : null;
-                $subjectLabel = trim(($subject->subject_code ? $subject->subject_code . ' - ' : '') . ($subject->subject_description ?? ''));
-
-                return [
-                    'subject' => $subjectLabel !== '' ? $subjectLabel : 'Unnamed Subject',
-                    'course' => $courseLabel !== '' ? $courseLabel : 'Course',
-                ];
-            })->all());
-            session()->flash('bulk_requires_password', true);
-
-            $request->validate([
-                'current_password' => ['required', 'current_password'],
-            ]);
-        }
-
-        // Apply the updated department fallback to all selected courses
-        foreach ($courses as $course) {
-            $this->cloneFormulaToCourse($course, $formula);
-        }
-
-        GradesFormulaService::flushCache();
-
-        session()->forget(['bulk_formula_conflicts', 'bulk_requires_password']);
-
-        $allDefinitions = FormulaStructure::getAllStructureDefinitions();
-        $templateLabel = $allDefinitions[$structureKey]['label'] ?? $structureKey;
-
-        return redirect()
-            ->route('admin.gradesFormula', $this->formulaQueryParams())
-            ->with('success', "Applied {$templateLabel} template to selected courses.");
-    }
+    // REMOVED: bulkApplyDepartmentFormula() method
+    // This method was removed as part of deprecating the Departments tab.
+    // The Formulas section now provides better template management functionality.
 
     public function applyDepartmentTemplate(Request $request, Department $department)
     {
@@ -621,7 +493,8 @@ class AdminController extends Controller
             abort(404);
         }
 
-        $templateKeys = array_keys(FormulaStructure::getAllStructureDefinitions());
+        $structureDefinitions = FormulaStructure::getAllStructureDefinitions();
+        $templateKeys = array_keys($structureDefinitions);
 
         $validated = $request->validate([
             'template_key' => ['required', 'string', Rule::in($templateKeys)],
@@ -633,7 +506,7 @@ class AdminController extends Controller
         $academicPeriods = $periodContext['academic_periods'];
 
         $structureKey = $validated['template_key'];
-        $structure = FormulaStructure::default($structureKey);
+        $structure = $this->resolveStructureConfigForKey($structureKey, $structureDefinitions);
         $structureErrors = FormulaStructure::validate($structure);
 
         if (! empty($structureErrors)) {
@@ -1761,7 +1634,8 @@ class AdminController extends Controller
             'selectedAcademicYear' => $selectedAcademicYear,
             'selectedAcademicPeriodId' => $selectedAcademicPeriodId,
             'availableSemesters' => $periodContext['available_semesters'],
-            'requiresPasswordConfirmation' => $subjectHasExistingGrades,
+            // Password NOT required for editing existing formulas, only for applying templates
+            'requiresPasswordConfirmation' => false,
         ]);
     }
 
@@ -1873,7 +1747,8 @@ class AdminController extends Controller
         $courseFormulaForView = $exactCourseFormula ?? $courseFormula;
         $subjectFallback = $subjectFallbackCandidates->first() ?? $globalFormula;
 
-        $structureDefinitions = collect(FormulaStructure::getAllStructureDefinitions());
+        $allStructureDefinitions = FormulaStructure::getAllStructureDefinitions();
+        $structureDefinitions = collect($allStructureDefinitions);
 
         $structureOptions = $structureDefinitions
             ->map(function (array $definition, string $key) {
@@ -1888,8 +1763,8 @@ class AdminController extends Controller
         $baselineStructureType = $baselineFormula->structure_type ?? 'lecture_only';
 
         $structureBlueprints = $structureDefinitions
-            ->map(function (array $definition, string $key) use ($baselineFormula, $baselineStructureType) {
-                $structure = FormulaStructure::default($key);
+            ->map(function (array $definition, string $key) use ($baselineFormula, $baselineStructureType, $allStructureDefinitions) {
+                $structure = $this->resolveStructureConfigForKey($key, $allStructureDefinitions);
                 $flattened = collect(FormulaStructure::flattenWeights($structure));
 
                 $weights = $flattened
@@ -2088,16 +1963,20 @@ class AdminController extends Controller
     {
         Gate::authorize('admin');
 
-        // Validate password first
-        $request->validate([
-            'password' => ['required', 'string'],
-        ]);
+        $scope = $request->input('scope_level');
+        $passwordProvided = $request->filled('password');
+        $requiresPassword = in_array($scope, ['global']);
 
-        // Verify the password matches the authenticated user
-        if (!Hash::check($request->input('password'), Auth::user()->password)) {
-            return back()
-                ->withErrors(['password' => 'The provided password is incorrect.'])
-                ->withInput();
+        if ($requiresPassword || $passwordProvided) {
+            $request->validate([
+                'password' => ['required', 'string'],
+            ]);
+
+            if (!Hash::check($request->input('password'), Auth::user()->password)) {
+                return back()
+                    ->withErrors(['password' => 'The provided password is incorrect.'])
+                    ->withInput();
+            }
         }
 
         $scopeRules = [
@@ -2110,7 +1989,6 @@ class AdminController extends Controller
             'structure_config' => ['required', 'string'],
         ];
 
-        $scope = $request->input('scope_level');
         $periodContext = $this->resolveFormulaPeriodContext();
         $selectedSemester = $periodContext['semester'];
         $selectedAcademicPeriodId = $periodContext['academic_period_id'];
@@ -2243,11 +2121,9 @@ class AdminController extends Controller
             $course = $subject->course;
             $department = $subject->department ?? $course?->department;
 
-            if ($this->subjectHasRecordedGrades($subject, $selectedAcademicPeriodId)) {
-                $request->validate([
-                    'current_password' => ['required', 'current_password'],
-                ]);
-            }
+            // Password is NOT required when creating subject formulas
+            // It is only required when applying templates (handled in applySubjectFormula)
+            // This allows instructors to create and fine-tune formulas without password prompts
         }
 
         $label = $validated['label'] ?? match ($scope) {
@@ -2373,11 +2249,9 @@ class AdminController extends Controller
             $selectedAcademicPeriodId = null;
         }
 
-        if ($scope === 'subject' && $formula->subject && $this->subjectHasRecordedGrades($formula->subject, $selectedAcademicPeriodId)) {
-            $request->validate([
-                'current_password' => ['required', 'current_password'],
-            ]);
-        }
+        // Password is NOT required when editing an existing subject formula
+        // It is only required when creating/applying a new formula (handled in storeGradesFormula/applySubjectFormula)
+        // This allows instructors to fine-tune weights without password prompts
 
         $rules = [
             'label' => ['nullable', 'string', 'max:255'],
@@ -3000,7 +2874,7 @@ class AdminController extends Controller
 
     protected function applyStructureTypeToSubject(Subject $subject, string $structureType, GradesFormula $baseline): GradesFormula
     {
-        $structure = FormulaStructure::normalize(FormulaStructure::default($structureType));
+        $structure = $this->resolveStructureConfigForKey($structureType);
 
         $weights = collect(FormulaStructure::flattenWeights($structure))
             ->map(function (array $entry) {
@@ -3143,7 +3017,7 @@ class AdminController extends Controller
     private function prepareStructurePayload(GradesFormula $formula): array
     {
         $type = $formula->structure_type ?? 'lecture_only';
-        $structure = $formula->structure_config ?? \App\Support\Grades\FormulaStructure::default($type);
+        $structure = $formula->structure_config ?? $this->resolveStructureConfigForKey($type);
 
         return [
             'type' => $type,
@@ -3172,9 +3046,38 @@ class AdminController extends Controller
         return [
             'type' => $type,
             'structure' => \App\Support\Grades\FormulaStructure::toPercentPayload(
-                \App\Support\Grades\FormulaStructure::default($type)
+                $this->resolveStructureConfigForKey($type)
             ),
         ];
+    }
+
+    private function resolveStructureConfigForKey(string $structureKey, ?array $definitions = null): array
+    {
+        $definitions ??= FormulaStructure::getAllStructureDefinitions();
+        $definition = $definitions[$structureKey] ?? null;
+
+        $structureConfig = $definition['structure_config'] ?? null;
+
+        if (is_string($structureConfig) && $structureConfig !== '') {
+            $decoded = json_decode($structureConfig, true);
+            if (json_last_error() === JSON_ERROR_NONE) {
+                $structureConfig = $decoded;
+            }
+        }
+
+        if (is_array($structureConfig) && ! empty($structureConfig)) {
+            if ($this->isNewTemplateFormat($structureConfig)) {
+                $structureConfig = $this->convertNewFormatToOld($structureConfig);
+            }
+
+            try {
+                return FormulaStructure::normalize($structureConfig);
+            } catch (\Throwable $exception) {
+                // Fall through to the default structure when normalization fails.
+            }
+        }
+
+        return FormulaStructure::normalize(FormulaStructure::default($structureKey));
     }
 
     private function getStructureCatalog(): array
@@ -3196,6 +3099,12 @@ class AdminController extends Controller
 
                     if (! is_array($structureConfig) || empty($structureConfig)) {
                         $structureConfig = FormulaStructure::default('lecture_only');
+                    }
+
+                    // Check if this is the NEW format (with is_main, parent_id)
+                    // and convert it to the OLD format (with key, type, children)
+                    if ($this->isNewTemplateFormat($structureConfig)) {
+                        $structureConfig = $this->convertNewFormatToOld($structureConfig);
                     }
 
                     try {
@@ -3231,6 +3140,140 @@ class AdminController extends Controller
                 ];
             })
             ->toArray();
+    }
+
+    /**
+     * Check if structure config is in the new format (with 'type' and 'structure' array).
+     */
+    private function isNewTemplateFormat(array $config): bool
+    {
+        // New format has a top-level 'type' and 'structure' key
+        // with 'structure' being an array of components with 'is_main' flags
+        if (! isset($config['structure']) || ! is_array($config['structure'])) {
+            return false;
+        }
+
+        // Check if any entry has 'is_main' key (new format indicator)
+        foreach ($config['structure'] as $entry) {
+            if (is_array($entry) && array_key_exists('is_main', $entry)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Convert new template format to old format.
+     * 
+     * New format: { type: 'custom', structure: [{ is_main, parent_id, label, weight, activity_type }] }
+     * Old format: { key, type, label, children: [{ key, type, label, weight, activity_type }] }
+     */
+    private function convertNewFormatToOld(array $config): array
+    {
+        $entries = $config['structure'] ?? [];
+        
+        // Separate main and sub components
+        $mainComponents = [];
+        $subComponents = [];
+        $mainCounter = 1;
+        
+        foreach ($entries as $entry) {
+            if (! is_array($entry)) {
+                continue;
+            }
+            
+            $isMain = (bool) ($entry['is_main'] ?? false);
+            
+            if ($isMain) {
+                // Use component_id if available, otherwise generate from counter
+                $componentId = $entry['component_id'] ?? 'comp_' . $mainCounter;
+                $mainComponents[] = [
+                    'entry' => $entry,
+                    'id' => $componentId,
+                    'children' => [],
+                ];
+                $mainCounter++;
+            } else {
+                $subComponents[] = $entry;
+            }
+        }
+        
+        // Build lookup map for main components
+        $componentLookup = [];
+        foreach ($mainComponents as $index => $component) {
+            if ($component['id'] !== null) {
+                $componentLookup[$component['id']] = $index;
+            }
+        }
+        
+        // Attach sub-components to their parents
+        foreach ($subComponents as $sub) {
+            $parentId = $sub['parent_id'] ?? null;
+            
+            if ($parentId !== null && isset($componentLookup[$parentId])) {
+                $parentIndex = $componentLookup[$parentId];
+                $mainComponents[$parentIndex]['children'][] = $sub;
+            }
+        }
+        
+        // Build the old format structure
+        $children = [];
+        
+        foreach ($mainComponents as $component) {
+            $entry = $component['entry'];
+            $subs = $component['children'];
+            
+            $activityType = $entry['activity_type'] ?? 'component';
+            $label = $entry['label'] ?? 'Component';
+            $weight = isset($entry['weight']) ? (float) $entry['weight'] / 100.0 : 0.0;
+            
+            $key = Str::slug($activityType, '_');
+            
+            if (empty($subs)) {
+                // No sub-components, create a simple activity node
+                $children[] = [
+                    'key' => $key,
+                    'type' => 'activity',
+                    'label' => $label,
+                    'activity_type' => $activityType,
+                    'weight' => $weight,
+                ];
+            } else {
+                // Has sub-components, create a composite node
+                $subChildren = [];
+                
+                foreach ($subs as $sub) {
+                    $subActivityType = $sub['activity_type'] ?? 'component';
+                    $subLabel = $sub['label'] ?? 'Component';
+                    $subWeight = isset($sub['weight']) ? (float) $sub['weight'] / 100.0 : 0.0;
+                    $subKey = Str::slug($key . '.' . $subActivityType, '_');
+                    
+                    $subChildren[] = [
+                        'key' => $subKey,
+                        'type' => 'activity',
+                        'label' => $subLabel,
+                        'activity_type' => $key . '.' . $subActivityType,
+                        'weight' => $subWeight,
+                    ];
+                }
+                
+                $children[] = [
+                    'key' => $key,
+                    'type' => 'composite',
+                    'label' => $label,
+                    'weight' => $weight,
+                    'children' => $subChildren,
+                ];
+            }
+        }
+        
+        return [
+            'key' => 'period_grade',
+            'type' => 'composite',
+            'label' => 'Period Grade',
+            'children' => $children,
+        ];
     }
 
     private function normalizeTemplateIdentifier(?string $value, string $fallback): string

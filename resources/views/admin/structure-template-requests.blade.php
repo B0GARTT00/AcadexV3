@@ -138,32 +138,39 @@
                                 <small class="text-muted">{{ $request->created_at->format('h:i A') }}</small>
                             </td>
                             <td>
-                                <div class="btn-group" role="group">
-                                    <button type="button" class="btn btn-sm btn-outline-primary" 
-                                            onclick="viewRequest({{ $request->id }})"
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-sm btn-info" 
+                                            onclick="viewRequest(this)"
                                             data-request-id="{{ $request->id }}"
                                             data-label="{{ $request->label }}"
                                             data-description="{{ $request->description }}"
-                                            data-structure="{{ json_encode($request->structure_config) }}"
+                                            data-structure='@json($request->structure_config)'
                                             data-chairperson="{{ $request->chairperson->first_name }} {{ $request->chairperson->last_name }}"
                                             data-status="{{ $request->status }}"
                                             data-admin-notes="{{ $request->admin_notes }}"
                                             data-bs-toggle="modal" 
-                                            data-bs-target="#viewRequestModal">
-                                        <i class="bi bi-eye"></i>
+                                            data-bs-target="#viewRequestModal"
+                                            title="View Details">
+                                        <i class="bi bi-eye me-1"></i>View
                                     </button>
                                     @if ($request->status === 'pending')
-                                        <button type="button" class="btn btn-sm btn-outline-success" 
-                                                onclick="approveRequest({{ $request->id }}, '{{ $request->label }}')"
+                                        <button type="button" class="btn btn-sm btn-success" 
+                                                onclick="approveRequest(this)"
+                                                data-template-name="{{ $request->label }}"
+                                                data-approve-url="{{ route('admin.structureTemplateRequests.approve', $request) }}"
                                                 data-bs-toggle="modal" 
-                                                data-bs-target="#approveModal">
-                                            <i class="bi bi-check-circle"></i>
+                                                data-bs-target="#approveModal"
+                                                title="Approve Request">
+                                            <i class="bi bi-check-circle me-1"></i>Approve
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                onclick="rejectRequest({{ $request->id }}, '{{ $request->label }}')"
+                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                onclick="rejectRequest(this)"
+                                                data-template-name="{{ $request->label }}"
+                                                data-reject-url="{{ route('admin.structureTemplateRequests.reject', $request) }}"
                                                 data-bs-toggle="modal" 
-                                                data-bs-target="#rejectModal">
-                                            <i class="bi bi-x-circle"></i>
+                                                data-bs-target="#rejectModal"
+                                                title="Reject Request">
+                                            <i class="bi bi-x-circle me-1"></i>Reject
                                         </button>
                                     @endif
                                 </div>
@@ -179,16 +186,21 @@
 <!-- View Request Modal -->
 <div class="modal fade" id="viewRequestModal" tabindex="-1" aria-labelledby="viewRequestModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="viewRequestModalLabel">Template Request Details</h5>
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white border-0">
+                <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-eye-fill" style="font-size: 1.5rem;"></i>
+                    <h5 class="modal-title mb-0" id="viewRequestModalLabel">Template Request Details</h5>
+                </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-            <div class="modal-body" id="viewRequestBody">
+            <div class="modal-body p-4" id="viewRequestBody">
                 <!-- Content will be populated by JavaScript -->
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <div class="modal-footer border-0 bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-1"></i>Close
+                </button>
             </div>
         </div>
     </div>
@@ -197,26 +209,36 @@
 <!-- Approve Modal -->
 <div class="modal fade" id="approveModal" tabindex="-1" aria-labelledby="approveModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg">
             <form method="POST" id="approveForm">
                 @csrf
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="approveModalLabel">Approve Template Request</h5>
+                <div class="modal-header bg-success text-white border-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill" style="font-size: 1.5rem;"></i>
+                        <h5 class="modal-title mb-0" id="approveModalLabel">Approve Template Request</h5>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to approve <strong id="approveTemplateName"></strong>?</p>
-                    <p class="text-muted small">This will create a new structure template that can be used by instructors.</p>
+                <div class="modal-body p-4">
+                    <div class="alert alert-success border-0 shadow-sm mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        This will create a new structure template that can be used by instructors.
+                    </div>
                     
-                    <div class="mb-3">
-                        <label for="approveAdminNotes" class="form-label">Notes (Optional)</label>
-                        <textarea class="form-control" id="approveAdminNotes" name="admin_notes" rows="3" placeholder="Add any notes for the chairperson..."></textarea>
+                    <p class="mb-3">Are you sure you want to approve <strong id="approveTemplateName" class="text-success"></strong>?</p>
+                    
+                    <div class="mb-0">
+                        <label for="approveAdminNotes" class="form-label fw-semibold">Notes (Optional)</label>
+                        <textarea class="form-control" id="approveAdminNotes" name="admin_notes" rows="3" placeholder="Add any notes or comments for the chairperson..."></textarea>
+                        <small class="text-muted">These notes will be visible to the chairperson.</small>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check-circle me-1"></i>Approve
+                <div class="modal-footer border-0 bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-success px-4">
+                        <i class="bi bi-check-circle me-1"></i>Approve Template
                     </button>
                 </div>
             </form>
@@ -227,26 +249,38 @@
 <!-- Reject Modal -->
 <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg">
             <form method="POST" id="rejectForm">
                 @csrf
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="rejectModalLabel">Reject Template Request</h5>
+                <div class="modal-header bg-danger text-white border-0">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-x-circle-fill" style="font-size: 1.5rem;"></i>
+                        <h5 class="modal-title mb-0" id="rejectModalLabel">Reject Template Request</h5>
+                    </div>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <p>Are you sure you want to reject <strong id="rejectTemplateName"></strong>?</p>
+                <div class="modal-body p-4">
+                    <div class="alert alert-danger border-0 shadow-sm mb-3">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        The chairperson will be notified that their template request was rejected.
+                    </div>
                     
-                    <div class="mb-3">
-                        <label for="rejectAdminNotes" class="form-label">Reason for Rejection <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="rejectAdminNotes" name="admin_notes" rows="3" required placeholder="Explain why this template request is being rejected..."></textarea>
+                    <p class="mb-3">Are you sure you want to reject <strong id="rejectTemplateName" class="text-danger"></strong>?</p>
+                    
+                    <div class="mb-0">
+                        <label for="rejectAdminNotes" class="form-label fw-semibold">
+                            Reason for Rejection <span class="text-danger">*</span>
+                        </label>
+                        <textarea class="form-control" id="rejectAdminNotes" name="admin_notes" rows="4" required placeholder="Explain why this template request is being rejected..."></textarea>
                         <small class="text-muted">This message will be visible to the chairperson.</small>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-x-circle me-1"></i>Reject
+                <div class="modal-footer border-0 bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bi bi-x-circle me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-danger px-4">
+                        <i class="bi bi-x-circle me-1"></i>Reject Template
                     </button>
                 </div>
             </form>
@@ -257,99 +291,231 @@
 
 @push('scripts')
 <script>
-function viewRequest(requestId) {
-    const button = document.querySelector(`[data-request-id="${requestId}"]`);
-    const label = button.dataset.label;
-    const description = button.dataset.description;
-    const structure = JSON.parse(button.dataset.structure);
-    const chairperson = button.dataset.chairperson;
-    const status = button.dataset.status;
-    const adminNotes = button.dataset.adminNotes;
-    
-    const structureType = structure.type || 'unknown';
-    const structureData = structure.structure || [];
-    
+const structureTypeLabels = {
+    lecture_only: 'Lecture Only',
+    lecture_lab: 'Lecture + Lab',
+    custom: 'Custom',
+};
+
+const approveForm = document.getElementById('approveForm');
+const rejectForm = document.getElementById('rejectForm');
+const approveTemplateNameEl = document.getElementById('approveTemplateName');
+const rejectTemplateNameEl = document.getElementById('rejectTemplateName');
+const approveAdminNotesEl = document.getElementById('approveAdminNotes');
+const rejectAdminNotesEl = document.getElementById('rejectAdminNotes');
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatMultiline(value) {
+    return escapeHtml(value).replace(/\r?\n/g, '<br>');
+}
+
+function safeParseJson(value) {
+    if (!value) {
+        return {};
+    }
+
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        console.error('Failed to parse structure payload', error);
+        return {};
+    }
+}
+
+function formatWeight(value) {
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric.toFixed(2) : '0.00';
+}
+
+function groupStructure(entries) {
+    if (!Array.isArray(entries)) {
+        return [];
+    }
+
+    const groups = [];
+    const componentLookup = new Map();
+    let lastGroup = null;
+
+    entries.forEach((rawEntry) => {
+        const entry = rawEntry || {};
+        const isMain = Boolean(entry.is_main);
+
+        if (isMain) {
+            const group = {
+                component: entry,
+                subComponents: [],
+            };
+
+            groups.push(group);
+            lastGroup = group;
+
+            const key = entry.component_id ?? entry.id;
+            if (key !== undefined && key !== null) {
+                componentLookup.set(String(key), group);
+            }
+
+            return;
+        }
+
+        if (!lastGroup) {
+            return;
+        }
+
+        let targetGroup = lastGroup;
+        const parentKey = entry.parent_id;
+
+        if (parentKey !== undefined && parentKey !== null) {
+            const lookupKey = String(parentKey);
+            if (componentLookup.has(lookupKey)) {
+                targetGroup = componentLookup.get(lookupKey);
+            }
+        }
+
+        targetGroup.subComponents.push(entry);
+    });
+
+    return groups;
+}
+
+function viewRequest(button) {
+    const label = button.dataset.label ?? '';
+    const description = button.dataset.description ?? '';
+    const chairperson = button.dataset.chairperson ?? '';
+    const status = button.dataset.status ?? '';
+    const adminNotes = button.dataset.adminNotes ?? '';
+    const structureConfig = safeParseJson(button.dataset.structure);
+    const structureTypeKey = structureConfig?.type ?? 'custom';
+    const structureTypeLabel = structureTypeLabels[structureTypeKey] ?? 'Custom';
+    const structureEntries = Array.isArray(structureConfig?.structure) ? structureConfig.structure : [];
+    const grouped = groupStructure(structureEntries);
+
     let html = `
         <div class="mb-3">
             <label class="fw-bold text-muted small">Template Name</label>
-            <p>${label}</p>
+            <p>${escapeHtml(label)}</p>
         </div>
-        ${description ? `
-        <div class="mb-3">
-            <label class="fw-bold text-muted small">Description</label>
-            <p>${description}</p>
-        </div>
-        ` : ''}
+    `;
+
+    if (description) {
+        html += `
+            <div class="mb-3">
+                <label class="fw-bold text-muted small">Description</label>
+                <p>${formatMultiline(description)}</p>
+            </div>
+        `;
+    }
+
+    html += `
         <div class="mb-3">
             <label class="fw-bold text-muted small">Submitted By</label>
-            <p>${chairperson}</p>
+            <p>${escapeHtml(chairperson)}</p>
         </div>
         <div class="mb-3">
             <label class="fw-bold text-muted small">Structure Type</label>
-            <p><span class="badge bg-info text-dark">${structureType}</span></p>
+            <p><span class="badge bg-info text-dark">${escapeHtml(structureTypeLabel)}</span></p>
         </div>
         <div class="mb-3">
             <label class="fw-bold text-muted small">Grading Components</label>
             <div class="mt-2">
     `;
-    
-    const mainComponents = structureData.filter(c => c.is_main);
-    const subComponents = structureData.filter(c => !c.is_main);
-    
-    mainComponents.forEach(main => {
-        html += `
-            <div class="card mb-2 border-success">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between">
-                        <div>
-                            <strong>${main.label || 'Unnamed'}</strong>
-                            <span class="badge bg-success-subtle text-success ms-2">${main.activity_type || 'other'}</span>
+
+    if (!grouped.length) {
+        html += '<p class="text-muted">No grading components provided.</p>';
+    } else {
+        grouped.forEach(({ component, subComponents }) => {
+            const mainLabel = escapeHtml(component?.label ?? 'Unnamed');
+            const activityType = escapeHtml(component?.activity_type ?? 'other');
+            const mainWeight = formatWeight(component?.weight);
+
+            html += `
+                <div class="card mb-2 border-success">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <strong>${mainLabel}</strong>
+                                <span class="badge bg-success-subtle text-success ms-2">${activityType}</span>
+                            </div>
+                            <strong class="text-success">${mainWeight}%</strong>
                         </div>
-                        <strong class="text-success">${main.weight.toFixed(2)}%</strong>
-                    </div>
-        `;
-        
-        const subs = subComponents.filter(s => s.parent_id === main.parent_id);
-        if (subs.length > 0) {
-            html += '<div class="mt-2 ps-3 border-start border-success">';
-            subs.forEach(sub => {
-                html += `
-                    <div class="d-flex justify-content-between small mb-1">
-                        <span><i class="bi bi-arrow-return-right me-1"></i>${sub.label || 'Unnamed'}</span>
-                        <span class="text-success">${sub.weight.toFixed(2)}%</span>
-                    </div>
-                `;
-            });
-            html += '</div>';
-        }
-        
-        html += '</div></div>';
-    });
-    
+            `;
+
+            if (subComponents.length) {
+                html += '<div class="mt-2 ps-3 border-start border-success">';
+                subComponents.forEach((sub) => {
+                    const subLabel = escapeHtml(sub?.label ?? 'Unnamed');
+                    const subWeight = formatWeight(sub?.weight);
+
+                    html += `
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span><i class="bi bi-arrow-return-right me-1"></i>${subLabel}</span>
+                            <span class="text-success">${subWeight}%</span>
+                        </div>
+                    `;
+                });
+                html += '</div>';
+            }
+
+            html += '</div></div>';
+        });
+    }
+
     html += '</div></div>';
-    
+
     if (adminNotes && (status === 'approved' || status === 'rejected')) {
+        const alertType = status === 'approved' ? 'success' : 'danger';
         html += `
             <div class="mb-3">
                 <label class="fw-bold text-muted small">Admin Notes</label>
-                <div class="alert alert-${status === 'approved' ? 'success' : 'danger'} mb-0">
-                    ${adminNotes}
+                <div class="alert alert-${alertType} mb-0">
+                    ${formatMultiline(adminNotes)}
                 </div>
             </div>
         `;
     }
-    
+
     document.getElementById('viewRequestBody').innerHTML = html;
 }
 
-function approveRequest(requestId, templateName) {
-    document.getElementById('approveTemplateName').textContent = templateName;
-    document.getElementById('approveForm').action = `/admin/structure-template-requests/${requestId}/approve`;
+function approveRequest(button) {
+    const templateName = button.dataset.templateName ?? '';
+    const approveUrl = button.dataset.approveUrl ?? '';
+
+    if (approveTemplateNameEl) {
+        approveTemplateNameEl.textContent = templateName;
+    }
+
+    if (approveAdminNotesEl) {
+        approveAdminNotesEl.value = '';
+    }
+
+    if (approveForm && approveUrl) {
+        approveForm.action = approveUrl;
+    }
 }
 
-function rejectRequest(requestId, templateName) {
-    document.getElementById('rejectTemplateName').textContent = templateName;
-    document.getElementById('rejectForm').action = `/admin/structure-template-requests/${requestId}/reject`;
+function rejectRequest(button) {
+    const templateName = button.dataset.templateName ?? '';
+    const rejectUrl = button.dataset.rejectUrl ?? '';
+
+    if (rejectTemplateNameEl) {
+        rejectTemplateNameEl.textContent = templateName;
+    }
+
+    if (rejectAdminNotesEl) {
+        rejectAdminNotesEl.value = '';
+    }
+
+    if (rejectForm && rejectUrl) {
+        rejectForm.action = rejectUrl;
+    }
 }
 </script>
 @endpush
