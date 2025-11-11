@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'unverified' => [
+            'driver' => 'session',
+            'provider' => 'unverified_users',
+        ],
     ],
 
     /*
@@ -63,6 +67,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', App\Models\User::class),
+        ],
+
+        'unverified_users' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\UnverifiedUser::class,
         ],
 
         // 'users' => [

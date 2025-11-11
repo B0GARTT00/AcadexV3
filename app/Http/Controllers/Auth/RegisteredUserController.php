@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\UnverifiedUser;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -52,7 +54,7 @@ class RegisteredUserController extends Controller
         $fullEmail = strtolower(trim($request->email)) . '@brokenshire.edu.ph';
 
         // Store in unverified_users table
-        UnverifiedUser::create([
+        $unverifiedUser = UnverifiedUser::create([
             'first_name'    => $request->first_name,
             'middle_name'   => $request->middle_name,
             'last_name'     => $request->last_name,
@@ -62,15 +64,12 @@ class RegisteredUserController extends Controller
             'course_id'     => $request->course_id,
         ]);
 
-        // Check if the selected department is GE
-        $isGEDepartment = Department::where('id', $request->department_id)
-            ->where('department_code', 'GE')
-            ->exists();
+        // Fire the Registered event to send verification email
+        event(new Registered($unverifiedUser));
 
-        $approvalMessage = $isGEDepartment 
-            ? 'Your account request has been submitted and is pending GE Coordinator approval.'
-            : 'Your account request has been submitted and is pending Department Chairperson approval.';
+        // Log in the unverified user using the 'unverified' guard
+        Auth::guard('unverified')->login($unverifiedUser);
 
-        return redirect()->route('login')->with('status', $approvalMessage);
+        return redirect()->route('unverified.verification.notice');
     }
 }
