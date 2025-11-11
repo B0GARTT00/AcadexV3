@@ -115,11 +115,12 @@ class GECoordinatorController extends Controller
             abort(403);
         }
 
+        // Validate base email format first
         $request->validate([
             'first_name'    => 'required|string|max:255',
             'middle_name'   => 'nullable|string|max:255',
             'last_name'     => 'required|string|max:255',
-            'email'         => 'required|string|regex:/^[^@]+$/|unique:unverified_users,email|max:255',
+            'email'         => 'required|string|regex:/^[^@]+$/|max:255',
             'password'      => [
                 'required',
                 'confirmed',
@@ -130,6 +131,15 @@ class GECoordinatorController extends Controller
         ]);
 
         $fullEmail = strtolower(trim($request->email)) . '@brokenshire.edu.ph';
+
+        // Check uniqueness of the full email in both unverified_users and users tables
+        if (UnverifiedUser::where('email', $fullEmail)->exists()) {
+            return back()->withErrors(['email' => 'This email is already registered and pending verification.'])->withInput();
+        }
+
+        if (User::where('email', $fullEmail)->exists()) {
+            return back()->withErrors(['email' => 'This email is already registered.'])->withInput();
+        }
 
         UnverifiedUser::create([
             'first_name'    => $request->first_name,

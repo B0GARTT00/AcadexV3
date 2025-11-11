@@ -32,11 +32,12 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
+        // Validate the base email format first
         $request->validate([
             'first_name'    => ['required', 'string', 'max:255'],
             'middle_name'   => ['nullable', 'string', 'max:255'],
             'last_name'     => ['required', 'string', 'max:255'],
-            'email'         => ['required', 'string', 'regex:/^[^@]+$/', 'max:255', 'unique:unverified_users,email'],
+            'email'         => ['required', 'string', 'regex:/^[^@]+$/', 'max:255'],
             'department_id' => ['required', 'exists:departments,id'],
             'course_id'     => ['required', 'exists:courses,id'],
             'password'      => [
@@ -52,6 +53,15 @@ class RegisteredUserController extends Controller
 
         // Append domain to email
         $fullEmail = strtolower(trim($request->email)) . '@brokenshire.edu.ph';
+
+        // Check uniqueness of the full email in both unverified_users and users tables
+        if (UnverifiedUser::where('email', $fullEmail)->exists()) {
+            return back()->withErrors(['email' => 'This email is already registered and pending verification.'])->withInput();
+        }
+
+        if (\App\Models\User::where('email', $fullEmail)->exists()) {
+            return back()->withErrors(['email' => 'This email is already registered.'])->withInput();
+        }
 
         // Store in unverified_users table
         $unverifiedUser = UnverifiedUser::create([
