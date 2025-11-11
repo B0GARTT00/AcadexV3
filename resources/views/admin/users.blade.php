@@ -56,6 +56,8 @@
                     <tr>
                         <th>Username</th>
                         <th>User Role</th>
+                        <th>Active Sessions</th>
+                        <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -65,10 +67,25 @@
                             <td>
                                 {{ $user->role == 1 ? 'Chairperson' : ($user->role == 2 ? 'Dean' : ($user->role == 3 ? 'Admin' : ($user->role == 5 ? 'VPAA' : 'Unknown'))) }}
                             </td>
+                            <td class="text-center">
+                                <span class="badge bg-info session-count" data-user-id="{{ $user->id }}">
+                                    <i class="bi bi-hourglass-split"></i> Loading...
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <button 
+                                    class="btn btn-sm btn-danger force-logout-btn" 
+                                    data-user-id="{{ $user->id }}"
+                                    data-user-name="{{ $user->name }}"
+                                    title="Force logout from all devices"
+                                >
+                                    <i class="bi bi-door-open"></i> Force Logout
+                                </button>
+                            </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="2" class="text-center text-muted fst-italic py-3">No users found.</td>
+                            <td colspan="4" class="text-center text-muted fst-italic py-3">No users found.</td>
                         </tr>
                     @endforelse
                 </tbody>
@@ -626,6 +643,115 @@
                     icon.classList.remove('bi-eye-slash');
                     icon.classList.add('bi-eye');
                 }
+            });
+        });
+
+        // Load session counts for all users on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const sessionBadges = document.querySelectorAll('.session-count');
+            
+            sessionBadges.forEach(badge => {
+                const userId = badge.dataset.userId;
+                
+                fetch(`/admin/users/${userId}/session-count`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const count = data.count;
+                            badge.innerHTML = `<i class="bi bi-circle-fill"></i> ${count} active`;
+                            
+                            // Change badge color based on session count
+                            badge.classList.remove('bg-info', 'bg-success', 'bg-warning');
+                            if (count === 0) {
+                                badge.classList.add('bg-secondary');
+                            } else if (count === 1) {
+                                badge.classList.add('bg-success');
+                            } else {
+                                badge.classList.add('bg-warning');
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching session count:', error);
+                        badge.innerHTML = '<i class="bi bi-x-circle"></i> Error';
+                        badge.classList.remove('bg-info');
+                        badge.classList.add('bg-danger');
+                    });
+            });
+
+            // Force logout functionality
+            const forceLogoutButtons = document.querySelectorAll('.force-logout-btn');
+            
+            forceLogoutButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const userId = this.dataset.userId;
+                    const userName = this.dataset.userName;
+                    
+                    Swal.fire({
+                        title: 'Force Logout User?',
+                        html: `Are you sure you want to log out <strong>${userName}</strong> from all devices?<br><br>This will end all their active sessions immediately.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Yes, Force Logout',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Show loading state
+                            button.disabled = true;
+                            button.innerHTML = '<i class="bi bi-hourglass-split"></i> Logging out...';
+                            
+                            fetch(`/admin/users/${userId}/force-logout`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                                }
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Success!',
+                                        text: data.message,
+                                        confirmButtonColor: '#198754'
+                                    });
+                                    
+                                    // Update session count badge
+                                    const sessionBadge = document.querySelector(`.session-count[data-user-id="${userId}"]`);
+                                    if (sessionBadge) {
+                                        sessionBadge.innerHTML = '<i class="bi bi-circle-fill"></i> 0 active';
+                                        sessionBadge.classList.remove('bg-info', 'bg-success', 'bg-warning');
+                                        sessionBadge.classList.add('bg-secondary');
+                                    }
+                                } else {
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: data.message,
+                                        confirmButtonColor: '#198754'
+                                    });
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: 'Failed to force logout user. Please try again.',
+                                    confirmButtonColor: '#198754'
+                                });
+                            })
+                            .finally(() => {
+                                // Reset button state
+                                button.disabled = false;
+                                button.innerHTML = '<i class="bi bi-door-open"></i> Force Logout';
+                            });
+                        }
+                    });
+                });
             });
         });
     </script>

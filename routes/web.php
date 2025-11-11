@@ -296,6 +296,10 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::get('/users', [AdminController::class, 'viewUsers'])->name('users');
     Route::post('/users/confirm-password', [AdminController::class, 'adminConfirmUserCreationWithPassword'])->name('confirmUserCreationWithPassword');
     Route::post('/users/store-verified-user', [AdminController::class, 'storeUser'])->name('storeVerifiedUser');
+    
+    // Session Management - Force Logout
+    Route::post('/users/{user}/force-logout', [AdminController::class, 'forceLogoutUser'])->name('users.forceLogout');
+    Route::get('/users/{user}/session-count', [AdminController::class, 'getUserSessionCount'])->name('users.sessionCount');
 });
 
 // VPAA Routes

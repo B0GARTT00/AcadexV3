@@ -2863,4 +2863,46 @@ class AdminController extends Controller
 
         return redirect()->route('admin.users')->with('success', 'User created successfully.');
     }
+
+    /**
+     * Force logout a user from all devices by clearing their sessions
+     */
+    public function forceLogoutUser(Request $request, User $user)
+    {
+        Gate::authorize('admin');
+
+        try {
+            // Delete all sessions for this user
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully logged out {$user->first_name} {$user->last_name} from all devices."
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to logout user. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get active session count for a user
+     */
+    public function getUserSessionCount(User $user)
+    {
+        Gate::authorize('admin');
+
+        $sessionCount = DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'count' => $sessionCount
+        ]);
+    }
 }
