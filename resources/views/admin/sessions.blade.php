@@ -450,6 +450,9 @@
             <div class="d-flex justify-content-end mb-3">
                 <form action="{{ route('admin.sessions') }}" method="GET" class="d-flex align-items-center gap-2">
                     <input type="hidden" name="tab" value="logs">
+                    @if(request('logs_page'))
+                        <input type="hidden" name="logs_page" value="{{ request('logs_page') }}">
+                    @endif
                     <label for="date" class="mb-0 small fw-semibold">Filter by Date:</label>
                     <input type="date" name="date" id="date" value="{{ request('date', now()->format('Y-m-d')) }}" 
                            class="form-control form-control-sm" style="width: 180px;" 

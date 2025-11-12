@@ -172,12 +172,12 @@
                 <div class="wildcard-circle" style="background: linear-gradient(135deg, #198754, #0f5132);">
                     <i class="bi bi-plus-lg text-white" style="font-size: 1.2rem;"></i>
                 </div>
-                <div class="card-body pt-5 text-center d-flex flex-column align-items-center gap-3">
+                    <div class="card-body pt-5 text-center d-flex flex-column align-items-center gap-3">
                     <div>
                         <h6 class="fw-semibold wildcard-title mt-2 text-dark">Create New Catalog Formula</h6>
                         <p class="text-muted small mb-0">Define reusable weightings for instructors to apply across subjects.</p>
                     </div>
-                    <span class="badge rounded-pill badge-formula-label">Start a Formula</span>
+                    {{-- Bottom badge intentionally removed to avoid empty placeholder --}}
                 </div>
             </div>
         </div>
@@ -254,24 +254,36 @@
                     $course = $summary['course'];
                 @endphp
                 <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                    <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $summary['status'] }}" data-url="{{ $buildRoute('admin.gradesFormula.course', ['department' => $department->id, 'course' => $course->id]) }}">
-                        <div class="position-relative" style="height: 80px; background: linear-gradient(135deg, #0f5132, #198754);"></div>
-                        <div class="wildcard-circle" style="background: linear-gradient(135deg, #23a362, #0b3d23);">
-                            <span class="text-white fw-bold">{{ $course->course_code }}</span>
-                        </div>
-                        <div class="card-body pt-5 text-center d-flex flex-column align-items-center gap-3">
-                            <div>
-                                <h6 class="fw-semibold mt-2 text-dark wildcard-title" title="{{ $course->course_description }}">
-                                    {{ $course->course_description }}
-                                </h6>
-                                <p class="text-muted small mb-0">{{ $summary['scope_text'] }}</p>
+                    <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $summary['status'] }}" data-url="{{ $buildRoute('admin.gradesFormula.course', ['department' => $department->id, 'course' => $course->id]) }}" style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        {{-- Top header --}}
+                        <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
+                            <div class="wildcard-circle position-absolute start-50 translate-middle"
+                                style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                                <span class="text-white fw-bold">{{ $course->course_code }}</span>
                             </div>
-                            <div class="d-flex flex-column gap-2 w-100">
+                        </div>
+
+                        {{-- Card body --}}
+                        <div class="card-body pt-5 text-center">
+                            <h6 class="fw-semibold mt-4 text-dark text-truncate" title="{{ $course->course_description }}">
+                                {{ $course->course_description }}
+                            </h6>
+                            <p class="text-muted small mb-3">{{ $summary['scope_text'] }}</p>
+
+                            {{-- Footer badges --}}
+                            <div class="d-flex flex-column gap-2 mt-4">
                                 @if($summary['missing_subject_count'] > 0)
-                                    <span class="badge bg-danger-subtle text-danger">{{ $summary['missing_subject_count'] }} subject{{ $summary['missing_subject_count'] === 1 ? '' : 's' }} pending</span>
+                                    <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                        ⚠️ {{ $summary['missing_subject_count'] }} subject{{ $summary['missing_subject_count'] === 1 ? '' : 's' }} pending
+                                    </span>
                                 @endif
-                                <span class="badge rounded-pill {{ $summary['has_formula'] ? 'bg-success-subtle text-success' : 'bg-light text-secondary' }}">{{ $summary['formula_scope'] }}</span>
-                                <span class="badge rounded-pill badge-formula-label">{{ $summary['formula_label'] }}</span>
+                                <span class="badge px-3 py-2 fw-semibold rounded-pill {{ $summary['has_formula'] ? 'bg-success' : 'bg-secondary' }}">
+                                    @if($summary['has_formula'])
+                                        ✓ {{ $summary['formula_scope'] }}
+                                    @else
+                                        {{ $summary['formula_scope'] }}
+                                    @endif
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -341,6 +353,7 @@
         }
     });
 </script>
+<!-- Bottom badge elements removed to prevent empty rounded pills. -->
 @endpush
 
 @push('styles')
@@ -354,8 +367,17 @@
 }
 
 .wildcard-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(25, 135, 84, 0.18);
+    transform: scale(1.05);
+    box-shadow: 0 20px 30px rgba(0,0,0,0.1);
+}
+
+.wildcard-circle {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.wildcard-card:hover .wildcard-circle {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    transform: translate(-50%, -55%) scale(1.05);
 }
 
 .wildcard-filter-btn {
@@ -369,39 +391,6 @@
 
 .wildcard-filter-btn.active {
     box-shadow: 0 6px 20px rgba(25, 135, 84, 0.25);
-}
-
-.wildcard-circle {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 24px rgba(15, 81, 50, 0.35);
-    position: absolute;
-    top: 55px;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 0 18px;
-    background: linear-gradient(135deg, #23a362, #0b3d23);
-    max-width: calc(100% - 24px);
-}
-
-.wildcard-circle span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: 0.03em;
-    overflow-wrap: anywhere;
-    word-break: normal;
-    white-space: normal;
-    font-size: clamp(0.6rem, 0.52rem + 0.45vw, 0.95rem);
 }
 
 .badge-formula-label {
@@ -437,24 +426,14 @@
     word-break: break-word;
 }
 
-.formula-card .card-body {
-    text-align: left;
-}
-
-.formula-card .card-body .badge-formula-label {
-    align-self: flex-start;
-}
-
 @media (max-width: 576px) {
     .wildcard-card {
         min-height: 200px;
     }
 
     .wildcard-circle {
-        width: 90px;
-        height: 90px;
-        top: 44px;
-        padding: 0 14px;
+        width: 80px;
+        height: 80px;
     }
 }
 </style>

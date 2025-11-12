@@ -1,6 +1,6 @@
 <div class="col-12">
     <h6 class="fw-semibold">Grading Layout</h6>
-    <p class="text-muted">Select the grading structure and fine-tune component weights. Each component group must total 100%.</p>
+    <p class="text-muted">Select the grading structure and fine-tune component weights and limits. Each component group must total 100%.</p>
 
     <div class="mb-4">
     <label class="form-label fw-semibold">Department Formula</label>
@@ -16,7 +16,7 @@
         <template x-for="node in orderedNodes()" :key="node.ref.uid">
             <div class="px-3 py-3 border-bottom" :style="`margin-left: ${node.depth * 24}px;`">
                 <div class="d-flex justify-content-between align-items-start gap-3">
-                    <div>
+                    <div class="flex-grow-1">
                         <div class="fw-semibold" x-text="node.ref.label"></div>
                         <div class="text-muted small" x-show="isComposite(node.ref)">
                             Relative weight: <span x-text="formatPercent(node.ref.weight_percent)"></span>
@@ -25,12 +25,12 @@
                             <div>Overall contribution: <span x-text="formatPercent(node.ref.overall_percent)"></span></div>
                         </div>
                         <div class="text-muted small" x-show="!isComposite(node.ref)">
-                            Max assessments: <span x-text="displayMaxAssessments(node.ref)"></span>
+                            Max components: <span x-text="displayMaxAssessments(node.ref)"></span>
                             · Relative weight: <span x-text="formatPercent(node.ref.weight_percent)"></span>
                             <div>Overall contribution: <span x-text="formatPercent(node.ref.overall_percent)"></span></div>
                         </div>
                     </div>
-                    <div class="ms-auto" x-show="node.parent">
+                    <div class="ms-auto d-flex gap-2" x-show="node.parent">
                         <div class="input-group input-group-sm" style="width: 140px;">
                             <input
                                 type="number"
@@ -40,8 +40,23 @@
                                 step="0.1"
                                 x-model.number="node.ref.weight_percent"
                                 @input="syncWeight(node.ref)"
+                                title="Weight percentage"
                             >
                             <span class="input-group-text">%</span>
+                        </div>
+                        <div class="input-group input-group-sm" style="width: 100px;" x-show="!isComposite(node.ref)">
+                            <span class="input-group-text"><i class="bi bi-123"></i></span>
+                            <input
+                                type="number"
+                                class="form-control"
+                                min="1"
+                                max="5"
+                                step="1"
+                                x-model.number="node.ref.max_assessments"
+                                @input="updateMaxAssessments(node.ref)"
+                                title="Max number of components (1-5)"
+                                placeholder="Max"
+                            >
                         </div>
                     </div>
                 </div>

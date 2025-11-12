@@ -10,12 +10,12 @@
                         <i class="bi bi-diagram-3 text-white" style="font-size: 1.5rem;"></i>
                     </div>
                     <div>
-                        <h3 class="fw-bold mb-1" style="color: #198754;">Structure Template Requests</h3>
-                        <p class="text-muted mb-0">Create and manage your custom grading structure requests</p>
+                        <h3 class="fw-bold mb-1" style="color: #198754;">Structure Formula Requests</h3>
+                        <p class="text-muted mb-0">Create and manage your custom grading structure formula requests</p>
                     </div>
                 </div>
                 <a href="{{ route('chairperson.structureTemplates.create') }}" class="btn btn-success">
-                    <i class="bi bi-plus-circle me-1"></i>New Template Request
+                    <i class="bi bi-plus-circle me-1"></i>New Formula Request
                 </a>
             </div>
         </div>
@@ -73,8 +73,8 @@
                 <div class="mb-3">
                     <i class="bi bi-diagram-3" style="font-size: 4rem; color: #dee2e6;"></i>
                 </div>
-                <h5 class="text-muted mb-2">No Template Requests Yet</h5>
-                <p class="text-muted mb-3">Create your first custom grading structure template request.</p>
+                <h5 class="text-muted mb-2">No Formula Requests Yet</h5>
+                <p class="text-muted mb-3">Create your first custom grading structure formula request.</p>
                 <a href="{{ route('chairperson.structureTemplates.create') }}" class="btn btn-success">
                     <i class="bi bi-plus-circle me-1"></i>Create New Request
                 </a>

@@ -247,27 +247,41 @@
                         $status = $summary['status'];
                     @endphp
                     <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                        <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $status }}" data-url="{{ $buildRoute('admin.gradesFormula.department', ['department' => $department->id]) }}">
-                            <div class="position-relative" style="height: 80px; background: linear-gradient(135deg, #0f5132, #198754);"></div>
-                            <div class="wildcard-circle" style="background: linear-gradient(135deg, #23a362, #0b3d23);">
-                                <span class="text-white fw-bold">{{ $department->department_code }}</span>
-                            </div>
-                            <div class="card-body pt-5 text-center d-flex flex-column align-items-center gap-3">
-                                <div>
-                                    <h6 class="fw-semibold mt-2 text-dark wildcard-title" title="{{ $department->department_description }}">
-                                        {{ $department->department_description }}
-                                    </h6>
-                                    <p class="text-muted small mb-0">{{ $summary['scope_text'] }}</p>
+                        <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $status }}" data-url="{{ $buildRoute('admin.gradesFormula.department', ['department' => $department->id]) }}" style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                            {{-- Top header --}}
+                            <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
+                                <div class="wildcard-circle position-absolute start-50 translate-middle"
+                                    style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                                    <span class="text-white fw-bold">{{ $department->department_code }}</span>
                                 </div>
-                                <div class="d-flex flex-column gap-2 w-100">
+                            </div>
+
+                            {{-- Card body --}}
+                            <div class="card-body pt-5 text-center">
+                                <h6 class="fw-semibold mt-4 text-dark text-truncate" title="{{ $department->department_description }}">
+                                    {{ $department->department_description }}
+                                </h6>
+                                <p class="text-muted small mb-3">{{ $summary['scope_text'] }}</p>
+
+                                {{-- Footer badges --}}
+                                <div class="d-flex flex-column gap-2 mt-4">
                                     @if($summary['missing_course_count'] > 0)
-                                        <span class="badge bg-danger-subtle text-danger">{{ $summary['missing_course_count'] }} course{{ $summary['missing_course_count'] === 1 ? '' : 's' }} pending</span>
+                                        <span class="badge bg-danger text-white px-3 py-2 rounded-pill">
+                                            ⚠️ {{ $summary['missing_course_count'] }} course{{ $summary['missing_course_count'] === 1 ? '' : 's' }} pending
+                                        </span>
                                     @endif
                                     @if($summary['missing_subject_count'] > 0)
-                                        <span class="badge bg-warning-subtle text-warning">{{ $summary['missing_subject_count'] }} subject{{ $summary['missing_subject_count'] === 1 ? '' : 's' }} pending</span>
+                                        <span class="badge bg-warning text-dark px-3 py-2 rounded-pill">
+                                            ⚠️ {{ $summary['missing_subject_count'] }} subject{{ $summary['missing_subject_count'] === 1 ? '' : 's' }} pending
+                                        </span>
                                     @endif
-                                    <span class="badge rounded-pill {{ $summary['catalog_count'] > 0 ? 'bg-success-subtle text-success' : 'bg-light text-secondary' }}">Department Baseline</span>
-                                    <span class="badge rounded-pill badge-formula-label">{{ $summary['formula_label'] ?? $defaultBadgeLabel }}</span>
+                                    <span class="badge px-3 py-2 fw-semibold rounded-pill {{ $summary['catalog_count'] > 0 ? 'bg-success' : 'bg-secondary' }}">
+                                        @if($summary['catalog_count'] > 0)
+                                            ✓ Department Baseline
+                                        @else
+                                            Department Baseline
+                                        @endif
+                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -339,10 +353,10 @@
                                         <span class="badge bg-success-subtle text-success">Structure</span>
                                         @if(!empty($template['id']))
                                             <div class="btn-group btn-group-sm" role="group" aria-label="Manage structure template">
-                                                <button type="button" class="btn btn-outline-secondary js-edit-structure-template" data-template-id="{{ $template['id'] }}">
+                                                <a href="{{ route('admin.gradesFormula.structureTemplate.edit', array_merge(['template' => $template['id']], $preservedQuery)) }}" class="btn btn-outline-secondary">
                                                     <i class="bi bi-pencil-square me-1"></i>Edit
-                                                </button>
-                                                <button type="button" class="btn btn-outline-danger js-delete-structure-template" data-template-id="{{ $template['id'] }}">
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger js-delete-structure-template" data-template-id="{{ $template['id'] }}" data-template-label="{{ $template['label'] }}">
                                                     <i class="bi bi-trash me-1"></i>Delete
                                                 </button>
                                             </div>
@@ -358,10 +372,18 @@
                                             {{-- Sub-component (e.g., Lecture Quiz 40%) --}}
                                             <span class="badge bg-success-subtle text-success ps-3">
                                                 <i class="bi bi-arrow-return-right me-1"></i>{{ $weight['type'] }} {{ $weight['percent'] }}%
+                                                @if(isset($weight['max_items']) && $weight['max_items'] !== null)
+                                                    · max {{ $weight['max_items'] }}
+                                                @endif
                                             </span>
                                         @else
                                             {{-- Simple activity --}}
-                                            <span class="badge bg-success-subtle text-success">{{ $weight['type'] }} {{ $weight['percent'] }}%</span>
+                                            <span class="badge bg-success-subtle text-success">
+                                                {{ $weight['type'] }} {{ $weight['percent'] }}%
+                                                @if(isset($weight['max_items']) && $weight['max_items'] !== null)
+                                                    · max {{ $weight['max_items'] }}
+                                                @endif
+                                            </span>
                                         @endif
                                     @endforeach
                                 </div>
@@ -1617,7 +1639,7 @@
             }
         }
 
-        function addComponent(type = '', weight = '', label = '', isMain = true, parentId = null) {
+        function addComponent(type = '', weight = '', label = '', isMain = true, parentId = null, maxItems = '') {
             componentCounter++;
             const currentId = componentCounter;
             const isSubComponent = !isMain;
@@ -1641,17 +1663,22 @@
                             </div>
                         </div>
                         <div class="row g-3">
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small fw-semibold">Activity Type</label>
                                 <input type="text" class="form-control form-control-sm component-activity-type" name="components[${currentId}][activity_type]" value="${type}" placeholder="e.g., Quiz, Exam, OCR" required>
                                 ${!isSubComponent ? `<input type="hidden" name="components[${currentId}][is_main]" value="1">` : `<input type="hidden" name="components[${currentId}][parent_id]" value="${parentId}">`}
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small fw-semibold">Weight (%)</label>
                                 <input type="number" class="form-control form-control-sm component-weight" name="components[${currentId}][weight]" value="${weight}" min="0" max="100" step="0.1" required>
                                 ${!isSubComponent ? '<small class="text-muted">Main component weight</small>' : '<small class="text-muted">Sub-component weight (relative to parent)</small>'}
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-semibold">Max Components</label>
+                                <input type="number" class="form-control form-control-sm component-max-items" name="components[${currentId}][max_items]" value="${maxItems}" min="1" max="5" step="1" placeholder="1-5">
+                                <small class="text-muted">Limit: 1-5</small>
+                            </div>
+                            <div class="col-md-3">
                                 <label class="form-label small fw-semibold">Label</label>
                                 <input type="text" class="form-control form-control-sm component-label" name="components[${currentId}][label]" value="${label}" placeholder="e.g., ${isSubComponent ? 'Lecture Quizzes' : 'Lecture Component'}" required>
                             </div>
@@ -1790,7 +1817,8 @@
                     resolveComponentValue(component, 'weight', ''),
                     resolveComponentValue(component, 'label', ''),
                     true,
-                    null
+                    null,
+                    resolveComponentValue(component, 'max_items', '')
                 );
                 idMap[oldId] = newId;
             });
@@ -1807,7 +1835,8 @@
                     resolveComponentValue(component, 'weight', ''),
                     resolveComponentValue(component, 'label', ''),
                     false,
-                    parentNewId
+                    parentNewId,
+                    resolveComponentValue(component, 'max_items', '')
                 );
             });
 
@@ -2437,13 +2466,13 @@
 }
 
 .wildcard-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(25, 135, 84, 0.18);
+    transform: scale(1.05);
+    box-shadow: 0 20px 30px rgba(0,0,0,0.1);
 }
 
 .wildcard-card.is-pressed {
-    transform: translateY(-2px) scale(0.99);
-    box-shadow: 0 14px 32px rgba(25, 135, 84, 0.2);
+    transform: scale(0.99);
+    box-shadow: 0 14px 28px rgba(0,0,0,0.08);
 }
 
 .wildcard-card:focus-visible {
@@ -2452,36 +2481,12 @@
 }
 
 .wildcard-circle {
-    width: 110px;
-    height: 110px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 24px rgba(15, 81, 50, 0.35);
-    position: absolute;
-    top: 55px;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 0 18px;
-    background: linear-gradient(135deg, #23a362, #0b3d23);
-    max-width: calc(100% - 24px);
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
 }
 
-.wildcard-circle span {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    text-align: center;
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: 0.03em;
-    overflow-wrap: anywhere;
-    word-break: normal;
-    white-space: normal;
-    font-size: clamp(0.6rem, 0.52rem + 0.45vw, 0.95rem);
+.wildcard-card:hover .wildcard-circle {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    transform: translate(-50%, -55%) scale(1.05);
 }
 
 .wildcard-filter-btn {
@@ -2500,6 +2505,16 @@
 .badge.bg-success-subtle {
     background-color: rgba(25, 135, 84, 0.15) !important;
     color: #0f5132 !important;
+}
+
+.bg-warning-subtle {
+    background-color: rgba(255, 193, 7, 0.15) !important;
+    color: #664d03 !important;
+}
+
+.bg-danger-subtle {
+    background-color: rgba(220, 53, 69, 0.15) !important;
+    color: #842029 !important;
 }
 
 
@@ -2660,10 +2675,8 @@
     }
 
     .wildcard-circle {
-        width: 90px;
-        height: 90px;
-        top: 44px;
-        padding: 0 14px;
+        width: 80px;
+        height: 80px;
     }
 }
 
@@ -2720,6 +2733,13 @@
 .badge.bg-success-subtle,
 .badge.bg-light {
     max-width: 100%;
+}
+
+/* Hide any empty formula-label badges that render as blank pills at the
+   bottom of wildcard cards while preserving non-empty labels like
+   "Department Baseline". This avoids visual empty placeholders. */
+.badge-formula-label:empty {
+    display: none !important;
 }
 
 </style>

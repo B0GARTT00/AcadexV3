@@ -473,6 +473,16 @@ This subject already has a custom formula. Applying a structure template will re
                 node.weight_percent = Number.isFinite(numeric) ? Math.max(0, Math.min(100, numeric)) : 0;
                 this.syncTotals();
             },
+            updateMaxAssessments(node) {
+                const numeric = Number(node.max_assessments);
+                if (Number.isFinite(numeric) && numeric >= 1 && numeric <= 5) {
+                    node.max_assessments = Math.round(numeric);
+                } else if (node.max_assessments === '' || node.max_assessments === null) {
+                    node.max_assessments = null;
+                } else {
+                    node.max_assessments = Math.max(1, Math.min(5, Math.round(numeric)));
+                }
+            },
             syncTotals() {
                 this.collectCompositeNodes().forEach(composite => {
                     composite.total_percent = (composite.children ?? []).reduce(

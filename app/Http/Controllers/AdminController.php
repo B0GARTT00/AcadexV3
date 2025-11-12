@@ -1205,6 +1205,7 @@ class AdminController extends Controller
             'components.*.activity_type' => ['required', 'string', 'max:100'],
             'components.*.weight' => ['required', 'numeric', 'min:0', 'max:100'],
             'components.*.label' => ['required', 'string', 'max:100'],
+            'components.*.max_items' => ['nullable', 'integer', 'min:1', 'max:5'],
             'components.*.is_main' => ['nullable', 'boolean'],
             'components.*.parent_id' => ['nullable', 'integer'],
         ]);
@@ -1286,6 +1287,7 @@ class AdminController extends Controller
             'components.*.activity_type' => ['required', 'string', 'max:100'],
             'components.*.weight' => ['required', 'numeric', 'min:0', 'max:100'],
             'components.*.label' => ['required', 'string', 'max:100'],
+            'components.*.max_items' => ['nullable', 'integer', 'min:1', 'max:5'],
             'components.*.is_main' => ['nullable', 'boolean'],
             'components.*.parent_id' => ['nullable', 'integer'],
         ]);
@@ -1322,6 +1324,31 @@ class AdminController extends Controller
         return redirect()
             ->route('admin.gradesFormula', array_merge($this->formulaQueryParams(), ['view' => 'formulas']))
             ->with('success', "Structure template '{$template->label}' updated successfully.");
+    }
+
+    public function editStructureTemplate(StructureTemplate $template)
+    {
+        Gate::authorize('admin');
+
+        if ($template->is_deleted) {
+            abort(404);
+        }
+
+        if ($template->is_system_default) {
+            abort(403, 'System templates cannot be modified.');
+        }
+
+        $periodContext = $this->resolveFormulaPeriodContext();
+
+        return view('admin.structure-template-edit', [
+            'template' => $template,
+            'semester' => $periodContext['semester'] ?? null,
+            'academicPeriods' => $periodContext['academic_periods'] ?? collect(),
+            'academicYears' => $periodContext['academic_years'] ?? collect(),
+            'selectedAcademicYear' => $periodContext['academic_year'] ?? null,
+            'selectedAcademicPeriodId' => $periodContext['academic_period_id'] ?? null,
+            'availableSemesters' => $periodContext['available_semesters'] ?? collect(),
+        ]);
     }
 
     public function destroyStructureTemplate(Request $request, StructureTemplate $template)
@@ -1372,6 +1399,7 @@ class AdminController extends Controller
             $activityType = trim((string) ($component['activity_type'] ?? ''));
             $label = trim((string) ($component['label'] ?? ''));
             $weight = (float) ($component['weight'] ?? 0);
+            $maxItems = isset($component['max_items']) && $component['max_items'] !== '' ? (int) $component['max_items'] : null;
             $isMain = ! empty($component['is_main']);
             $parentId = $component['parent_id'] ?? null;
 
@@ -1379,6 +1407,7 @@ class AdminController extends Controller
                 'activity_type' => $activityType,
                 'label' => $label,
                 'weight' => $weight,
+                'max_items' => $maxItems,
                 'is_main' => $isMain,
                 'parent_id' => $parentId,
             ];
@@ -1451,6 +1480,7 @@ class AdminController extends Controller
             $mainWeight = $mainComponent['weight'] / 100;
             $mainIdentifier = $mainComponent['normalized_identifier'];
             $label = $mainComponent['label'];
+            $maxItems = $mainComponent['max_items'];
 
             if (isset($subComponents[$id]) && count($subComponents[$id]) > 0) {
                 $children = [];
@@ -1459,13 +1489,19 @@ class AdminController extends Controller
                     $childIdentifier = $subComponent['normalized_identifier'];
                     $compositeActivityType = $mainIdentifier . '.' . $childIdentifier;
 
-                    $children[] = [
+                    $childNode = [
                         'key' => $compositeActivityType,
                         'type' => 'activity',
                         'label' => $subComponent['label'],
                         'activity_type' => $compositeActivityType,
                         'weight' => $subComponent['weight'] / 100,
                     ];
+
+                    if ($subComponent['max_items'] !== null) {
+                        $childNode['max_assessments'] = $subComponent['max_items'];
+                    }
+
+                    $children[] = $childNode;
                 }
 
                 $structureConfig['children'][] = [
@@ -1476,13 +1512,19 @@ class AdminController extends Controller
                     'children' => $children,
                 ];
             } else {
-                $structureConfig['children'][] = [
+                $mainNode = [
                     'key' => $mainIdentifier,
                     'type' => 'activity',
                     'label' => $label,
                     'activity_type' => $mainIdentifier,
                     'weight' => $mainWeight,
                 ];
+
+                if ($maxItems !== null) {
+                    $mainNode['max_assessments'] = $maxItems;
+                }
+
+                $structureConfig['children'][] = $mainNode;
             }
         }
 
@@ -3300,6 +3342,7 @@ class AdminController extends Controller
             $childWeight = isset($child['weight']) ? (float) $child['weight'] : 0.0;
             $childLabel = $child['label'] ?? FormulaStructure::formatLabel($child['key'] ?? 'component');
             $childPercent = (int) round($childWeight * 100);
+            $maxAssessments = $child['max_assessments'] ?? null;
 
             if ($childType === 'composite' && !empty($child['children'])) {
                 // This is a composite node (e.g., "Lecture Component 60%")
@@ -3308,6 +3351,7 @@ class AdminController extends Controller
                     'type' => $childLabel,
                     'percent' => $childPercent,
                     'is_composite' => true,
+                    'max_items' => null, // Composites don't have max items
                 ];
 
                 // Add sub-components with relative weights
@@ -3316,12 +3360,14 @@ class AdminController extends Controller
                     $subActivityType = $subChild['activity_type'] ?? $subChild['key'] ?? 'component';
                     $subLabel = $subChild['label'] ?? FormulaStructure::formatLabel($subActivityType);
                     $subPercent = (int) round($subWeight * 100);
+                    $subMaxAssessments = $subChild['max_assessments'] ?? null;
 
                     $weights[] = [
                         'type' => $subLabel,
                         'percent' => $subPercent,
                         'is_sub' => true,
                         'parent_label' => $childLabel,
+                        'max_items' => $subMaxAssessments,
                     ];
                 }
             } else {
@@ -3333,6 +3379,7 @@ class AdminController extends Controller
                     'type' => $label,
                     'percent' => $childPercent,
                     'is_composite' => false,
+                    'max_items' => $maxAssessments,
                 ];
             }
         }
@@ -3644,7 +3691,7 @@ class AdminController extends Controller
             ->whereNotNull('sessions.user_id')
             ->orderByDesc('sessions.last_activity');
 
-        $sessions = $sessionsQuery->paginate(10)->through(function ($session) {
+        $sessions = $sessionsQuery->paginate(10, ['*'], 'sessions_page')->through(function ($session) {
                 $lastActivity = \Carbon\Carbon::createFromTimestamp($session->last_activity);
                 $session->last_activity_formatted = $session->last_activity_at
                     ? \Carbon\Carbon::parse($session->last_activity_at)->diffForHumans()
@@ -3657,7 +3704,7 @@ class AdminController extends Controller
                 $session->status = $minutesInactive > config('session.lifetime', 120) ? 'expired' : 'active';
                 
                 return $session;
-            });
+            })->appends($request->except('logs_page'));
 
         // Get user logs with optional date filtering and pagination
         $userLogsQuery = UserLog::with('user')
@@ -3668,7 +3715,7 @@ class AdminController extends Controller
             $userLogsQuery->whereDate('created_at', $date);
         }
 
-        $userLogs = $userLogsQuery->paginate(10)->appends(['date' => $request->input('date', ''), 'tab' => 'logs']);
+        $userLogs = $userLogsQuery->paginate(10, ['*'], 'logs_page')->appends($request->except('sessions_page'));
         $selectedDate = $request->input('date', '');
 
         return view('admin.sessions', compact('sessions', 'userLogs', 'selectedDate'));

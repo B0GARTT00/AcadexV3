@@ -59,7 +59,7 @@
                 <ol class="breadcrumb bg-white rounded-pill px-3 py-1 shadow-sm mb-0">
                     <li class="breadcrumb-item">
                         <a href="{{ route('chairperson.structureTemplates.index') }}" class="text-success text-decoration-none">
-                            <i class="bi bi-diagram-3 me-1"></i>Template Requests
+                            <i class="bi bi-diagram-3 me-1"></i>Formula Requests
                         </a>
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">{{ $request->label }}</li>

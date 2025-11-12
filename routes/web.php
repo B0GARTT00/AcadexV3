@@ -300,6 +300,7 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::delete('/grades-formula/{formula}', [AdminController::class, 'destroyGlobalFormula'])->name('gradesFormula.destroy');
     Route::get('/grades-formula/{formula}/edit', [AdminController::class, 'editGlobalFormula'])->name('gradesFormula.edit');
     Route::post('/grades-formula/structure-template/store', [AdminController::class, 'storeStructureTemplate'])->name('gradesFormula.structureTemplate.store');
+    Route::get('/grades-formula/structure-template/{template}/edit', [AdminController::class, 'editStructureTemplate'])->name('gradesFormula.structureTemplate.edit');
     Route::put('/grades-formula/structure-template/{template}', [AdminController::class, 'updateStructureTemplate'])->name('gradesFormula.structureTemplate.update');
     Route::delete('/grades-formula/structure-template/{template}', [AdminController::class, 'destroyStructureTemplate'])->name('gradesFormula.structureTemplate.destroy');
 

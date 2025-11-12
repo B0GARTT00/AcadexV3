@@ -168,7 +168,7 @@
                            class="nav-link {{ request()->routeIs('chairperson.structureTemplates.*') ? 'active' : '' }} d-flex align-items-center justify-content-between sidebar-link">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-diagram-3 me-3"></i>
-                                <span>Template Requests</span>
+                                <span>Formula Requests</span>
                             </div>
                             @if ($myPendingRequests > 0)
                                 <span class="badge bg-warning text-dark rounded-pill">{{ $myPendingRequests }}</span>
@@ -324,7 +324,7 @@
                            class="nav-link {{ request()->routeIs('admin.structureTemplateRequests.*') ? 'active' : '' }} d-flex align-items-center justify-content-between sidebar-link">
                             <div class="d-flex align-items-center">
                                 <i class="bi bi-clipboard-check me-3"></i>
-                                <span>Template Requests</span>
+                                <span>Formula Requests</span>
                             </div>
                             @if ($pendingTemplateRequests > 0)
                                 <span class="badge bg-warning text-dark rounded-pill">{{ $pendingTemplateRequests }}</span>

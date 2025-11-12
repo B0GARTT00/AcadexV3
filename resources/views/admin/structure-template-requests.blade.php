@@ -10,8 +10,8 @@
                         <i class="bi bi-clipboard-check text-white" style="font-size: 1.5rem;"></i>
                     </div>
                     <div>
-                        <h3 class="fw-bold mb-1" style="color: #198754;">Structure Template Requests</h3>
-                        <p class="text-muted mb-0">Review and approve chairperson template submissions</p>
+                        <h3 class="fw-bold mb-1" style="color: #198754;">Structure Formula Requests</h3>
+                        <p class="text-muted mb-0">Review and approve chairperson formula submissions</p>
                     </div>
                 </div>
                 <a href="{{ route('admin.gradesFormula', ['view' => 'formulas']) }}" class="btn btn-outline-secondary">
@@ -72,13 +72,13 @@
                 <h5 class="text-muted mb-2">No Requests Found</h5>
                 <p class="text-muted mb-0">
                     @if ($status === 'pending')
-                        There are no pending template requests at the moment.
+                        There are no pending formula requests at the moment.
                     @elseif ($status === 'approved')
-                        No approved template requests found.
+                        No approved formula requests found.
                     @elseif ($status === 'rejected')
-                        No rejected template requests found.
+                        No rejected formula requests found.
                     @else
-                        No template requests have been submitted yet.
+                        No formula requests have been submitted yet.
                     @endif
                 </p>
             </div>

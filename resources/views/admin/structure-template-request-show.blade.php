@@ -18,7 +18,7 @@
                     </li>
                     <li class="breadcrumb-item">
                         <a href="{{ route('admin.structureTemplateRequests.index') }}" class="text-decoration-none" style="color: #198754;">
-                            Template Requests
+                            Formula Requests
                         </a>
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">{{ $request->label }}</li>
@@ -32,7 +32,7 @@
                     </div>
                     <div>
                         <h3 class="fw-bold mb-1" style="color: #198754;">{{ $request->label }}</h3>
-                        <p class="text-muted mb-0">Template Request Details</p>
+                        <p class="text-muted mb-0">Formula Request Details</p>
                     </div>
                 </div>
                 <a href="{{ route('admin.structureTemplateRequests.index') }}" class="btn btn-outline-secondary">
@@ -145,10 +145,10 @@
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm mb-3">
                 <div class="card-body">
-                    <h5 class="fw-bold mb-3" style="color: #198754;">Template Information</h5>
+                    <h5 class="fw-bold mb-3" style="color: #198754;">Formula Information</h5>
                     
                     <div class="mb-4">
-                        <label class="fw-semibold text-muted small">Template Name</label>
+                        <label class="fw-semibold text-muted small">Formula Name</label>
                         <div class="fs-5">{{ $request->label }}</div>
                     </div>
                     
@@ -252,17 +252,17 @@
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-success text-white border-0">
                     <h5 class="modal-title" id="approveModalLabel">
-                        <i class="bi bi-check-circle me-2"></i>Approve Template Request
+                        <i class="bi bi-check-circle me-2"></i>Approve Formula Request
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST" action="{{ route('admin.structureTemplateRequests.approve', $request) }}">
                     @csrf
                     <div class="modal-body">
-                        <p class="mb-3">Are you sure you want to approve this template request? This will create a new structure template that can be used by chairpersons and instructors.</p>
+                        <p class="mb-3">Are you sure you want to approve this formula request? This will create a new structure formu that can be used by chairpersons and instructors.</p>
                         
                         <div class="alert alert-info mb-3">
-                            <strong>Template Name:</strong> {{ $request->label }}
+                            <strong>Formula Name:</strong> {{ $request->label }}
                         </div>
                         
                         <div class="mb-3">
@@ -287,17 +287,17 @@
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-danger text-white border-0">
                     <h5 class="modal-title" id="rejectModalLabel">
-                        <i class="bi bi-x-circle me-2"></i>Reject Template Request
+                        <i class="bi bi-x-circle me-2"></i>Reject Formula Request
                     </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <form method="POST" action="{{ route('admin.structureTemplateRequests.reject', $request) }}">
                     @csrf
                     <div class="modal-body">
-                        <p class="mb-3">Please provide a reason for rejecting this template request. This information will be visible to the chairperson who submitted it.</p>
+                        <p class="mb-3">Please provide a reason for rejecting this formula request. This information will be visible to the chairperson who submitted it.</p>
                         
                         <div class="alert alert-warning mb-3">
-                            <strong>Template Name:</strong> {{ $request->label }}
+                            <strong>Formula Name:</strong> {{ $request->label }}
                         </div>
                         
                         <div class="mb-3">

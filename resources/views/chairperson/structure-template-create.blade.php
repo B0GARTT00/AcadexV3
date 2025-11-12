@@ -8,7 +8,7 @@
                 <ol class="breadcrumb bg-white rounded-pill px-3 py-1 shadow-sm mb-0">
                     <li class="breadcrumb-item">
                         <a href="{{ route('chairperson.structureTemplates.index') }}" class="text-success text-decoration-none">
-                            <i class="bi bi-diagram-3 me-1"></i>Template Requests
+                            <i class="bi bi-diagram-3 me-1"></i>Formula Requests
                         </a>
                     </li>
                     <li class="breadcrumb-item active" aria-current="page">Create New Request</li>
@@ -115,17 +115,22 @@
                 </button>
             </div>
             <div class="row g-2">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label small">Name</label>
-                    <input type="text" class="form-control form-control-sm activity-name-input" placeholder="e.g., Midterm" required>
+                    <input type="text" class="form-control form-control-sm activity-name-input" placeholder="e.g., Quiz" required>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label small">Label</label>
-                    <input type="text" class="form-control form-control-sm component-label" placeholder="e.g., Midterm Exam" required data-auto="true">
+                    <input type="text" class="form-control form-control-sm component-label" required data-auto="true">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <label class="form-label small">Weight (%)</label>
                     <input type="number" class="form-control form-control-sm component-weight" min="0" max="100" step="0.01" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label small">Max Components</label>
+                    <input type="number" class="form-control form-control-sm component-max-items" min="1" max="5" step="1" placeholder="1-5">
+                    <small class="text-muted">Limit: 1-5</small>
                 </div>
             </div>
             <div class="mt-2 d-flex justify-content-between align-items-center">
@@ -152,14 +157,17 @@
                 </button>
             </div>
             <div class="row g-2">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <input type="text" class="form-control form-control-sm activity-name-input" placeholder="e.g., Quiz" required>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <input type="text" class="form-control form-control-sm component-label" placeholder="Label" required data-auto="true">
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <input type="number" class="form-control form-control-sm component-weight" min="0" max="100" step="0.01" placeholder="Weight %" required>
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control form-control-sm component-max-items" min="1" max="5" step="1" placeholder="Max 1-5">
                 </div>
             </div>
         </div>
@@ -421,6 +429,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const activityType = comp.querySelector('.activity-name-input').value.trim();
             const label = comp.querySelector('.component-label').value.trim();
             const weight = parseFloat(comp.querySelector('.component-weight').value);
+            const maxItemsInput = comp.querySelector('.component-max-items');
+            const maxItems = maxItemsInput && maxItemsInput.value ? parseInt(maxItemsInput.value) : null;
             
             if (label && !isNaN(weight)) {
                 structure.push({
@@ -428,6 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     activity_type: activityType,
                     label: label,
                     weight: weight,
+                    max_items: maxItems,
                     is_main: true,
                     parent_id: null
                 });
@@ -438,6 +449,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const subActivityType = sub.querySelector('.activity-name-input').value.trim();
                     const subLabel = sub.querySelector('.component-label').value.trim();
                     const subWeight = parseFloat(sub.querySelector('.component-weight').value);
+                    const subMaxItemsInput = sub.querySelector('.component-max-items');
+                    const subMaxItems = subMaxItemsInput && subMaxItemsInput.value ? parseInt(subMaxItemsInput.value) : null;
                     
                     if (subLabel && !isNaN(subWeight)) {
                         structure.push({
@@ -445,6 +458,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             activity_type: subActivityType,
                             label: subLabel,
                             weight: subWeight,
+                            max_items: subMaxItems,
                             is_main: false,
                             parent_id: componentId
                         });
