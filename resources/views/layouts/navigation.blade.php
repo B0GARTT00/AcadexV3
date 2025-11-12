@@ -169,33 +169,6 @@
     </div>
 </header>
 
-{{-- Sign Out Confirmation Modal --}}
-<div class="modal fade" id="signOutModal" tabindex="-1" aria-labelledby="signOutModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content rounded-4 shadow">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title" id="signOutModalLabel">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    Confirm Sign Out
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                Are you sure you want to sign out?
-            </div>
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="POST" action="{{ route('logout') }}" id="logoutForm">
-                    @csrf
-                    <button type="submit" class="btn btn-danger">
-                        Yes, Sign Out
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
 @if($showNotifications ?? false)
 <style>
 .notification-item:hover {

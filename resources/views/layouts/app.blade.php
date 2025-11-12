@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="color-scheme" content="light">
 
     <title>{{ config('app.name', 'Laravel') }}</title>
     
@@ -15,6 +16,37 @@
 
     <!-- Critical CSS to prevent FOUC -->
     <style>
+        /* Force light mode - disable Tailwind dark mode */
+        html {
+            color-scheme: light !important;
+        }
+        
+        /* Override all dark mode Tailwind classes */
+        @media (prefers-color-scheme: dark) {
+            * {
+                color-scheme: light !important;
+            }
+            
+            /* Force all backgrounds to be light */
+            .dark\:bg-gray-800,
+            [class*="dark:bg-gray"] {
+                background-color: #ffffff !important;
+            }
+            
+            /* Force all text to be dark */
+            .dark\:text-gray-200,
+            .dark\:text-gray-400,
+            [class*="dark:text-gray"] {
+                color: #000000 !important;
+            }
+            
+            /* Force all borders to be light gray */
+            .dark\:border-gray-700,
+            [class*="dark:border-gray"] {
+                border-color: #e5e7eb !important;
+            }
+        }
+        
         /* Immediate layout structure before external CSS loads */
         html, body {
             margin: 0;
@@ -99,6 +131,13 @@
         header .dropdown-menu {
             z-index: 2010 !important;
             position: absolute !important;
+        }
+        /* Modal and backdrop z-index fix */
+        .modal-backdrop {
+            z-index: 2040 !important;
+        }
+        .modal {
+            z-index: 2050 !important;
         }
         header h1 {
             font-size: 1rem !important;
@@ -635,6 +674,33 @@
             }
         });
     </script>
+
+    {{-- Sign Out Confirmation Modal - At body level for proper z-index stacking --}}
+    <div class="modal fade" id="signOutModal" tabindex="-1" aria-labelledby="signOutModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content rounded-4 shadow bg-white">
+                <div class="modal-header border-bottom">
+                    <h5 class="modal-title text-danger fw-semibold" id="signOutModalLabel">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        Confirm Sign Out
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-dark">
+                    Are you sure you want to sign out?
+                </div>
+                <div class="modal-footer border-top bg-light">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <form method="POST" action="{{ route('logout') }}" id="logoutForm" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-danger">
+                            Yes, Sign Out
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 
     @stack('scripts')
 </body>

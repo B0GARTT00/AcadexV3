@@ -1,3 +1,31 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Force disable all dark mode styles */
+@layer utilities {
+    @media (prefers-color-scheme: dark) {
+        /* Override all dark background colors */
+        .dark\:bg-gray-800,
+        .dark\:bg-gray-900,
+        .dark\:bg-gray-700,
+        .dark\:bg-gray-600 {
+            background-color: #ffffff !important;
+        }
+        
+        /* Override all dark text colors */
+        .dark\:text-gray-200,
+        .dark\:text-gray-300,
+        .dark\:text-gray-400,
+        .dark\:text-gray-100 {
+            color: #000000 !important;
+        }
+        
+        /* Override all dark border colors */
+        .dark\:border-gray-700,
+        .dark\:border-gray-600,
+        .dark\:border-gray-500 {
+            border-color: #e5e7eb !important;
+        }
+    }
+}

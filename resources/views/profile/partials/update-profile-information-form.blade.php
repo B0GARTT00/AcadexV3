@@ -1,10 +1,10 @@
 <section>
-    <header class="mb-4">
-        <h2 class="h5 fw-semibold text-white mb-2" style="color: #ffffff !important;">
+    <header class="mb-4 bg-transparent">
+        <h2 class="h5 fw-semibold text-dark mb-2">
             {{ __('Profile Information') }}
         </h2>
 
-        <p class="small text-white-50" style="color: rgba(255, 255, 255, 0.7) !important;">
+        <p class="small text-muted">
             {{ __("Update your account's profile information.") }}
         </p>
     </header>
