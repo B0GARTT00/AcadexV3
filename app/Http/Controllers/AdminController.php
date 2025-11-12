@@ -3434,7 +3434,6 @@ class AdminController extends Controller
         return redirect()->route('admin.users')->with('success', 'User created successfully.');
     }
 
-<<<<<<< HEAD
     /**
      * Force logout a user from all devices by clearing their sessions
      */
@@ -3457,7 +3456,9 @@ class AdminController extends Controller
                 'success' => false,
                 'message' => 'Failed to logout user. Please try again.'
             ], 500);
-=======
+        }
+    }
+
     // ============================
     // Structure Template Requests
     // ============================
@@ -3562,27 +3563,10 @@ class AdminController extends Controller
             return redirect()
                 ->back()
                 ->withErrors(['error' => 'Failed to approve template request: ' . $e->getMessage()]);
->>>>>>> 8fb0fef (Grade Formula Request, Grades Formula Management)
         }
     }
 
     /**
-<<<<<<< HEAD
-     * Get active session count for a user
-     */
-    public function getUserSessionCount(User $user)
-    {
-        Gate::authorize('admin');
-
-        $sessionCount = DB::table('sessions')
-            ->where('user_id', $user->id)
-            ->count();
-
-        return response()->json([
-            'success' => true,
-            'count' => $sessionCount
-        ]);
-=======
      * Reject a structure template request.
      */
     public function rejectStructureTemplateRequest(Request $request, \App\Models\StructureTemplateRequest $templateRequest)
@@ -3608,7 +3592,23 @@ class AdminController extends Controller
         return redirect()
             ->route('admin.structureTemplateRequests.index')
             ->with('success', "Structure template request from {$templateRequest->chairperson->first_name} {$templateRequest->chairperson->last_name} has been rejected.");
->>>>>>> 8fb0fef (Grade Formula Request, Grades Formula Management)
+    }
+
+    /**
+     * Get active session count for a user
+     */
+    public function getUserSessionCount(User $user)
+    {
+        Gate::authorize('admin');
+
+        $sessionCount = DB::table('sessions')
+            ->where('user_id', $user->id)
+            ->count();
+
+        return response()->json([
+            'success' => true,
+            'count' => $sessionCount
+        ]);
     }
 
     // ============================

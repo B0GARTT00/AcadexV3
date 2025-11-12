@@ -28,6 +28,11 @@
             color: #084298;
         }
 
+        .table-responsive {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
         .action-btn {
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
@@ -88,22 +93,23 @@
     {{-- Sessions Table --}}
     <div class="card shadow-sm">
         <div class="card-body p-0">
-            <table id="sessionsTable" class="table table-bordered mb-0">
-                <thead class="table-success">
-                    <tr>
-                        <th>User</th>
-                        <th>Role</th>
-                        <th>Status</th>
-                        <th>Device</th>
-                        <th>Browser</th>
-                        <th>Platform</th>
-                        <th>IP Address</th>
-                        <th>Last Activity</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($sessions as $session)
+            <div class="table-responsive">
+                <table id="sessionsTable" class="table table-bordered mb-0">
+                    <thead class="table-success">
+                        <tr>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Device</th>
+                            <th>Browser</th>
+                            <th>Platform</th>
+                            <th>IP Address</th>
+                            <th>Last Activity</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($sessions as $session)
                         <tr class="{{ $session->is_current ? 'table-primary' : '' }}">
                             <td>
                                 <div class="d-flex flex-column">
@@ -188,6 +194,7 @@
                     @endforelse
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
         </div>
@@ -208,21 +215,22 @@
             {{-- Logs Table --}}
             <div class="card shadow-sm">
                 <div class="card-body p-0">
-                    <table id="userLogsTable" class="table table-bordered mb-0">
-                        <thead class="table-success">
-                            <tr>
-                                <th>User</th>
-                                <th>Event Type</th>
-                                <th>IP Address</th>
-                                <th>Browser</th>
-                                <th>Device</th>
-                                <th>Platform</th>
-                                <th>Date</th>
-                                <th>Time</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($userLogs as $log)
+                    <div class="table-responsive">
+                        <table id="userLogsTable" class="table table-bordered mb-0">
+                            <thead class="table-success">
+                                <tr>
+                                    <th>User</th>
+                                    <th>Event Type</th>
+                                    <th>IP Address</th>
+                                    <th>Browser</th>
+                                    <th>Device</th>
+                                    <th>Platform</th>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($userLogs as $log)
                                 <tr>
                                     <td>
                                         @if ($log->user)
@@ -270,6 +278,7 @@
                             @endforelse
                         </tbody>
                     </table>
+                    </div>
                 </div>
             </div>
         </div>
