@@ -2,6 +2,7 @@
 
 @section('content')
 @push('styles')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.7.32/dist/sweetalert2.min.css" rel="stylesheet">
     <style>
         /* Session status badges */
@@ -71,43 +72,45 @@
         }
 
         .action-btn {
-            padding: 0.4rem 0.7rem;
+            padding: 0.5rem 0.75rem !important;
             font-size: 0.875rem;
             border-radius: 6px;
             transition: all 0.2s ease;
-            border: none;
-            display: inline-flex;
+            border: none !important;
+            display: inline-flex !important;
             align-items: center;
             justify-content: center;
-            min-width: 36px;
-            height: 36px;
+            min-width: 38px;
+            height: 38px;
+            cursor: pointer;
         }
 
         .action-btn i {
-            font-size: 0.875rem;
+            font-size: 1rem;
             margin: 0;
+            line-height: 1;
         }
 
         .btn-revoke {
-            background-color: #dc3545;
-            color: white;
+            background-color: #dc3545 !important;
+            color: white !important;
         }
 
         .btn-revoke:hover {
-            background-color: #bb2d3b;
-            color: white;
+            background-color: #bb2d3b !important;
+            color: white !important;
             transform: translateY(-1px);
             box-shadow: 0 2px 4px rgba(220, 53, 69, 0.3);
         }
 
         .btn-revoke-all {
-            background-color: #fd7e14;
-            color: white;
+            background-color: #fd7e14 !important;
+            color: white !important;
         }
 
         .btn-revoke-all:hover {
-            background-color: #e8590c;
-            color: white;
+            background-color: #e8590c !important;
+            color: white !important;
             transform: translateY(-1px);
             box-shadow: 0 2px 4px rgba(253, 126, 20, 0.3);
         }
@@ -344,12 +347,12 @@
                                     <td class="text-center">
                                         @if(!$session->is_current)
                                             <div class="action-btn-group">
-                                                <button class="btn btn-sm btn-revoke action-btn" 
+                                                <button class="action-btn btn-revoke" 
                                                         onclick="confirmRevoke('{{ $session->id }}', '{{ $session->user_name }}')"
                                                         title="Revoke this session">
                                                     <i class="fas fa-ban"></i>
                                                 </button>
-                                                <button class="btn btn-sm btn-revoke-all action-btn" 
+                                                <button class="action-btn btn-revoke-all" 
                                                         onclick="confirmRevokeUser({{ $session->user_id }}, '{{ $session->user_name }}')"
                                                         title="Revoke all user sessions">
                                                     <i class="fas fa-user-times"></i>
@@ -357,7 +360,7 @@
                                             </div>
                                         @else
                                             <span class="your-session-badge">
-                                                <i class="fas fa-shield-alt"></i> Protected
+                                                <i class="fas fa-circle-check"></i> Current Session
                                             </span>
                                         @endif
                                     </td>

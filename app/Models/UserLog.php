@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $id
  * @property int $user_id
  * @property string $event_type
+ * @property string|null $ip_address
+ * @property string|null $user_agent
  * @property string|null $browser
  * @property string|null $device
  * @property string|null $platform
@@ -25,6 +27,8 @@ class UserLog extends Model
     protected $fillable = [
         'user_id',
         'event_type',
+        'ip_address',
+        'user_agent',
         'browser',
         'device',     
         'platform',   

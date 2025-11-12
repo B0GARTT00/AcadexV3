@@ -27,6 +27,8 @@ class LogUserFailedLogin
         $device = $agent->isMobile() ? 'Mobile' : ($agent->isTablet() ? 'Tablet' : 'Desktop');
 
         $this->recorder->record($userId, 'failed_login', [
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
             'browser' => $browser,
             'device' => $device,
             'platform' => $platform,

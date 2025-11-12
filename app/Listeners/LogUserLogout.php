@@ -28,6 +28,8 @@ class LogUserLogout
         $device = $agent->isMobile() ? 'Mobile' : ($agent->isTablet() ? 'Tablet' : 'Desktop');
 
         $this->recorder->record($userId, 'logout', [
+            'ip_address' => request()->ip(),
+            'user_agent' => request()->userAgent(),
             'browser' => $browser,
             'platform' => $platform,
             'device' => $device,
