@@ -58,23 +58,23 @@
                         <a class="nav-link d-flex align-items-center sidebar-link course-outcome-toggle" 
                            onclick="toggleCourseOutcomeMenu()"
                            style="cursor: pointer;">
-                            <i class="bi bi-mortarboard me-3"></i>
-                            <span>Course Outcome</span>
-                            <i class="bi bi-chevron-down ms-auto course-outcome-chevron {{ $isCourseOutcomeActive ? 'rotated' : '' }}"></i>
+                            <i class="bi bi-mortarboard me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                            <span style="flex: 1;">Course Outcome</span>
+                            <i class="bi bi-chevron-down ms-auto course-outcome-chevron {{ $isCourseOutcomeActive ? 'rotated' : '' }}" style="flex-shrink: 0;"></i>
                         </a>
                         <div class="course-outcome-submenu {{ $isCourseOutcomeActive ? 'show' : '' }}" id="courseOutcomeSubmenu">
                             <ul class="nav nav-pills flex-column ms-3">
                                 <li class="nav-item">
                                     <a href="{{ route('instructor.course_outcomes.index') }}" 
                                        class="nav-link {{ request()->routeIs('instructor.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-book me-3"></i>
+                                        <i class="bi bi-book me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
                                         <span>Manage Course Outcome</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
                                     <a href="{{ route('instructor.course-outcome-attainments.index') }}"
                                        class="nav-link {{ request()->routeIs('instructor.course-outcome-attainments.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-award me-3"></i>
+                                        <i class="bi bi-award me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
                                         <span>Course Outcome Attainment</span>
                                     </a>
                                 </li>
@@ -153,13 +153,15 @@
                         @endphp
                         <a href="{{ route('chairperson.structureTemplates.index') }}" 
                            class="nav-link {{ request()->routeIs('chairperson.structureTemplates.*') ? 'active' : '' }} d-flex align-items-center justify-content-between sidebar-link">
-                            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center" style="flex: 1; min-width: 0;">
                                 <i class="bi bi-diagram-3 me-3"></i>
                                 <span>Formula Requests</span>
                             </div>
-                            @if ($myPendingRequests > 0)
-                                <span class="badge bg-warning text-dark rounded-pill">{{ $myPendingRequests }}</span>
-                            @endif
+                            <div style="min-width: 30px; text-align: right;">
+                                @if ($myPendingRequests > 0)
+                                    <span class="badge bg-warning text-dark rounded-pill">{{ $myPendingRequests }}</span>
+                                @endif
+                            </div>
                         </a>
                     </li>
                 </ul>
@@ -309,13 +311,15 @@
                         @endphp
                         <a href="{{ route('admin.structureTemplateRequests.index') }}" 
                            class="nav-link {{ request()->routeIs('admin.structureTemplateRequests.*') ? 'active' : '' }} d-flex align-items-center justify-content-between sidebar-link">
-                            <div class="d-flex align-items-center">
+                            <div class="d-flex align-items-center" style="flex: 1; min-width: 0;">
                                 <i class="bi bi-clipboard-check me-3"></i>
                                 <span>Formula Requests</span>
                             </div>
-                            @if ($pendingTemplateRequests > 0)
-                                <span class="badge bg-warning text-dark rounded-pill">{{ $pendingTemplateRequests }}</span>
-                            @endif
+                            <div style="min-width: 30px; text-align: right;">
+                                @if ($pendingTemplateRequests > 0)
+                                    <span class="badge bg-warning text-dark rounded-pill">{{ $pendingTemplateRequests }}</span>
+                                @endif
+                            </div>
                         </a>
                     </li>
                     <li class="nav-item">

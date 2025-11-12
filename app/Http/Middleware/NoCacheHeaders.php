@@ -13,10 +13,13 @@ class NoCacheHeaders
         // Apply the No Cache headers
         $response = $next($request);
 
-        // Prevent caching
-        $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
-        $response->headers->set('Pragma', 'no-cache');
-        $response->headers->set('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
+        // Prevent caching for HTML responses only (allow CSS/JS/images to cache)
+        if ($response->headers->get('Content-Type') && 
+            str_contains($response->headers->get('Content-Type'), 'text/html')) {
+            $response->headers->set('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0');
+            $response->headers->set('Pragma', 'no-cache');
+            $response->headers->set('Expires', 'Sat, 01 Jan 2000 00:00:00 GMT');
+        }
 
         return $response;
     }

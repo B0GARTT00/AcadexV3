@@ -1,8 +1,8 @@
-<header class="px-4 py-3 shadow-sm d-flex justify-content-between align-items-center transition-all" style="background-color: var(--dark-green); color: white;">
+<header class="px-4 py-3 shadow-sm d-flex justify-content-between align-items-center header-stable" style="background-color: var(--dark-green); color: white; height: 70px; position: sticky; top: 0; z-index: 1000; will-change: transform;">
     <!-- Left: Current Academic Period -->
-    <div class="d-flex align-items-center">
-        <h1 class="fs-5 fw-semibold mb-0 d-flex align-items-center">
-            <i class="bi bi-calendar-event me-2"></i>
+    <div class="d-flex align-items-center" style="width: 400px; flex-shrink: 0;">
+        <h1 class="mb-0 d-flex align-items-center" style="line-height: 1; width: 100%; height: 34px; font-size: 1rem; font-weight: 600;">
+            <i class="bi bi-calendar-event me-2" style="font-size: 1.125rem; display: inline-block; width: 20px; height: 20px; text-align: center; flex-shrink: 0; line-height: 1;"></i>
             @php
                 $activePeriod = \App\Models\AcademicPeriod::find(session('active_academic_period_id'));
             @endphp
@@ -31,7 +31,7 @@
                     }
                 @endphp
                 
-                <span class="badge bg-success bg-opacity-25 px-3 py-2 rounded-pill">
+                <span class="badge bg-success bg-opacity-25 px-3 py-2 rounded-pill" style="white-space: nowrap; font-size: 0.8125rem; font-weight: 500; line-height: 1; height: 32px; display: inline-flex; align-items: center; min-width: 290px; justify-content: center; letter-spacing: -0.01em;">
                     @if($activePeriod->semester != 'Summer')
                         {{ $semesterLabel }} - AY {{ $startYear }} - {{ $endYear }}
                     @else
@@ -39,7 +39,7 @@
                     @endif
                 </span>
             @else
-                <span class="badge bg-success bg-opacity-25 px-3 py-2 rounded-pill">Dashboard</span>
+                <span class="badge bg-success bg-opacity-25 px-3 py-2 rounded-pill" style="white-space: nowrap; font-size: 0.8125rem; font-weight: 500; line-height: 1; height: 32px; display: inline-flex; align-items: center; min-width: 290px; justify-content: center; letter-spacing: -0.01em;">Dashboard</span>
             @endif
         </h1>    
     </div>
@@ -57,20 +57,26 @@
         
         <!-- Notification Bell -->
         @if($showNotifications)
-            <div class="position-relative" x-data="notificationBell" x-init="init()">
-                <button @click="toggleDropdown" type="button" class="btn btn-link text-white position-relative p-2">
-                    <i class="bi bi-bell fs-4"></i>
+            <div class="position-relative" x-data="notificationBell" x-init="init()" x-cloak style="min-width: 50px;">
+                <button @click="toggleDropdown" type="button" class="btn btn-link text-white position-relative p-2" style="min-width: 50px; min-height: 50px;">
+                    <i class="bi bi-bell fs-4" style="display: inline-block; line-height: 1;"></i>
                     <span x-show="unreadCount > 0" 
-                          x-text="unreadCount" 
+                          x-text="unreadCount"
                           class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
-                          style="font-size: 0.65rem;">
+                          style="font-size: 0.65rem; min-width: 20px; line-height: 1.4;">
                     </span>
                 </button>
                 
                 <!-- Notification Dropdown -->
                 <div x-show="showDropdown" 
                      @click.away="showDropdown = false"
-                     x-transition
+                     x-transition:enter="transition ease-out duration-100"
+                     x-transition:enter-start="opacity-0 scale-95"
+                     x-transition:enter-end="opacity-100 scale-100"
+                     x-transition:leave="transition ease-in duration-75"
+                     x-transition:leave-start="opacity-100 scale-100"
+                     x-transition:leave-end="opacity-0 scale-95"
+                     x-cloak
                      class="position-absolute end-0 mt-2 bg-white rounded-3 shadow-lg"
                      style="width: 380px; max-height: 500px; overflow-y: auto; z-index: 1050;">
                     
@@ -116,22 +122,23 @@
         @endif
         
         <!-- Profile Dropdown -->
-        <div class="dropdown">
+        <div class="dropdown" style="min-width: 200px; position: relative; z-index: 2000;">
         <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle hover-lift" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-            <div class="position-relative">
+            <div class="position-relative" style="flex-shrink: 0;">
                 <img src="https://ui-avatars.com/api/?name={{ urlencode($displayName) }}&background=259c59&color=fff"
                      alt="avatar"
                      class="rounded-circle me-2 border-2 border-success"
                      width="38"
-                     height="38">
+                     height="38"
+                     style="display: block;">
                 <span class="position-absolute bottom-0 end-0 bg-success rounded-circle border border-white" style="width: 10px; height: 10px;"></span>
             </div>
-            <div class="d-flex flex-column ms-2">
+            <div class="d-flex flex-column ms-2" style="min-width: 100px;">
                 <span class="fw-medium">{{ $displayName }}</span>
                 <small class="text-success">Online</small>
             </div>
         </a>
-        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg" style="min-width: 280px;" aria-labelledby="profileDropdown">
+        <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg" style="min-width: 280px; z-index: 2010 !important; position: absolute !important;" aria-labelledby="profileDropdown">
             <li class="px-3 py-3 border-bottom">
                 <div class="d-flex align-items-center">
                     <img src="https://ui-avatars.com/api/?name={{ urlencode($displayName) }}&background=259c59&color=fff"
@@ -190,6 +197,27 @@
 </div>
 
 @if($showNotifications ?? false)
+<style>
+.notification-item:hover {
+    background-color: #f8f9fa;
+}
+.notification-item:last-child {
+    border-bottom: none !important;
+}
+/* Prevent badge from causing layout shift */
+.badge.rounded-pill {
+    min-width: 20px;
+    text-align: center;
+}
+/* Smooth opacity changes only - prevent layout shift */
+[x-cloak] {
+    display: none !important;
+}
+/* Optimize Alpine transitions */
+[x-transition] {
+    will-change: opacity, transform;
+}
+</style>
 <script>
 document.addEventListener('alpine:init', () => {
     Alpine.data('notificationBell', () => ({

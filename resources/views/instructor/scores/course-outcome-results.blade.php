@@ -87,7 +87,6 @@
     height: 2px;
     background: #dee2e6;
     z-index: 1;
-    transition: all 0.3s ease;
 }
 
 .compact-step.active:not(:last-child)::after {
@@ -118,11 +117,10 @@
     height: 2px;
     background: #28a745;
     z-index: 1;
-    transition: all 0.3s ease;
 }
 
 .compact-step:hover {
-    transform: translateY(-2px);
+    /* Removed transform to prevent layout shift */
 }
 
 .compact-step.active {

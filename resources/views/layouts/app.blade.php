@@ -6,23 +6,147 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <title>{{ config('app.name', 'Laravel') }}</title>
+    
+    <!-- DNS Prefetch & Preconnect for CDN resources -->
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    <!-- Critical CSS to prevent FOUC -->
+    <style>
+        /* Immediate layout structure before external CSS loads */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow-x: hidden;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background-color: #EAF8E7;
+        }
+        
+        /* Loading Overlay */
+        .page-loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease-out, visibility 0.3s ease-out;
+        }
+        
+        body.loaded .page-loader {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+        }
+        
+        .loader-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid #e5e7eb;
+            border-top-color: #0F4B36;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 1.25rem;
+        }
+        
+        .loader-text {
+            color: #4b5563;
+            font-size: 0.875rem;
+            font-weight: 400;
+            letter-spacing: 0.025em;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .sidebar-wrapper {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 16rem;
+            height: 100vh;
+            background-color: #0F4B36;
+            z-index: 1040;
+        }
+        .main-content {
+            margin-left: 16rem;
+            min-height: 100vh;
+            background-color: #EAF8E7;
+            position: relative;
+            z-index: 1;
+        }
+        header {
+            height: 70px;
+            background-color: #023336;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        header .dropdown {
+            z-index: 2000 !important;
+        }
+        header .dropdown-menu {
+            z-index: 2010 !important;
+            position: absolute !important;
+        }
+        header h1 {
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            line-height: 1 !important;
+        }
+        header .badge {
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            font-size: 0.8125rem !important;
+            line-height: 1 !important;
+        }
+        /* Prevent Alpine flashing */
+        [x-cloak] { 
+            display: none !important; 
+        }
+        /* Prevent icon font flickering */
+        .bi, i[class*="bi-"] {
+            font-style: normal;
+            font-weight: normal !important;
+            font-variant: normal;
+            text-transform: none;
+            line-height: 1;
+            vertical-align: -.125em;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+    </style>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons - Preload and use CDN for better caching -->
+    <link rel="preload" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff2" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
 
     <!-- DataTables CSS with Bootstrap 5 Integration -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="{{ asset('css/datatables-custom.css') }}">
     
-    <!-- Google Fonts - Inter -->
+    <!-- Google Fonts - Inter (with display=swap to prevent FOIT) -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.5/dist/sweetalert2.min.css" rel="stylesheet">
     
-    <!-- App CSS & JS -->
+    <!-- App CSS & JS (with cache busting) -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
-    
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11.10.5/dist/sweetalert2.all.min.js"></script>
 
@@ -39,10 +163,12 @@
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: var(--light-green);
             min-height: 100vh;
             display: flex;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* Sidebar Styles */
@@ -54,11 +180,15 @@
             width: 16rem;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+            z-index: 1040;
+            contain: layout style paint;
         }
 
         .sidebar-content {
             height: calc(100vh - 140px); /* Adjusted to make room for version */
             overflow-y: auto;
+            overflow-x: hidden;
             flex: 1;
         }
 
@@ -75,14 +205,14 @@
             padding: 0.625rem 1rem;
             margin: 0.125rem 0;
             border-radius: 0.375rem;
-            transition: all 0.2s ease-in-out;
+            transition: background-color 0.2s ease-in-out;
             color: var(--menu-text) !important;
             font-size: 0.9375rem;
+            will-change: background-color;
         }
 
         .sidebar-link:hover {
             background-color: var(--hover-green);
-            transform: translateX(3px);
             color: #ffffff !important;
         }
 
@@ -96,31 +226,57 @@
             opacity: 0.9;
             width: 20px;
             text-align: center;
+            display: inline-block;
+            flex-shrink: 0;
+            line-height: 1;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            font-style: normal;
         }
 
         .sidebar-link:hover i {
             opacity: 1;
+        }
+        
+        /* Icon stability - prevent flickering */
+        i, .bi, [class*="bi-"] {
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+            transform: translateZ(0);
+            backface-visibility: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* Collapsible Menu Styles */
         .course-outcome-submenu {
             max-height: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease-out;
+            transition: max-height 0.2s ease-out;
+            will-change: max-height;
         }
 
         .course-outcome-submenu.show {
             max-height: 200px;
-            transition: max-height 0.3s ease-in;
+            transition: max-height 0.2s ease-in;
         }
 
         .course-outcome-chevron {
-            transition: transform 0.3s ease;
+            transition: transform 0.2s ease;
             font-size: 0.8rem;
+            display: inline-block;
+            width: 16px;
+            text-align: center;
         }
 
         .course-outcome-chevron.rotated {
             transform: rotate(180deg);
+        }
+        
+        /* Prevent sidebar from affecting header */
+        .sidebar-wrapper {
+            contain: layout style paint;
         }
 
         /* Submenu Styles */
@@ -128,15 +284,15 @@
             padding: 0.5rem 1rem;
             margin: 0.125rem 0;
             border-radius: 0.375rem;
-            transition: all 0.2s ease-in-out;
+            transition: background-color 0.2s ease-in-out;
             color: var(--menu-text) !important;
             font-size: 0.875rem;
             background-color: transparent;
+            will-change: background-color;
         }
 
         .submenu-link:hover {
             background-color: var(--hover-green);
-            transform: translateX(3px);
             color: #ffffff !important;
         }
 
@@ -151,6 +307,9 @@
             width: 18px;
             text-align: center;
             font-size: 0.85rem;
+            display: inline-block;
+            flex-shrink: 0;
+            line-height: 1;
         }
 
         .submenu-link:hover i {
@@ -162,6 +321,8 @@
             padding-bottom: 1rem;
             margin-bottom: 1rem;
             border-bottom: 1px solid var(--border-color);
+            transform: translateZ(0);
+            backface-visibility: hidden;
         }
 
         .logo-wrapper {
@@ -174,6 +335,7 @@
             width: 2.25rem;
             height: 2.25rem;
             border-radius: 0.5rem;
+            display: block;
         }
 
         .logo-wrapper span {
@@ -181,6 +343,7 @@
             font-weight: 600;
             letter-spacing: 0.5px;
             color: #ffffff;
+            line-height: 1;
         }
 
         /* Navigation Bar */
@@ -191,6 +354,8 @@
             position: sticky;
             top: 0;
             z-index: 1000;
+            min-height: 70px;
+            contain: layout style paint;
         }
 
         .academic-period {
@@ -230,19 +395,21 @@
             margin-left: 16rem;
             min-height: 100vh;
             width: calc(100% - 16rem);
+            position: relative;
+            contain: layout style;
         }
 
-        /* Transitions */
-        .transition-all {
-            transition: all 0.2s ease-in-out;
+        /* Prevent layout shifts */
+        * {
+            box-sizing: border-box;
         }
 
         .hover-lift {
-            transition: transform 0.2s ease;
+            transition: opacity 0.2s ease;
         }
 
         .hover-lift:hover {
-            transform: translateY(-2px);
+            opacity: 0.9;
         }
 
         /* General UI Elements */
@@ -252,6 +419,46 @@
 
         [x-cloak] {
             display: none !important;
+        }
+
+        /* Prevent Cumulative Layout Shift */
+        img {
+            display: block;
+        }
+
+        /* Reserve space for badges */
+        .badge.rounded-pill {
+            min-width: 20px;
+            display: inline-block;
+        }
+
+        /* Stabilize all icons */
+        .bi, [class^="bi-"], [class*=" bi-"] {
+            display: inline-block;
+            line-height: 1;
+            vertical-align: middle;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* Header stability */
+        .header-stable {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
+        }
+
+        /* Prevent icon flickering */
+        i {
+            font-style: normal;
+            font-variant: normal;
+            text-rendering: auto;
+        }
+
+        /* Smooth rendering */
+        body {
+            overflow-y: scroll;
         }
 
         /* Main Content Scrollbar */
@@ -302,8 +509,20 @@
 
     <!-- Additional Page Styles -->
     @stack('styles')
+
+    <!-- Preload critical resources -->
+    <link rel="preload" as="image" href="{{ asset('logo.jpg') }}">
+    <link rel="preload" as="script" href="{{ asset('js/page-transition.js') }}">
+    
+    <!-- Page transition handler (load early) -->
+    <script src="{{ asset('js/page-transition.js') }}" defer></script>
 </head>
 <body>
+    <!-- Loading Overlay -->
+    <div class="page-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">Loading...</div>
+    </div>
     <!-- Sidebar -->
     <aside class="sidebar-wrapper">
         @include('layouts.sidebar')
@@ -332,6 +551,56 @@
     <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Remove loading class when page is ready -->
+    <script>
+        // Show content when page is fully loaded
+        window.addEventListener('load', function() {
+            // Small delay for smoother transition
+            setTimeout(function() {
+                document.body.classList.add('loaded');
+            }, 150);
+        });
+
+        // Fallback if load event already fired
+        if (document.readyState === 'complete') {
+            setTimeout(function() {
+                document.body.classList.add('loaded');
+            }, 150);
+        } else if (document.readyState === 'interactive') {
+            // If DOM is ready but resources are still loading
+            setTimeout(function() {
+                document.body.classList.add('loaded');
+            }, 200);
+        }
+
+        // Smooth page transitions - show loader on navigation
+        document.addEventListener('click', function(e) {
+            const link = e.target.closest('a');
+            
+            if (link && 
+                link.href && 
+                link.href.indexOf(window.location.origin) === 0 &&
+                !link.hasAttribute('target') &&
+                !link.hasAttribute('download') &&
+                !link.classList.contains('dropdown-toggle') &&
+                !link.getAttribute('href').startsWith('#') &&
+                !link.closest('.dropdown-menu')) {
+                
+                // Show loading screen for internal navigation
+                document.body.classList.remove('loaded');
+            }
+        });
+
+        // Handle browser back/forward
+        window.addEventListener('pageshow', function(event) {
+            if (event.persisted) {
+                setTimeout(function() {
+                    document.body.classList.add('loaded');
+                }, 100);
+            }
+        });
+    </script>
 
     <!-- Course Outcome Submenu Handler -->
     <script>
