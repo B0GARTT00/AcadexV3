@@ -3610,4 +3610,242 @@ class AdminController extends Controller
             ->with('success', "Structure template request from {$templateRequest->chairperson->first_name} {$templateRequest->chairperson->last_name} has been rejected.");
 >>>>>>> 8fb0fef (Grade Formula Request, Grades Formula Management)
     }
+
+    // ============================
+    // Session Management
+    // ============================
+
+    /**
+     * Display all active user sessions for admin management.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function sessions(Request $request)
+    {
+        Gate::authorize('admin');
+
+        $sessions = DB::table('sessions')
+            ->leftJoin('users', 'sessions.user_id', '=', 'users.id')
+            ->select(
+                'sessions.id',
+                'sessions.user_id',
+                'sessions.ip_address',
+                'sessions.user_agent',
+                'sessions.last_activity',
+                'sessions.last_activity_at',
+                'sessions.device_type',
+                'sessions.browser',
+                'sessions.platform',
+                DB::raw('CONCAT(users.first_name, " ", users.last_name) as user_name'),
+                'users.email',
+                'users.role',
+                'users.is_active'
+            )
+            ->whereNotNull('sessions.user_id')
+            ->orderByDesc('sessions.last_activity')
+            ->get()
+            ->map(function ($session) {
+                $lastActivity = \Carbon\Carbon::createFromTimestamp($session->last_activity);
+                $session->last_activity_formatted = $session->last_activity_at
+                    ? \Carbon\Carbon::parse($session->last_activity_at)->diffForHumans()
+                    : $lastActivity->diffForHumans();
+                $session->last_activity_date = $lastActivity->format('M d, Y g:i A');
+                $session->is_current = $session->id === session()->getId();
+                
+                // Determine session status
+                $minutesInactive = $lastActivity->diffInMinutes(now());
+                $session->status = $minutesInactive > config('session.lifetime', 120) ? 'expired' : 'active';
+                
+                return $session;
+            });
+
+        // Get user logs with optional date filtering
+        $userLogsQuery = UserLog::with('user')
+            ->orderByDesc('created_at');
+
+        if ($request->has('date') && $request->input('date')) {
+            $date = $request->input('date');
+            $userLogsQuery->whereDate('created_at', $date);
+        }
+
+        $userLogs = $userLogsQuery->get();
+        $selectedDate = $request->input('date', '');
+
+        return view('admin.sessions', compact('sessions', 'userLogs', 'selectedDate'));
+    }
+
+    /**
+     * Revoke a specific user session.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function revokeSession(Request $request)
+    {
+        Gate::authorize('admin');
+
+        $request->validate([
+            'session_id' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        // Verify admin password
+        if (!Hash::check($request->input('password'), Auth::user()->password)) {
+            return back()
+                ->withErrors(['password' => 'The provided password is incorrect.'])
+                ->withInput();
+        }
+
+        $sessionId = $request->input('session_id');
+        
+        // Prevent admin from revoking their own session
+        if ($sessionId === session()->getId()) {
+            return back()
+                ->withErrors(['session_id' => 'You cannot revoke your own active session.'])
+                ->withInput();
+        }
+
+        // Get session info before deletion for logging
+        $sessionInfo = DB::table('sessions')
+            ->leftJoin('users', 'sessions.user_id', '=', 'users.id')
+            ->select('sessions.user_id', DB::raw('CONCAT(users.first_name, " ", users.last_name) as user_name'))
+            ->where('sessions.id', $sessionId)
+            ->first();
+
+        // Delete the session
+        $deleted = DB::table('sessions')->where('id', $sessionId)->delete();
+
+        if ($deleted && $sessionInfo) {
+            // Log the session revocation
+            DB::table('user_logs')->insert([
+                'user_id' => $sessionInfo->user_id,
+                'event_type' => 'session_revoked',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'browser' => (new \Jenssegers\Agent\Agent())->browser(),
+                'device' => (new \Jenssegers\Agent\Agent())->device(),
+                'platform' => (new \Jenssegers\Agent\Agent())->platform(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return redirect()
+                ->route('admin.sessions')
+                ->with('success', "Session for {$sessionInfo->user_name} has been revoked successfully.");
+        }
+
+        return back()
+            ->withErrors(['session_id' => 'Session not found or already terminated.'])
+            ->withInput();
+    }
+
+    /**
+     * Revoke all sessions for a specific user.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function revokeUserSessions(Request $request)
+    {
+        Gate::authorize('admin');
+
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'password' => 'required|string',
+        ]);
+
+        // Verify admin password
+        if (!Hash::check($request->input('password'), Auth::user()->password)) {
+            return back()
+                ->withErrors(['password' => 'The provided password is incorrect.'])
+                ->withInput();
+        }
+
+        $userId = $request->input('user_id');
+        
+        // Prevent admin from revoking their own sessions
+        if ($userId === Auth::id()) {
+            return back()
+                ->withErrors(['user_id' => 'You cannot revoke your own sessions.'])
+                ->withInput();
+        }
+
+        // Get user info
+        $user = User::findOrFail($userId);
+
+        // Delete all sessions for the user
+        $deleted = DB::table('sessions')
+            ->where('user_id', $userId)
+            ->delete();
+
+        if ($deleted > 0) {
+            // Log the bulk session revocation
+            DB::table('user_logs')->insert([
+                'user_id' => $userId,
+                'event_type' => 'all_sessions_revoked',
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'browser' => (new \Jenssegers\Agent\Agent())->browser(),
+                'device' => (new \Jenssegers\Agent\Agent())->device(),
+                'platform' => (new \Jenssegers\Agent\Agent())->platform(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return redirect()
+                ->route('admin.sessions')
+                ->with('success', "All {$deleted} session(s) for {$user->full_name} have been revoked successfully.");
+        }
+
+        return back()
+            ->withErrors(['user_id' => 'No active sessions found for this user.'])
+            ->withInput();
+    }
+
+    /**
+     * Revoke all sessions except the current admin session.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function revokeAllSessions(Request $request)
+    {
+        Gate::authorize('admin');
+
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        // Verify admin password
+        if (!Hash::check($request->input('password'), Auth::user()->password)) {
+            return back()
+                ->withErrors(['password' => 'The provided password is incorrect.'])
+                ->withInput();
+        }
+
+        $currentSessionId = session()->getId();
+
+        // Delete all sessions except current admin session
+        $deleted = DB::table('sessions')
+            ->where('id', '!=', $currentSessionId)
+            ->whereNotNull('user_id')
+            ->delete();
+
+        // Log the bulk revocation
+        DB::table('user_logs')->insert([
+            'user_id' => Auth::id(),
+            'event_type' => 'bulk_sessions_revoked',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'browser' => (new \Jenssegers\Agent\Agent())->browser(),
+            'device' => (new \Jenssegers\Agent\Agent())->device(),
+            'platform' => (new \Jenssegers\Agent\Agent())->platform(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return redirect()
+            ->route('admin.sessions')
+            ->with('success', "Successfully revoked {$deleted} user session(s). Your session remains active.");
+    }
 }

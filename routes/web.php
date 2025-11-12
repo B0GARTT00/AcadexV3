@@ -279,8 +279,6 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
 
     Route::get('/academic-periods', [AcademicPeriodController::class, 'index'])->name('academicPeriods');
     Route::post('/academic-periods/generate', [AcademicPeriodController::class, 'generate'])->name('academicPeriods.generate');
-    Route::get('/user-logs', [AdminController::class, 'viewUserLogs'])->name('userLogs');
-    Route::get('/admin/user-logs/filter', [AdminController::class, 'filterUserLogs'])->name('user_logs.filter');
 
     Route::get('/grades-formula', [AdminController::class, 'gradesFormula'])->name('gradesFormula');
     Route::get('/grades-formula/default', [AdminController::class, 'gradesFormulaDefault'])->name('gradesFormula.default');
@@ -314,10 +312,19 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::get('/users', [AdminController::class, 'viewUsers'])->name('users');
     Route::post('/users/confirm-password', [AdminController::class, 'adminConfirmUserCreationWithPassword'])->name('confirmUserCreationWithPassword');
     Route::post('/users/store-verified-user', [AdminController::class, 'storeUser'])->name('storeVerifiedUser');
+<<<<<<< HEAD
     
     // Session Management - Force Logout
     Route::post('/users/{user}/force-logout', [AdminController::class, 'forceLogoutUser'])->name('users.forceLogout');
     Route::get('/users/{user}/session-count', [AdminController::class, 'getUserSessionCount'])->name('users.sessionCount');
+=======
+
+    // Session Management Routes
+    Route::get('/sessions', [AdminController::class, 'sessions'])->name('sessions');
+    Route::post('/sessions/revoke', [AdminController::class, 'revokeSession'])->name('sessions.revoke');
+    Route::post('/sessions/revoke-user', [AdminController::class, 'revokeUserSessions'])->name('sessions.revokeUser');
+    Route::post('/sessions/revoke-all', [AdminController::class, 'revokeAllSessions'])->name('sessions.revokeAll');
+>>>>>>> c2e8324 (TN-004 - Added the implementation on the admin side: a session management feature that enables full control over user logins and active session connections.)
 });
 
 // VPAA Routes

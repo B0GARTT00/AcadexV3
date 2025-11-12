@@ -11,7 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
-        // Register global middleware here if needed
+        // Register global middleware to track session activity
+        $middleware->web(append: [
+            \App\Http\Middleware\TrackSessionActivity::class,
+        ]);
 
         // Register route middleware
         $middleware->alias([
