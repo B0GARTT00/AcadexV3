@@ -3624,7 +3624,7 @@ class AdminController extends Controller
     {
         Gate::authorize('admin');
 
-        $sessions = DB::table('sessions')
+        $sessionsQuery = DB::table('sessions')
             ->leftJoin('users', 'sessions.user_id', '=', 'users.id')
             ->select(
                 'sessions.id',
@@ -3642,9 +3642,9 @@ class AdminController extends Controller
                 'users.is_active'
             )
             ->whereNotNull('sessions.user_id')
-            ->orderByDesc('sessions.last_activity')
-            ->get()
-            ->map(function ($session) {
+            ->orderByDesc('sessions.last_activity');
+
+        $sessions = $sessionsQuery->paginate(10)->through(function ($session) {
                 $lastActivity = \Carbon\Carbon::createFromTimestamp($session->last_activity);
                 $session->last_activity_formatted = $session->last_activity_at
                     ? \Carbon\Carbon::parse($session->last_activity_at)->diffForHumans()
@@ -3659,7 +3659,7 @@ class AdminController extends Controller
                 return $session;
             });
 
-        // Get user logs with optional date filtering
+        // Get user logs with optional date filtering and pagination
         $userLogsQuery = UserLog::with('user')
             ->orderByDesc('created_at');
 
@@ -3668,7 +3668,7 @@ class AdminController extends Controller
             $userLogsQuery->whereDate('created_at', $date);
         }
 
-        $userLogs = $userLogsQuery->get();
+        $userLogs = $userLogsQuery->paginate(10)->appends(['date' => $request->input('date', ''), 'tab' => 'logs']);
         $selectedDate = $request->input('date', '');
 
         return view('admin.sessions', compact('sessions', 'userLogs', 'selectedDate'));

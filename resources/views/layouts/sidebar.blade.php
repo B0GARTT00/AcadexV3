@@ -282,6 +282,13 @@
                 <h6 class="px-3 mb-2">SYSTEM ADMINISTRATION</h6>
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
+                        <a href="{{ route('admin.sessions') }}" 
+                           class="nav-link {{ request()->routeIs('admin.sessions*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-shield-lock me-3"></i>
+                            <span>Session & Activity Monitor</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
                         <a href="{{ route('admin.departments') }}" 
                            class="nav-link {{ request()->routeIs('admin.departments') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-building me-3"></i>
@@ -329,13 +336,6 @@
                            class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-people me-3"></i>
                             <span>Users</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('admin.sessions') }}" 
-                           class="nav-link {{ request()->routeIs('admin.sessions*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-shield-lock me-3"></i>
-                            <span>Session & Activity Monitor</span>
                         </a>
                     </li>
                     <li class="nav-item">
