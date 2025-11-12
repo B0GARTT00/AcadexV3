@@ -40,14 +40,25 @@ class TrackSessionActivity
             $agent = new Agent();
             $agent->setUserAgent($request->userAgent());
 
+            $updateData = [
+                'last_activity_at' => now(),
+                'device_type' => $this->getDeviceType($agent),
+                'browser' => $agent->browser() ?: 'Unknown',
+                'platform' => $agent->platform() ?: 'Unknown',
+            ];
+
+            // Add device fingerprint from session if available
+            if ($request->session()->has('device_fingerprint')) {
+                $updateData['device_fingerprint'] = $request->session()->get('device_fingerprint');
+            }
+            // Or from request if provided
+            elseif ($request->has('device_fingerprint')) {
+                $updateData['device_fingerprint'] = $request->input('device_fingerprint');
+            }
+
             DB::table('sessions')
                 ->where('id', $request->session()->getId())
-                ->update([
-                    'last_activity_at' => now(),
-                    'device_type' => $this->getDeviceType($agent),
-                    'browser' => $agent->browser() ?: 'Unknown',
-                    'platform' => $agent->platform() ?: 'Unknown',
-                ]);
+                ->update($updateData);
         } catch (\Exception $e) {
             // Silently fail to avoid disrupting the request
             \Log::error('Failed to update session metadata: ' . $e->getMessage());

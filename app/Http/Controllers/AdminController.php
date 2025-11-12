@@ -3683,6 +3683,7 @@ class AdminController extends Controller
                 'sessions.device_type',
                 'sessions.browser',
                 'sessions.platform',
+                'sessions.device_fingerprint',
                 DB::raw('CONCAT(users.first_name, " ", users.last_name) as user_name'),
                 'users.email',
                 'users.role',

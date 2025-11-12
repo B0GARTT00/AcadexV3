@@ -174,6 +174,51 @@
                     icon.classList.add('fa-eye');
                 }
             });
+
+            // Generate device fingerprint using browser properties
+            function generateFingerprint() {
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                ctx.textBaseline = 'top';
+                ctx.font = '14px Arial';
+                ctx.fillText('Browser fingerprint', 2, 2);
+                const canvasData = canvas.toDataURL();
+                
+                const data = [
+                    navigator.userAgent,
+                    navigator.language,
+                    navigator.languages ? navigator.languages.join(',') : '',
+                    screen.colorDepth,
+                    screen.width + 'x' + screen.height,
+                    screen.availWidth + 'x' + screen.availHeight,
+                    new Date().getTimezoneOffset(),
+                    navigator.hardwareConcurrency || 'unknown',
+                    navigator.deviceMemory || 'unknown',
+                    navigator.platform,
+                    canvasData.substring(0, 100) // Use part of canvas fingerprint
+                ].join('|||');
+                
+                // Simple hash function
+                let hash = 0;
+                for (let i = 0; i < data.length; i++) {
+                    const char = data.charCodeAt(i);
+                    hash = ((hash << 5) - hash) + char;
+                    hash = hash & hash;
+                }
+                return Math.abs(hash).toString(16);
+            }
+
+            // Add fingerprint to form immediately
+            const loginForm = document.querySelector('form[action*="login"]');
+            if (loginForm) {
+                const fingerprint = generateFingerprint();
+                
+                let fpInput = document.createElement('input');
+                fpInput.type = 'hidden';
+                fpInput.name = 'device_fingerprint';
+                fpInput.value = fingerprint;
+                loginForm.appendChild(fpInput);
+            }
         });
     </script>
 @endsection

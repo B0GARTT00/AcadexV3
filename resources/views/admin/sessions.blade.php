@@ -150,6 +150,31 @@
             background-color: #e7f3ff !important;
         }
 
+        /* Fix modal z-index layering */
+        .modal-backdrop {
+            z-index: 1040 !important;
+        }
+        
+        .modal {
+            z-index: 1050 !important;
+        }
+        
+        .modal-dialog {
+            z-index: 1060 !important;
+        }
+        
+        .modal-content {
+            position: relative;
+            z-index: 1070 !important;
+        }
+        
+        .modal-content input,
+        .modal-content button,
+        .modal-content .form-control {
+            position: relative;
+            z-index: 1080 !important;
+        }
+
         .your-session-badge {
             background-color: #0d6efd;
             color: white;
@@ -278,6 +303,7 @@
                                     <th>Browser</th>
                                     <th>Platform</th>
                                     <th>IP Address</th>
+                                    <th>Device Fingerprint</th>
                                     <th>Last Activity</th>
                                     <th class="text-center">Actions</th>
                                 </tr>
@@ -339,6 +365,15 @@
                                     <td class="platform-text">{{ $session->platform ?? 'Unknown' }}</td>
                                     <td>
                                         <span class="ip-address">{{ $session->ip_address ?? 'N/A' }}</span>
+                                    </td>
+                                    <td>
+                                        @if($session->device_fingerprint)
+                                            <code class="text-muted" style="font-size: 0.75rem;" title="{{ $session->device_fingerprint }}">
+                                                {{ Str::limit($session->device_fingerprint, 12, '...') }}
+                                            </code>
+                                        @else
+                                            <span class="text-muted" style="font-size: 0.75rem;">N/A</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <div class="activity-time">{{ $session->last_activity_formatted }}</div>
@@ -615,8 +650,8 @@
                     </p>
                     <div class="mt-3">
                         <label class="form-label fw-bold">Confirm Your Password</label>
-                        <input type="password" name="password" class="form-control" required 
-                               placeholder="Enter your admin password">
+                        <input type="password" name="password" id="revoke-password" class="form-control" required 
+                               placeholder="Enter your admin password" autofocus>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -647,8 +682,8 @@
                     </p>
                     <div class="mt-3">
                         <label class="form-label fw-bold">Confirm Your Password</label>
-                        <input type="password" name="password" class="form-control" required 
-                               placeholder="Enter your admin password">
+                        <input type="password" name="password" id="revoke-user-password" class="form-control" required 
+                               placeholder="Enter your admin password" autofocus>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -700,19 +735,59 @@
         function confirmRevoke(sessionId, userName) {
             document.getElementById('revoke-session-id').value = sessionId;
             document.getElementById('revoke-user-name').textContent = userName;
-            const modal = new bootstrap.Modal(document.getElementById('revokeModal'));
+            const modalEl = document.getElementById('revokeModal');
+            const modal = new bootstrap.Modal(modalEl, {
+                backdrop: false,
+                keyboard: true,
+                focus: true
+            });
+            
+            // Clear previous password value and focus on input when modal is shown
+            modalEl.addEventListener('shown.bs.modal', function () {
+                const passwordInput = document.getElementById('revoke-password');
+                if (passwordInput) {
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            }, { once: true });
+            
             modal.show();
         }
 
         function confirmRevokeUser(userId, userName) {
             document.getElementById('revoke-user-id').value = userId;
             document.getElementById('revoke-all-user-name').textContent = userName;
-            const modal = new bootstrap.Modal(document.getElementById('revokeUserModal'));
+            const modalEl = document.getElementById('revokeUserModal');
+            const modal = new bootstrap.Modal(modalEl, {
+                backdrop: false,
+                keyboard: true,
+                focus: true
+            });
+            
+            // Clear previous password value and focus on input when modal is shown
+            modalEl.addEventListener('shown.bs.modal', function () {
+                const passwordInput = document.getElementById('revoke-user-password');
+                if (passwordInput) {
+                    passwordInput.value = '';
+                    passwordInput.focus();
+                }
+            }, { once: true });
+            
             modal.show();
         }
 
         function confirmRevokeAll() {
-            const modal = new bootstrap.Modal(document.getElementById('revokeAllModal'));
+            const modalEl = document.getElementById('revokeAllModal');
+            const modal = new bootstrap.Modal(modalEl);
+            
+            // Focus on password input when modal is shown
+            modalEl.addEventListener('shown.bs.modal', function () {
+                const passwordInput = modalEl.querySelector('input[type="password"]');
+                if (passwordInput) {
+                    setTimeout(() => passwordInput.focus(), 100);
+                }
+            }, { once: true });
+            
             modal.show();
         }
 
