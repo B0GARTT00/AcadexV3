@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container-fluid px-4 py-4">
-    <h1 class="text-2xl font-bold mb-4">🎓 Manage Students</h1>
+    <h1 class="text-2xl font-bold mb-4"><i class="bi bi-people me-2" style="color: #198754;"></i>Manage Students</h1>
 
     {{-- Subject Selection --}}
     <form method="GET" action="{{ route('instructor.students.index') }}" class="mb-4">

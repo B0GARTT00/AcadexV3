@@ -4,7 +4,7 @@
 <div class="container py-4">
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h4 text-dark fw-bold mb-0">📅 Academic Periods</h1>
+        <h1 class="h4 text-dark fw-bold mb-0"> Academic Periods</h1>
         <button class="btn btn-success" onclick="showModal()">+ Generate New</button>
     </div>
 

@@ -1,159 +1,67 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-3 py-2 course-outcomes-page" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
-    {{-- Compact Header Section --}}
-    <div class="row mb-2">
-        <div class="col">
-            {{-- Compact Breadcrumbs --}}
-            <nav aria-label="breadcrumb" class="mb-2">
-                <ol class="breadcrumb bg-white rounded-pill px-3 py-1 shadow-sm mb-0">
-                    <li class="breadcrumb-item">
-                        <a href="/" class="text-decoration-none" style="color: #198754; font-size: 0.9rem;">
-                            <i class="bi bi-house-door me-1"></i>Home
-                        </a>
-                    </li>
-                    <li class="breadcrumb-item active" aria-current="page" style="color: #6c757d; font-size: 0.9rem;">
-                        <i class="bi bi-target me-1"></i>Course Outcomes
-                    </li>
-                </ol>
-            </nav>
-
-            {{-- Compact Page Title --}}
-            <div class="d-flex align-items-center justify-content-between mb-2">
-                <div class="d-flex align-items-center">
-                    <div class="p-2 rounded-circle me-2" style="background: linear-gradient(135deg, #198754, #20c997);">
-                        <i class="bi bi-bullseye text-white" style="font-size: 1.2rem;"></i>
-                    </div>
-                    <div>
-                        <h4 class="fw-bold mb-0" style="color: #198754;">Course Outcome Management</h4>
-                        <small class="text-muted">Manage course learning outcomes by year</small>
-                    </div>
-                </div>
-                
-                {{-- Generate CO Button (Chairperson and GE Coordinator Only) --}}
-                @if(Auth::user()->role === 1 || Auth::user()->role === 4)
-                <div>
-                    <button type="button" class="btn btn-success btn-sm rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#generateCOModal" style="font-weight: 600;">
-                        <i class="bi bi-magic me-1"></i>Generate COs
-                    </button>
-                </div>
-                @endif
+<div class="container-fluid px-4 py-4">
+    {{-- Header Section --}}
+    <div class="mb-4">
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h4 class="fw-bold mb-2" style="color: #2c3e50;">
+                    <i class="bi bi-bullseye me-2" style="color: #198754;"></i>Course Outcome Management
+                </h4>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="/" style="color: #198754; text-decoration: none;">Home</a></li>
+                        <li class="breadcrumb-item active" aria-current="page" style="color: #6c757d;">Course Outcomes</li>
+                    </ol>
+                </nav>
             </div>
+            
+            {{-- Generate CO Button (Chairperson and GE Coordinator Only) --}}
+            @if(Auth::user()->role === 1 || Auth::user()->role === 4)
+            <div>
+                <button type="button" class="btn btn-success rounded-pill shadow-sm" data-bs-toggle="modal" data-bs-target="#generateCOModal" style="font-weight: 600;">
+                    <i class="bi bi-magic me-1"></i>Generate COs
+                </button>
+            </div>
+            @endif
         </div>
     </div>
 
-    {{-- Compact Academic Period Card --}}
-    @if(isset($currentPeriod))
-    <div class="card border-0 shadow-sm mb-2" style="background: linear-gradient(135deg, #198754, #20c997); color: white;">
-        <div class="card-body py-2">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <div class="d-flex align-items-center">
-                        <div class="p-1 rounded-circle me-2" style="background: linear-gradient(135deg, #198754, #20c997);">
-                            <i class="bi bi-mortarboard text-white" style="font-size: 1rem;"></i>
-                        </div>
-                        <div>
-                            <h6 class="mb-0 fw-bold">{{ $currentPeriod->academic_year }} - {{ $currentPeriod->semester }}</h6>
-                            @if((Auth::user()->role === 1 || Auth::user()->role === 4) && Auth::user()->course)
-                                <small class="opacity-90">
-                                    <i class="bi bi-mortarboard me-1"></i>{{ Auth::user()->course->course_code }} Program
-                                </small>
-                            @endif
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4 text-md-end">
-                    @if(isset($subjects) && count($subjects) > 0)
-                        <div class="bg-white bg-opacity-20 rounded-pill px-2 py-1 d-inline-block">
-                            <small style="color: #111; font-weight: bold;">{{ count($subjects) }} subjects</small>
-                            @if(isset($subjectsByYear))
-                                <small style="color: #111;"> • {{ count($subjectsByYear) }} years</small>
-                            @endif
-                        </div>
+    {{-- Year Level Sections --}}
+    @if(isset($subjectsByYear) && count($subjectsByYear) > 0)
+        <div class="mb-3">
+            @if(isset($currentPeriod))
+                <small class="text-muted d-block mb-3">
+                    <i class="bi bi-calendar3 me-1"></i>{{ $currentPeriod->academic_year }} - {{ $currentPeriod->semester }}
+                    @if((Auth::user()->role === 1 || Auth::user()->role === 4) && Auth::user()->course)
+                        • {{ Auth::user()->course->course_code }} Program
                     @endif
-                </div>
-            </div>
+                </small>
+            @endif
         </div>
-    </div>
     @endif
 
-    {{-- Compact Year Level Navigation --}}
-    @if(isset($subjectsByYear) && count($subjectsByYear) > 1)
-    <div class="card border-0 shadow-sm mb-2">
-        <div class="card-body py-2">
-            <div class="row align-items-center">
-                <div class="col-md-3">
-                    <h6 class="mb-0 fw-semibold" style="color: #198754; font-size: 0.9rem;">
-                        <i class="bi bi-filter me-1"></i>Filter by Year
-                    </h6>
-                </div>
-                <div class="col-md-9">
-                    <div class="d-flex flex-wrap gap-1 justify-content-md-end">
-                        {{-- Show All Button --}}
-                        <button class="btn btn-success btn-sm rounded-pill px-2 py-1 year-filter-btn active" data-year="all" style="font-size: 0.8rem;">
-                            <i class="bi bi-grid-3x3-gap me-1"></i>All
-                            <span class="badge bg-white text-dark ms-1" style="font-size: 0.7rem;">{{ array_sum($subjectsByYear->map(fn($subjects) => count($subjects))->toArray()) }}</span>
-                        </button>
-                        
-                        @foreach($subjectsByYear->keys()->sort() as $year)
-                            <button class="btn btn-outline-success btn-sm rounded-pill px-2 py-1 year-filter-btn" data-year="{{ $year }}" style="font-size: 0.8rem;">
-                                <i class="bi bi-mortarboard me-1"></i>
-                                @php
-                                    $yearLabels = [1 => '1st', 2 => '2nd', 3 => '3rd', 4 => '4th'];
-                                @endphp
-                                {{ $yearLabels[$year] ?? $year }}
-                                <span class="badge bg-success text-white ms-1" style="font-size: 0.7rem;">{{ count($subjectsByYear[$year]) }}</span>
-                            </button>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    @endif
-
-    {{-- Compact Subject Cards Grouped by Year Level --}}
+    {{-- Subject Cards Grouped by Year Level --}}
     @if(isset($subjectsByYear) && count($subjectsByYear))
         @foreach($subjectsByYear as $yearLevel => $subjects)
-            <div class="mb-3 year-section" id="year-{{ $yearLevel }}" data-year="{{ $yearLevel }}">
-                {{-- Compact Year Level Header --}}
-                <div class="year-level-section">
-                    <div class="row align-items-center mb-2">
-                        <div class="col">
-                            <div class="d-flex align-items-center">
-                                @php
-                                    $iconColors = 'success';
-                                @endphp
-                                <div class="p-2 rounded-circle me-2 bg-{{ $iconColors }} bg-opacity-10">
-                                    <i class="bi bi-award text-{{ $iconColors }}" style="font-size: 1.1rem;"></i>
-                                </div>
-                                <div>
-                                    <h5 class="fw-bold mb-0" style="color: #198754;">
-                                        @php
-                                            $yearLabels = [1 => '1st Year', 2 => '2nd Year', 3 => '3rd Year', 4 => '4th Year'];
-                                        @endphp
-                                        {{ $yearLabels[$yearLevel] ?? ($yearLevel ? 'Year ' . $yearLevel : 'Unspecified Year') }}
-                                    </h5>
-                                    <small class="text-muted">
-                                        <i class="bi bi-book me-1"></i>{{ count($subjects) }} {{ count($subjects) == 1 ? 'subject' : 'subjects' }}
-                                    </small>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-auto">
-                            @php
-                                $headerBadgeClass = 'bg-success';
-                            @endphp
-                            <span class="badge {{ $headerBadgeClass }} px-2 py-1 rounded-pill">
-                                Level {{ $yearLevel ?: '?' }}
-                            </span>
-                        </div>
-                    </div>
+            <div class="mb-4 year-section" id="year-{{ $yearLevel }}" data-year="{{ $yearLevel }}">
+                {{-- Year Level Header --}}
+                <div class="d-flex align-items-center mb-3">
+                    <i class="bi bi-award me-2" style="color: #198754; font-size: 1.2rem;"></i>
+                    <h5 class="fw-bold mb-0" style="color: #2c3e50;">
+                        @php
+                            $yearLabels = [1 => '1st Year', 2 => '2nd Year', 3 => '3rd Year', 4 => '4th Year'];
+                        @endphp
+                        {{ $yearLabels[$yearLevel] ?? ($yearLevel ? 'Year ' . $yearLevel : 'Unspecified Year') }}
+                    </h5>
+                    <span class="badge bg-success ms-2 rounded-pill">
+                        {{ count($subjects) }} {{ count($subjects) == 1 ? 'subject' : 'subjects' }}
+                    </span>
                 </div>
 
                 {{-- Subject Cards Grid --}}
-                <div class="row g-4 px-4 py-4" id="subject-selection-year-{{ $yearLevel }}">
+                <div class="row g-3" id="subject-selection-year-{{ $yearLevel }}">
                     @foreach($subjects as $subjectItem)
                         <div class="col-md-4">
                             <div

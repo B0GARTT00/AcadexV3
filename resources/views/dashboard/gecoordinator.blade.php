@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-4 py-5">
+<div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold text-dark mb-1">GE Coordinator Overview 👨‍💼</h2>
+            <h2 class="fw-bold text-dark mb-1">GE Coordinator Overview</h2>
             <p class="text-muted mb-0">Monitor General Education program performance and faculty management</p>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -15,7 +15,7 @@
     </div>
 
     {{-- Summary Cards --}}
-    <div class="row g-4">
+    <div class="row g-3">
         @php
             $cards = [
                 [
@@ -44,18 +44,18 @@
 
         @foreach ($cards as $card)
             <div class="col-md-4">
-                <div class="card h-100 border-0 shadow-sm rounded-4 hover-lift">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rounded-3 p-2 bg-{{ $card['color'] }}-subtle me-3">
-                                <i class="{{ $card['icon'] }} text-{{ $card['color'] }} fs-4"></i>
+                <div class="card h-100 border-0 shadow-sm rounded-3 hover-lift">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="rounded-2 p-2 bg-{{ $card['color'] }}-subtle me-2">
+                                <i class="{{ $card['icon'] }} text-{{ $card['color'] }} fs-5"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0">{{ $card['label'] }}</h6>
-                                <h3 class="fw-bold text-{{ $card['color'] }} mb-0">{{ $card['value'] }}</h3>
+                                <h6 class="text-muted mb-0 small">{{ $card['label'] }}</h6>
+                                <h4 class="fw-bold text-{{ $card['color'] }} mb-0">{{ $card['value'] }}</h4>
                             </div>
                         </div>
-                        <p class="text-muted small mb-0">
+                        <p class="text-muted small mb-0" style="font-size: 0.8rem;">
                             <i class="bi bi-arrow-right"></i> {{ $card['trend'] }}
                         </p>
                     </div>
@@ -64,7 +64,7 @@
         @endforeach
     </div>
 
-    <div class="row g-4 mt-4">
+    <div class="row g-3 mt-1">
         {{-- Faculty Status Overview --}}
         <div class="col-lg-8">
             <div class="card border-0 shadow-sm rounded-4 h-100">

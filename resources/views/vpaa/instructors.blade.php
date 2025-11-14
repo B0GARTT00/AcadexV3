@@ -14,9 +14,9 @@
             </h1>
             <nav aria-label="breadcrumb" class="mt-2">
                 <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('vpaa.dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('vpaa.departments') }}">Departments</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Instructors</li>
+                    <li class="breadcrumb-item"><a href="{{ route('vpaa.dashboard') }}" class="text-success">Dashboard</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('vpaa.departments') }}" class="text-success">Departments</a></li>
+                    <li class="breadcrumb-item active text-success" aria-current="page">Instructors</li>
                 </ol>
             </nav>
         </div>

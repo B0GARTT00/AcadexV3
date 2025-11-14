@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-4 py-5">
+<div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h2 class="fw-bold text-dark mb-1">Welcome Back, {{ Auth::user()->name }}! 👋</h2>
+            <h2 class="fw-bold text-dark mb-1">Welcome Back, {{ Auth::user()->name }}!</h2>
             <p class="text-muted mb-0">Oversee academic operations and institutional management</p>
         </div>
         <div class="d-flex align-items-center gap-3">
@@ -15,7 +15,7 @@
     </div>
 
     {{-- Summary Cards --}}
-    <div class="row g-4">
+    <div class="row g-3">
         @php
             $cards = [
                 [
@@ -51,18 +51,18 @@
 
         @foreach ($cards as $card)
             <div class="col-md-3">
-                <div class="card h-100 border-0 shadow-sm rounded-4 hover-lift">
-                    <div class="card-body p-4">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="rounded-3 p-2 bg-{{ $card['color'] }}-subtle me-3">
-                                <i class="{{ $card['icon'] }} text-{{ $card['color'] }} fs-4"></i>
+                <div class="card h-100 border-0 shadow-sm rounded-3 hover-lift">
+                    <div class="card-body p-3">
+                        <div class="d-flex align-items-center mb-2">
+                            <div class="rounded-2 p-2 bg-{{ $card['color'] }}-subtle me-2">
+                                <i class="{{ $card['icon'] }} text-{{ $card['color'] }} fs-5"></i>
                             </div>
                             <div>
-                                <h6 class="text-muted mb-0">{{ $card['label'] }}</h6>
-                                <h3 class="fw-bold text-{{ $card['color'] }} mb-0">{{ $card['value'] }}</h3>
+                                <h6 class="text-muted mb-0 small">{{ $card['label'] }}</h6>
+                                <h4 class="fw-bold text-{{ $card['color'] }} mb-0">{{ $card['value'] }}</h4>
                             </div>
                         </div>
-                        <p class="text-muted small mb-0">
+                        <p class="text-muted small mb-0" style="font-size: 0.8rem;">
                             <i class="bi bi-arrow-right"></i> {{ $card['trend'] }}
                         </p>
                     </div>
@@ -81,10 +81,10 @@
         </div>
     @endif
 
-    <div class="row g-4 mt-4">
+    <div class="row g-3 mt-1">
         {{-- Departments Overview --}}
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm rounded-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
                 <div class="card-body p-4">
                     {{-- Header Section --}}
                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -150,51 +150,49 @@
         </div>
 
         {{-- Quick Access Panel --}}
-        <div class="col-lg-4">
+        <div class="col-lg-6">
             <div class="card border-0 shadow-sm rounded-4 h-100">
-                <div class="card-body p-4 d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
+                <div class="card-body p-4">
+                    <div class="mb-3">
                         <h5 class="fw-semibold mb-0">
                             <i class="bi bi-speedometer2 me-2"></i>Quick Access
                         </h5>
                     </div>
 
-                    {{-- Quick Access Items --}}
-                    <div class="flex-grow-1">
-                        <div class="row g-3">
-                            <div class="col-12">
-                                <a href="{{ route('vpaa.departments') }}" class="card border-0 bg-primary bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
-                                    <div class="card-body text-center p-3">
-                                        <div class="bg-primary bg-opacity-25 text-primary rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
-                                            <i class="bi bi-building fs-4"></i>
-                                        </div>
-                                        <h6 class="mb-1 fw-semibold">Departments</h6>
-                                        <p class="text-muted small mb-0">Manage academic departments</p>
+                    {{-- Quick Access Items (Horizontal) --}}
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <a href="{{ route('vpaa.departments') }}" class="card border-0 bg-primary bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none h-100">
+                                <div class="card-body text-center p-3">
+                                    <div class="bg-primary bg-opacity-25 text-primary rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 45px; height: 45px;">
+                                        <i class="bi bi-building fs-5"></i>
                                     </div>
-                                </a>
-                            </div>
-                            <div class="col-12">
-                                <a href="{{ route('vpaa.instructors') }}" class="card border-0 bg-success bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
-                                    <div class="card-body text-center p-3">
-                                        <div class="bg-success bg-opacity-25 text-success rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
-                                            <i class="bi bi-people-fill fs-4"></i>
-                                        </div>
-                                        <h6 class="mb-1 fw-semibold">Instructors</h6>
-                                        <p class="text-muted small mb-0">View and manage faculty</p>
+                                    <h6 class="mb-0 fw-semibold small text-dark">Departments</h6>
+                                    <p class="text-muted mb-0" style="font-size: 0.7rem;">Manage departments</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ route('vpaa.instructors') }}" class="card border-0 bg-success bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none h-100">
+                                <div class="card-body text-center p-3">
+                                    <div class="bg-success bg-opacity-25 text-success rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 45px; height: 45px;">
+                                        <i class="bi bi-people-fill fs-5"></i>
                                     </div>
-                                </a>
-                            </div>
-                            <div class="col-12">
-                                <a href="{{ route('vpaa.students') }}" class="card border-0 bg-info bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none">
-                                    <div class="card-body text-center p-3">
-                                        <div class="bg-info bg-opacity-25 text-info rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 50px; height: 50px;">
-                                            <i class="bi bi-mortarboard-fill fs-4"></i>
-                                        </div>
-                                        <h6 class="mb-1 fw-semibold">Students</h6>
-                                        <p class="text-muted small mb-0">Access student records</p>
+                                    <h6 class="mb-0 fw-semibold small text-dark">Instructors</h6>
+                                    <p class="text-muted mb-0" style="font-size: 0.7rem;">Manage faculty</p>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="col-md-4">
+                            <a href="{{ route('vpaa.students') }}" class="card border-0 bg-info bg-opacity-10 hover-bg-opacity-25 transition-all rounded-3 text-decoration-none h-100">
+                                <div class="card-body text-center p-3">
+                                    <div class="bg-info bg-opacity-25 text-info rounded-circle p-2 d-inline-flex align-items-center justify-content-center mb-2" style="width: 45px; height: 45px;">
+                                        <i class="bi bi-mortarboard-fill fs-5"></i>
                                     </div>
-                                </a>
-                            </div>
+                                    <h6 class="mb-0 fw-semibold small text-dark">Students</h6>
+                                    <p class="text-muted mb-0" style="font-size: 0.7rem;">Access records</p>
+                                </div>
+                            </a>
                         </div>
                     </div>
                 </div>

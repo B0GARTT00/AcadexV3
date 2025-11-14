@@ -2,7 +2,7 @@
 
 @section('content')
 <div class="container-fluid px-4 py-4">
-    <h1 class="h4 fw-bold mb-4">📈 Final Grades</h1>
+    <h1 class="h4 fw-bold mb-4"><i class="bi bi-graph-up me-2" style="color: #198754;"></i>Final Grades</h1>
 
     {{-- Subject Selection + Print Button --}}
     <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
@@ -20,7 +20,7 @@
 
         @if(!empty($finalData) && count($finalData) > 0)
             <button onclick="printTable()" class="btn btn-success">
-                🖨️ Print Table
+                <i class="bi bi-printer me-1"></i>Print Table
             </button>
         @endif
     </div>
@@ -31,7 +31,7 @@
             @csrf
             <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
             <button type="submit" class="btn btn-success px-4 shadow-sm">
-                🔄 Generate Final Grades
+                <i class="bi bi-arrow-clockwise me-1"></i>Generate Final Grades
             </button>
         </form>
     @endif

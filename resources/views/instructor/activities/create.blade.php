@@ -1,40 +1,18 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-3 py-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
-  <!-- Page Header -->
-  <div class="row mb-3">
-    <div class="col">
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb bg-white rounded-pill px-3 py-2 shadow-sm mb-0">
-          <li class="breadcrumb-item">
-            <a href="{{ route('dashboard') }}" class="text-decoration-none" style="color: #198754; font-size: 0.9rem;">
-              <i class="bi bi-house-door me-1"></i>Home
-            </a>
-          </li>
-          <li class="breadcrumb-item">
-            <a href="{{ route('instructor.grades.index') }}" class="text-decoration-none" style="color: #198754; font-size: 0.9rem;">
-              <i class="bi bi-clipboard-data me-1"></i>Grades
-            </a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page" style="color: #6c757d; font-size: 0.9rem;">
-            Activities
-          </li>
-        </ol>
-      </nav>
-
-      <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
-        <div class="d-flex align-items-center">
-          <div class="p-3 rounded-circle me-3" style="background: linear-gradient(135deg, #198754, #20c997);">
-            <i class="bi bi-list-check text-white" style="font-size: 1.5rem;"></i>
-          </div>
-          <div>
-            <h1 class="h3 fw-bold mb-1" style="color: #198754;">Assessment Activities</h1>
-            <p class="text-muted mb-0 small">Plan and align your assessments with grading formulas across all terms</p>
-          </div>
-        </div>
-      </div>
-    </div>
+<div class="container-fluid px-4 py-4">
+  {{-- Header Section --}}
+  <div class="mb-4">
+    <h4 class="fw-bold mb-2" style="color: #2c3e50;">
+      <i class="bi bi-clipboard-check me-2" style="color: #198754;"></i>Manage Activities
+    </h4>
+    <nav aria-label="breadcrumb">
+      <ol class="breadcrumb mb-0">
+        <li class="breadcrumb-item"><a href="/" style="color: #198754; text-decoration: none;">Home</a></li>
+        <li class="breadcrumb-item active" aria-current="page" style="color: #6c757d;">Manage Activities</li>
+      </ol>
+    </nav>
   </div>
 
   <!-- Alerts -->

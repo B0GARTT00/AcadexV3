@@ -5,9 +5,9 @@
     {{-- Breadcrumbs --}}
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="/vpaa/dashboard">Home</a></li>
-            <li class="breadcrumb-item"><a href="{{ route('vpaa.course-outcome-attainment') }}">Course Outcome Attainment Results</a></li>
-            <li class="breadcrumb-item active" aria-current="page">
+            <li class="breadcrumb-item"><a href="/vpaa/dashboard" class="text-success">Home</a></li>
+            <li class="breadcrumb-item"><a href="{{ route('vpaa.course-outcome-attainment') }}" class="text-success">Course Outcome Attainment Results</a></li>
+            <li class="breadcrumb-item active text-success" aria-current="page">
                 {{ $selectedSubject->subject_code }} - {{ $selectedSubject->subject_description }}
             </li>
         </ol>

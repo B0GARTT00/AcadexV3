@@ -4,8 +4,8 @@
 <div class="container-fluid px-4 py-4">
     <nav aria-label="breadcrumb" class="mb-4">
         <ol class="breadcrumb">
-            <li class="breadcrumb-item"><a href="{{ route('vpaa.dashboard') }}">Home</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Students</li>
+            <li class="breadcrumb-item"><a href="{{ route('vpaa.dashboard') }}" class="text-success">Home</a></li>
+            <li class="breadcrumb-item active text-success" aria-current="page">Students</li>
         </ol>
     </nav>
 
