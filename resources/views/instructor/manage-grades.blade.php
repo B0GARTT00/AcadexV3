@@ -171,7 +171,9 @@ window.initializeCourseOutcomeDropdowns = initializeCourseOutcomeDropdowns;
             document.body.appendChild(modal.firstElementChild);
         }
         
-        const modalInstance = new bootstrap.Modal(document.getElementById('unsavedChangesModal'));
+        const modalInstance = new bootstrap.Modal(document.getElementById('unsavedChangesModal'), {
+            backdrop: false
+        });
         const confirmBtn = document.getElementById('confirmLeaveBtn');
         
         // Remove any existing event listeners

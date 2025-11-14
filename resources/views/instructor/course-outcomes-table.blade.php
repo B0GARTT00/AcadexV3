@@ -483,7 +483,9 @@ function openEditModal(id, coCode, identifier, description) {
     document.getElementById('editForm').action = `/instructor/course_outcomes/${id}`;
     
     // Show the modal
-    const editModal = new bootstrap.Modal(document.getElementById('editCourseOutcomeModal'));
+    const editModal = new bootstrap.Modal(document.getElementById('editCourseOutcomeModal'), {
+        backdrop: false
+    });
     editModal.show();
 }
 
@@ -494,7 +496,9 @@ function openDeleteModal(id, coCode) {
     document.getElementById('deleteForm').action = `/instructor/course_outcomes/${id}`;
     
     // Show the modal
-    const deleteModal = new bootstrap.Modal(document.getElementById('deleteCourseOutcomeModal'));
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteCourseOutcomeModal'), {
+        backdrop: false
+    });
     deleteModal.show();
 }
 </script>

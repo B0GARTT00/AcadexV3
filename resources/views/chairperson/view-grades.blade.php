@@ -230,7 +230,9 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const notesModal = new bootstrap.Modal(document.getElementById('notesModal'));
+    const notesModal = new bootstrap.Modal(document.getElementById('notesModal'), {
+        backdrop: false
+    });
     const notesTextarea = document.getElementById('notesTextarea');
     const studentNameDisplay = document.getElementById('studentNameDisplay');
     const saveNotesBtn = document.getElementById('saveNotesBtn');

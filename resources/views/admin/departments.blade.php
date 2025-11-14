@@ -69,7 +69,9 @@
 {{-- JS --}}
 <script>
     function showModal() {
-        const modal = new bootstrap.Modal(document.getElementById('departmentModal'));
+        const modal = new bootstrap.Modal(document.getElementById('departmentModal'), {
+            backdrop: false
+        });
         modal.show();
     }
 </script>

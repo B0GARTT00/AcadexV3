@@ -181,7 +181,9 @@
             warningModalElement = document.getElementById('gradeWarningModal');
         }
 
-        const warningModal = new bootstrap.Modal(warningModalElement);
+        const warningModal = new bootstrap.Modal(warningModalElement, {
+            backdrop: false
+        });
 
         // Function to show warning modal
         function showWarningModal(invalidGrades, newMax) {

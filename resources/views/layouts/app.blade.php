@@ -132,13 +132,6 @@
             z-index: 2010 !important;
             position: absolute !important;
         }
-        /* Modal and backdrop z-index fix */
-        .modal-backdrop {
-            z-index: 2040 !important;
-        }
-        .modal {
-            z-index: 2050 !important;
-        }
         header h1 {
             font-size: 1rem !important;
             font-weight: 600 !important;
@@ -701,6 +694,55 @@
             </div>
         </div>
     </div>
+
+    {{-- Global Modal Backdrop Fix --}}
+    <script>
+        // Fix all modals to have no backdrop - must run before any modal initialization
+        (function() {
+            // Wait for Bootstrap to be available
+            if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
+                // Store original methods
+                const originalShow = bootstrap.Modal.prototype.show;
+                const originalGetOrCreateInstance = bootstrap.Modal.getOrCreateInstance;
+                
+                // Override show method
+                bootstrap.Modal.prototype.show = function() {
+                    if (this._config && this._config.backdrop !== false) {
+                        this._config.backdrop = false;
+                    }
+                    originalShow.call(this);
+                };
+                
+                // Override getOrCreateInstance to always use backdrop: false
+                bootstrap.Modal.getOrCreateInstance = function(element, config) {
+                    config = config || {};
+                    config.backdrop = false;
+                    return originalGetOrCreateInstance.call(this, element, config);
+                };
+                
+                // Override constructor to set backdrop: false by default
+                const OriginalModal = bootstrap.Modal;
+                bootstrap.Modal = function(element, config) {
+                    config = config || {};
+                    if (config.backdrop !== false) {
+                        config.backdrop = false;
+                    }
+                    return new OriginalModal(element, config);
+                };
+                // Copy static methods
+                Object.setPrototypeOf(bootstrap.Modal, OriginalModal);
+                bootstrap.Modal.prototype = OriginalModal.prototype;
+                bootstrap.Modal.getOrCreateInstance = function(element, config) {
+                    config = config || {};
+                    config.backdrop = false;
+                    return OriginalModal.getOrCreateInstance(element, config);
+                };
+                bootstrap.Modal.getInstance = OriginalModal.getInstance;
+                bootstrap.Modal.VERSION = OriginalModal.VERSION;
+                bootstrap.Modal.Default = OriginalModal.Default;
+            }
+        })();
+    </script>
 
     @stack('scripts')
 </body>

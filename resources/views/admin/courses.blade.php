@@ -80,7 +80,9 @@
 {{-- JS --}}
 <script>
     function showModal() {
-        const modal = new bootstrap.Modal(document.getElementById('courseModal'));
+        const modal = new bootstrap.Modal(document.getElementById('courseModal'), {
+            backdrop: false
+        });
         modal.show();
     }
 </script>

@@ -383,7 +383,9 @@
             </div>`;
         
         // Show the modal using Bootstrap
-        const modal = new bootstrap.Modal(document.getElementById('instructorListModal'));
+        const modal = new bootstrap.Modal(document.getElementById('instructorListModal'), {
+            backdrop: false
+        });
         modal.show();
         
         // Fetch instructors for this subject
@@ -459,7 +461,9 @@
         document.getElementById('unassignInstructorName').textContent = instructorName;
         
         // Show the confirmation modal
-        const confirmModal = new bootstrap.Modal(document.getElementById('confirmUnassignModal'));
+        const confirmModal = new bootstrap.Modal(document.getElementById('confirmUnassignModal'), {
+            backdrop: false
+        });
         confirmModal.show();
     }
     

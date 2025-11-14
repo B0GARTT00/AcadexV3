@@ -378,7 +378,7 @@
                         @endif
                     </form>
                     @if ($requiresPasswordPrompt)
-                        <div class="modal fade" id="subjectFormulaPasswordModal" tabindex="-1" aria-labelledby="subjectFormulaPasswordModalLabel" aria-hidden="true" data-bs-backdrop="static">
+                        <div class="modal fade" id="subjectFormulaPasswordModal" tabindex="-1" aria-labelledby="subjectFormulaPasswordModalLabel" aria-hidden="true">
                             <div class="modal-dialog modal-dialog-centered">
                                 <div class="modal-content border-0 shadow-sm">
                                     <div class="modal-header bg-success text-white">

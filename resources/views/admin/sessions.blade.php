@@ -778,7 +778,9 @@
 
         function confirmRevokeAll() {
             const modalEl = document.getElementById('revokeAllModal');
-            const modal = new bootstrap.Modal(modalEl);
+            const modal = new bootstrap.Modal(modalEl, {
+                backdrop: false
+            });
             
             // Focus on password input when modal is shown
             modalEl.addEventListener('shown.bs.modal', function () {

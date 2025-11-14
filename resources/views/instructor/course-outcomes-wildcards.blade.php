@@ -607,7 +607,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-show modal if there are validation errors (form was submitted with errors)
     @if($errors->any() && old('generation_mode'))
-        const modal = new bootstrap.Modal(document.getElementById('generateCOModal'));
+        const modal = new bootstrap.Modal(document.getElementById('generateCOModal'), {
+            backdrop: false
+        });
         modal.show();
         
         // Restore form state

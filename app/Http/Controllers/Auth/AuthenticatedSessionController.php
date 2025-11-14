@@ -72,7 +72,13 @@ class AuthenticatedSessionController extends Controller
 
         // Store device fingerprint in session data (will be saved with session)
         if ($request->has('device_fingerprint')) {
-            $request->session()->put('device_fingerprint', $request->input('device_fingerprint'));
+            $deviceFingerprint = $request->input('device_fingerprint');
+            $request->session()->put('device_fingerprint', $deviceFingerprint);
+            
+            // Also update the database immediately
+            DB::table('sessions')
+                ->where('id', $request->session()->getId())
+                ->update(['device_fingerprint' => $deviceFingerprint]);
         }
 
         // Always clear any previous session academic period

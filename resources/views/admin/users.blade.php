@@ -365,7 +365,9 @@
         }
 
         function openModal() {
-            const modal = new bootstrap.Modal(document.getElementById('courseModal'));
+            const modal = new bootstrap.Modal(document.getElementById('courseModal'), {
+                backdrop: false
+            });
             modal.show();
         }
 
@@ -397,14 +399,18 @@
                             });
                         } else {
                             // Proceed with confirmation modal if no duplicate
-                            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+                            const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'), {
+                                backdrop: false
+                            });
                             confirmModal.show();
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
                         // Proceed with confirmation modal if check fails
-                        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+                        const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'), {
+                            backdrop: false
+                        });
                         confirmModal.show();
                     });
             }

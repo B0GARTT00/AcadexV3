@@ -88,8 +88,15 @@ class GoogleAuthController extends Controller
             Auth::login($user, true);
 
             // Store device fingerprint in session data
+            $deviceFingerprint = request()->input('device_fingerprint');
             if ($deviceFingerprint) {
                 session()->put('device_fingerprint', $deviceFingerprint);
+                
+                // Also update the database immediately
+                DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->where('id', session()->getId())
+                    ->update(['device_fingerprint' => $deviceFingerprint]);
             }
 
             // Fire login event for user_logs tracking

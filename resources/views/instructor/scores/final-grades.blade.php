@@ -148,7 +148,9 @@
 <script>
     // View Notes Modal Handler
     document.addEventListener('DOMContentLoaded', function() {
-        const viewNotesModal = new bootstrap.Modal(document.getElementById('viewNotesModal'));
+        const viewNotesModal = new bootstrap.Modal(document.getElementById('viewNotesModal'), {
+            backdrop: false
+        });
         const viewStudentNameDisplay = document.getElementById('viewStudentNameDisplay');
         const viewNotesContent = document.getElementById('viewNotesContent');
 
