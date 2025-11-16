@@ -133,11 +133,11 @@
             <nav aria-label="breadcrumb" class="mb-2">
                 <ol class="breadcrumb bg-white rounded-pill px-3 py-1 shadow-sm mb-0">
                     <li class="breadcrumb-item">
-                        <a href="{{ route('dashboard') }}" class="text-decoration-none" style="color: #198754; font-size: 0.9rem;">
+                        <a href="{{ route('dashboard') }}" class="text-decoration-none" style="color: #198754;">
                             <i class="bi bi-house-door me-1"></i>Home
                         </a>
                     </li>
-                    <li class="breadcrumb-item active" aria-current="page" style="color: #6c757d; font-size: 0.9rem;">
+                    <li class="breadcrumb-item active" aria-current="page">
                         <i class="bi bi-sliders me-1"></i>Grades Formula
                     </li>
                 </ol>
@@ -301,22 +301,6 @@
                         </div>
                     </div>
                 @endif
-            </div>
-
-            <div class="text-center py-5">
-                <div class="card border-0 shadow-sm mx-auto" style="max-width: 520px;">
-                    <div class="card-body p-5">
-                        <div class="mb-4">
-                            <div class="p-4 rounded-circle mx-auto d-inline-flex" style="background: linear-gradient(135deg, #198754, #20c997);">
-                                <i class="bi bi-hand-index-thumb text-white" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                        <h4 class="fw-bold mb-3" style="color: #198754;">Pick a wildcard to continue</h4>
-                        <p class="text-muted mb-0">
-                            Choose a department card above to view and edit its grading formula on a dedicated page.
-                        </p>
-                    </div>
-                </div>
             </div>
             </div>
         </div>
