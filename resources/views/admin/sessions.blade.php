@@ -392,6 +392,49 @@
                                                         title="Revoke all user sessions">
                                                     <i class="fas fa-user-times"></i>
                                                 </button>
+                                                <button class="action-btn btn-danger" 
+                                                        onclick="showDisableAccountModal({{ $session->user_id }}, '{{ $session->user_name }}')"
+                                                        title="Disable this account">
+                                                    <i class="fas fa-user-slash"></i>
+                                                </button>
+                                                <!-- Disable Account Modal -->
+                                                <div class="modal fade" id="disableAccountModal" tabindex="-1" aria-labelledby="disableAccountModalLabel" aria-hidden="true">
+                                                    <div class="modal-dialog modal-dialog-centered">
+                                                        <div class="modal-content">
+                                                            <div class="modal-header bg-danger text-white">
+                                                                <h5 class="modal-title" id="disableAccountModalLabel">
+                                                                    <i class="fas fa-user-slash me-2"></i>Disable Account
+                                                                </h5>
+                                                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                            </div>
+                                                            <div class="modal-body">
+                                                                <p>Are you sure you want to <strong>disable</strong> the account for <span id="disableAccountUserName" class="fw-bold"></span>?</p>
+                                                                <div class="alert alert-warning small mb-0">
+                                                                    This will immediately prevent the user from logging in or accessing the system. You can re-enable the account from the user management page.
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                                <form id="disableAccountForm" method="POST" action="">
+                                                                    @csrf
+                                                                    <button type="submit" class="btn btn-danger">Disable Account</button>
+                                                                </form>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <script>
+                                                    let disableAccountUserId = null;
+                                                    function showDisableAccountModal(userId, userName) {
+                                                        disableAccountUserId = userId;
+                                                        document.getElementById('disableAccountUserName').textContent = userName;
+                                                        const form = document.getElementById('disableAccountForm');
+                                                        form.action = '/admin/users/' + userId + '/disable';
+                                                        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('disableAccountModal'));
+                                                        modal.show();
+                                                    }
+                                                </script>
                                             </div>
                                         @else
                                             <span class="your-session-badge">
