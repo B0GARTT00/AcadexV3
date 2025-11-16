@@ -11,6 +11,134 @@
         .swal2-html-container {
             margin: 0.5em 1em 0.5em !important;
         }
+        /* Disable modal option cards */
+        .disable-modal-header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            border-bottom: none;
+            padding: 1.5rem;
+        }
+        .disable-modal-body {
+            padding: 1.75rem;
+            background: #f8f9fa;
+        }
+        .disable-modal-intro {
+            background: white;
+            padding: 1rem 1.25rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid #dc3545;
+            margin-bottom: 1.5rem;
+        }
+        .disable-options-row {
+            gap: 0.75rem;
+            margin-top: 0.75rem;
+        }
+        .disable-option-card {
+            border: 2px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: white;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        .disable-option-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #0d6efd, #0dcaf0);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .disable-option-card:hover {
+            border-color: #0d6efd;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(13, 110, 253, 0.15);
+        }
+        .disable-option-card .icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+        .disable-option-card .meta {
+            flex: 1 1 auto;
+            width: 100%;
+        }
+        .disable-option-card .meta .fw-semibold {
+            font-size: 0.875rem;
+            margin-bottom: 0.15rem;
+            color: #212529;
+        }
+        .disable-option-card.active {
+            border-color: #0d6efd;
+            box-shadow: 0 6px 20px rgba(13, 110, 253, 0.2);
+            background: linear-gradient(135deg, #f8fbff 0%, #e7f3ff 100%);
+            transform: translateY(-2px);
+        }
+        .disable-option-card.active::before {
+            transform: scaleX(1);
+        }
+        .disable-option-card.active .icon {
+            background: linear-gradient(135deg, #0d6efd, #0dcaf0) !important;
+            color: white !important;
+            transform: scale(1.05);
+        }
+        .disable-option-card small {
+            color: #6c757d;
+            font-size: 0.75rem;
+            line-height: 1.3;
+        }
+        .disable-option-card .check-mark {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            width: 20px;
+            height: 20px;
+            background: #0d6efd;
+            border-radius: 50%;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.65rem;
+        }
+        .disable-option-card.active .check-mark {
+            display: flex;
+            animation: checkPop 0.3s ease;
+        }
+        @keyframes checkPop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+        .disable-modal-footer {
+            background: white;
+            border-top: 1px solid #dee2e6;
+            padding: 1.25rem 1.75rem;
+        }
+        #customDisableDatetime {
+            border: 2px solid #e9ecef;
+            border-radius: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            transition: border-color 0.2s ease;
+        }
+        #customDisableDatetime:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.1);
+        }
     </style>
 @endpush
 
@@ -65,7 +193,28 @@
                         <tr>
                             <td>{{ $user->name }}</td>
                             <td>
-                                {{ $user->role == 1 ? 'Chairperson' : ($user->role == 2 ? 'Dean' : ($user->role == 3 ? 'Admin' : ($user->role == 5 ? 'VPAA' : 'Unknown'))) }}
+                                @switch($user->role)
+                                    @case(0)
+                                        Instructor
+                                        @break
+                                    @case(1)
+                                        Chairperson
+                                        @break
+                                    @case(2)
+                                        Dean
+                                        @break
+                                    @case(3)
+                                        Admin
+                                        @break
+                                    @case(4)
+                                        GE Coordinator
+                                        @break
+                                    @case(5)
+                                        VPAA
+                                        @break
+                                    @default
+                                        Unknown
+                                @endswitch
                             </td>
                             <td class="text-center">
                                 <span class="badge bg-info session-count" data-user-id="{{ $user->id }}">
@@ -73,13 +222,8 @@
                                 </span>
                             </td>
                             <td class="text-center">
-                                <button 
-                                    class="btn btn-sm btn-danger force-logout-btn" 
-                                    data-user-id="{{ $user->id }}"
-                                    data-user-name="{{ $user->name }}"
-                                    title="Force logout from all devices"
-                                >
-                                    <i class="bi bi-door-open"></i> Force Logout
+                                <button type="button" class="btn btn-sm btn-danger" onclick="openChooseDisableModal({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Disable Account">
+                                    <i class="bi bi-person-slash"></i> Disable
                                 </button>
                             </td>
                         </tr>
@@ -93,8 +237,134 @@
         </div>
     </div>
 </div>
+    {{-- Disable Choose Modal (one instance) --}}
+    <div class="modal fade" id="chooseDisableModal" tabindex="-1" aria-labelledby="chooseDisableModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header disable-modal-header text-white">
+                    <div>
+                        <h5 class="modal-title mb-1" id="chooseDisableModalLabel">
+                            <i class="bi bi-person-slash me-2"></i>Disable User Account
+                        </h5>
+                        <small class="opacity-75">Temporarily restrict account access</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="chooseDisableForm" method="POST" action="">
+                    @csrf
+                    <div class="modal-body disable-modal-body">
+                        <div class="disable-modal-intro">
+                            <div class="d-flex align-items-start gap-3">
+                                <div class="text-danger" style="font-size: 1.5rem;">
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-1 fw-bold">Disabling: <span id="chooseDisableUserName" class="text-primary"></span></h6>
+                                    <p class="mb-0 small text-muted">
+                                        This will prevent the user from logging in or accessing the system for the selected duration. 
+                                        All active sessions will be terminated immediately.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
 
-{{-- Add User Modal --}}
+                        <div class="mb-2">
+                            <label class="form-label fw-semibold text-dark mb-3">
+                                <i class="bi bi-clock-history me-2"></i>Choose Duration
+                            </label>
+                        </div>
+
+                        <div class="row disable-options-row row-cols-1 row-cols-md-2 row-cols-lg-4">
+                            <div class="col mb-3">
+                                <div class="disable-option-card active" data-value="1_week" role="button" tabindex="0">
+                                    <span class="check-mark"><i class="bi bi-check-lg"></i></span>
+                                    <div class="icon bg-primary bg-opacity-10 text-primary">
+                                        <i class="bi bi-calendar-week-fill"></i>
+                                    </div>
+                                    <div class="meta">
+                                        <div class="fw-semibold">1 Week</div>
+                                        <small>Disable for 7 days</small>
+                                    </div>
+                                    <input type="radio" class="d-none" name="duration_option" value="1_week" checked>
+                                </div>
+                            </div>
+
+                            <div class="col mb-3">
+                                <div class="disable-option-card" data-value="1_month" role="button" tabindex="0">
+                                    <span class="check-mark"><i class="bi bi-check-lg"></i></span>
+                                    <div class="icon bg-info bg-opacity-10 text-info">
+                                        <i class="bi bi-calendar-month-fill"></i>
+                                    </div>
+                                    <div class="meta">
+                                        <div class="fw-semibold">1 Month</div>
+                                        <small>Disable for ~30 days</small>
+                                    </div>
+                                    <input type="radio" class="d-none" name="duration_option" value="1_month">
+                                </div>
+                            </div>
+
+                            <div class="col mb-3">
+                                <div class="disable-option-card" data-value="indefinite" role="button" tabindex="0">
+                                    <span class="check-mark"><i class="bi bi-check-lg"></i></span>
+                                    <div class="icon bg-danger bg-opacity-10 text-danger">
+                                        <i class="bi bi-slash-circle-fill"></i>
+                                    </div>
+                                    <div class="meta">
+                                        <div class="fw-semibold">Indefinite</div>
+                                        <small>Until manually re-enabled</small>
+                                    </div>
+                                    <input type="radio" class="d-none" name="duration_option" value="indefinite">
+                                </div>
+                            </div>
+
+                            <div class="col mb-3">
+                                <div class="disable-option-card" data-value="custom" role="button" tabindex="0">
+                                    <span class="check-mark"><i class="bi bi-check-lg"></i></span>
+                                    <div class="icon bg-warning bg-opacity-10 text-warning">
+                                        <i class="bi bi-clock-fill"></i>
+                                    </div>
+                                    <div class="meta">
+                                        <div class="fw-semibold">Custom</div>
+                                        <small>Pick exact date &amp; time</small>
+                                    </div>
+                                    <input type="radio" class="d-none" name="duration_option" value="custom">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="customDatetimeWrapper" style="display: none;" class="mt-3">
+                            <div class="bg-white p-3 rounded-3 border">
+                                <label for="customDisableDatetime" class="form-label fw-semibold small mb-2">
+                                    <i class="bi bi-calendar-event me-1"></i>Select Re-enable Date & Time
+                                </label>
+                                <input 
+                                    type="datetime-local" 
+                                    id="customDisableDatetime" 
+                                    name="custom_disable_datetime" 
+                                    class="form-control" 
+                                    min="{{ now()->addMinutes(5)->format('Y-m-d\TH:i') }}"
+                                >
+                                <small class="text-muted d-block mt-2">
+                                    <i class="bi bi-info-circle me-1"></i>Account will be automatically re-enabled at this time
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer disable-modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                            <i class="bi bi-x-lg me-1"></i>Cancel
+                        </button>
+                        <input type="hidden" name="duration" id="chooseDisableDuration" value="1_week">
+                        <button type="submit" class="btn btn-danger px-4">
+                            <i class="bi bi-person-slash me-2"></i>Disable Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    {{-- Add User Modal --}}
 <div class="modal fade" id="courseModal" tabindex="-1" aria-labelledby="courseModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
@@ -230,6 +500,127 @@
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+    function openChooseDisableModal(userId, userName) {
+        document.getElementById('chooseDisableUserName').textContent = userName;
+        const form = document.getElementById('chooseDisableForm');
+        form.action = '/admin/users/' + userId + '/disable';
+        form.dataset.userId = userId;
+        form.dataset.userName = userName;
+        // default radio value
+        const defaultVal = document.querySelector('input[name="duration_option"]:checked')?.value || '1_week';
+        document.getElementById('chooseDisableDuration').value = defaultVal;
+        // show modal
+        const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById('chooseDisableModal'));
+        modal.show();
+    }
+
+
+    // Update hidden input and show/hide custom datetime when radio changes
+    document.addEventListener('change', function (e) {
+        if (e.target && e.target.name === 'duration_option') {
+            document.getElementById('chooseDisableDuration').value = e.target.value;
+            const customWrapper = document.getElementById('customDatetimeWrapper');
+            const customInput = document.getElementById('customDisableDatetime');
+            if (e.target.value === 'custom') {
+                customWrapper.style.display = '';
+                customInput.required = true;
+            } else {
+                customWrapper.style.display = 'none';
+                customInput.required = false;
+            }
+        }
+    });
+
+    // Card click handler: make the whole card selectable and reflect selection visually
+    document.addEventListener('click', function (e) {
+        const card = e.target.closest('.disable-option-card');
+        if (!card) return;
+
+        const value = card.dataset.value;
+        const radios = document.getElementsByName('duration_option');
+        Array.from(radios).forEach(r => r.checked = (r.value === value));
+
+        // Toggle active class
+        document.querySelectorAll('.disable-option-card').forEach(c => c.classList.remove('active'));
+        card.classList.add('active');
+
+        // Trigger change event for radio to run existing handlers
+        const event = new Event('change', { bubbles: true });
+        const selectedRadio = Array.from(radios).find(r => r.value === value);
+        if (selectedRadio) selectedRadio.dispatchEvent(event);
+    });
+
+    // AJAX submission
+    document.getElementById('chooseDisableForm')?.addEventListener('submit', function (e) {
+        e.preventDefault();
+        
+        const form = e.target;
+        const userId = form.dataset.userId;
+        const userName = form.dataset.userName;
+        const selected = document.querySelector('input[name="duration_option"]:checked');
+        
+        if (!selected) {
+            alert('Please select a duration.');
+            return;
+        }
+        
+        const duration = selected.value;
+        const formData = new FormData();
+        formData.append('duration', duration);
+        formData.append('_token', document.querySelector('input[name="_token"]').value);
+        if (duration === 'custom') {
+            const customVal = document.getElementById('customDisableDatetime').value;
+            if (!customVal) {
+                alert('Please select a custom date and time.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+                return;
+            }
+            formData.append('custom_disable_datetime', customVal);
+        }
+        // Disable submit button
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Disabling...';
+        fetch(form.action, {
+            method: 'POST',
+            body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Hide modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('chooseDisableModal'));
+                modal.hide();
+                // Show success message
+                const alert = document.createElement('div');
+                alert.className = 'alert alert-success alert-dismissible fade show';
+                alert.innerHTML = `
+                    <i class="bi bi-check-circle me-2"></i>${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                `;
+                document.querySelector('.container.py-4').insertBefore(alert, document.querySelector('.d-flex.justify-content-between'));
+                // Optionally reload page after 2 seconds
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                alert('Error: ' + (data.message || 'Failed to disable user.'));
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred while disabling the user.');
+        })
+        .finally(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        });
+    });
+</script>
+@endpush
 
 {{-- Confirmation Modal --}}
 <div class="modal fade" id="confirmModal" tabindex="-1" aria-labelledby="confirmModalLabel" aria-hidden="true">

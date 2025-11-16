@@ -314,8 +314,9 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     Route::post('/users/confirm-password', [AdminController::class, 'adminConfirmUserCreationWithPassword'])->name('confirmUserCreationWithPassword');
     Route::post('/users/store-verified-user', [AdminController::class, 'storeUser'])->name('storeVerifiedUser');
     
-    // Session Management - Force Logout
+    // Session Management - Force Logout and Disable
     Route::post('/users/{user}/force-logout', [AdminController::class, 'forceLogoutUser'])->name('users.forceLogout');
+    Route::post('/users/{user}/disable', [AdminController::class, 'disableUser'])->name('users.disable');
     Route::get('/users/{user}/session-count', [AdminController::class, 'getUserSessionCount'])->name('users.sessionCount');
 
     // Session Management Routes

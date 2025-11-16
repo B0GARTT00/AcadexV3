@@ -3392,9 +3392,9 @@ class AdminController extends Controller
     {
         Gate::authorize('admin');
 
-        $users = User::whereIn('role', [1, 2, 3, 5])
-            ->orderBy('role', 'asc')
-            ->get();
+
+        // Show all users, including instructors (role 0)
+        $users = User::orderBy('role', 'asc')->get();
 
         $departments = Department::all();
         $courses = Course::all();
@@ -3502,6 +3502,68 @@ class AdminController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to logout user. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Disable a user account for a specified duration
+     */
+    public function disableUser(Request $request, User $user)
+    {
+        Gate::authorize('admin');
+
+        $request->validate([
+            'duration' => 'required|in:1_week,1_month,indefinite,custom',
+            'custom_disable_datetime' => 'required_if:duration,custom|date|after:now',
+        ]);
+
+        try {
+            $duration = $request->duration;
+            $now = now();
+
+            // Calculate disabled_until based on duration
+            switch ($duration) {
+                case '1_week':
+                    $user->disabled_until = $now->copy()->addWeek();
+                    break;
+                case '1_month':
+                    $user->disabled_until = $now->copy()->addMonth();
+                    break;
+                case 'indefinite':
+                    $user->disabled_until = $now->copy()->addYears(100); // far future
+                    break;
+                case 'custom':
+                    $user->disabled_until = $request->custom_disable_datetime;
+                    break;
+            }
+
+            $user->is_active = false;
+            $user->save();
+
+            // Force logout the user from all devices
+            DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->delete();
+
+            $userName = trim("{$user->first_name} {$user->last_name}");
+            $message = "Account for {$userName} has been disabled";
+
+            if ($duration === 'indefinite') {
+                $message .= ' indefinitely.';
+            } else {
+                $message .= " until " . (new \Carbon\Carbon($user->disabled_until))->format('M d, Y h:i A') . '.';
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'disabled_until' => (new \Carbon\Carbon($user->disabled_until))->toISOString(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to disable user. Please try again.'
             ], 500);
         }
     }
