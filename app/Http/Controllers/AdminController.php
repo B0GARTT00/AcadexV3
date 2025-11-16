@@ -1199,7 +1199,7 @@ class AdminController extends Controller
         $validated = $request->validate([
             'password' => ['required', 'string'],
             'template_label' => ['required', 'string', 'max:100'],
-            'template_key' => ['required', 'string', 'max:50', 'unique:structure_templates,template_key'],
+            'template_key' => ['required', 'string', 'max:50', Rule::unique('structure_templates', 'template_key')->where('is_deleted', false)],
             'template_description' => ['nullable', 'string', 'max:500'],
             'components' => ['required', 'array', 'min:1'],
             'components.*.activity_type' => ['required', 'string', 'max:100'],
@@ -1280,7 +1280,7 @@ class AdminController extends Controller
                 'required',
                 'string',
                 'max:50',
-                Rule::unique('structure_templates', 'template_key')->ignore($template->id),
+                Rule::unique('structure_templates', 'template_key')->ignore($template->id)->where('is_deleted', false),
             ],
             'template_description' => ['nullable', 'string', 'max:500'],
             'components' => ['required', 'array', 'min:1'],
@@ -3633,12 +3633,30 @@ class AdminController extends Controller
         try {
             DB::beginTransaction();
 
+            $structureConfig = $templateRequest->structure_config;
+
+            if (! is_array($structureConfig)) {
+                throw new \InvalidArgumentException('The submitted structure is invalid.');
+            }
+
+            if ($this->isNewTemplateFormat($structureConfig)) {
+                $structureConfig = $this->convertNewFormatToOld($structureConfig);
+            }
+
+            if (empty(data_get($structureConfig, 'children', []))) {
+                throw new \InvalidArgumentException('The request does not contain any grading components.');
+            }
+
             // Generate a unique template key
             $baseKey = Str::slug($templateRequest->label);
+            if ($baseKey === '') {
+                $baseKey = 'template-' . Str::random(6);
+            }
+
             $templateKey = $baseKey;
             $counter = 1;
 
-            while (StructureTemplate::where('template_key', $templateKey)->where('is_deleted', false)->exists()) {
+            while (StructureTemplate::where('template_key', $templateKey)->exists()) {
                 $templateKey = $baseKey . '-' . $counter;
                 $counter++;
             }
@@ -3648,7 +3666,7 @@ class AdminController extends Controller
                 'template_key' => $templateKey,
                 'label' => $templateRequest->label,
                 'description' => $templateRequest->description,
-                'structure_config' => $templateRequest->structure_config,
+                'structure_config' => $structureConfig,
                 'is_system_default' => false,
                 'is_deleted' => false,
                 'created_by' => Auth::id(),
