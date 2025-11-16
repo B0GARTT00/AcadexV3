@@ -1,0 +1,37 @@
+Last Name,First Name,Middle Name,Year Level,Course Code
+Dela Cruz,Juan,Santos,1,BSIT
+Garcia,Maria,Reyes,1,BSIT
+Santos,Pedro,Mendoza,2,BSIT
+Reyes,Ana,Cruz,2,BSIT
+Bautista,Jose,Flores,3,BSIT
+Villanueva,Rosa,Diaz,3,BSIT
+Aquino,Carlos,Torres,4,BSIT
+Ramos,Elena,Gonzales,4,BSIT
+Mendoza,Miguel,Rivera,1,BSBA
+Cruz,Sofia,Morales,1,BSBA
+Torres,Luis,Castro,2,BSBA
+Flores,Isabel,Ramos,2,BSBA
+Diaz,Antonio,Gutierrez,3,BSBA
+Gonzales,Carmen,Perez,3,BSBA
+Rivera,Roberto,Hernandez,4,BSBA
+Morales,Teresa,Jimenez,4,BSBA
+Castro,Fernando,Lopez,1,BSN
+Ramos,Patricia,Martinez,1,BSN
+Gutierrez,Ricardo,Rodriguez,2,BSN
+Perez,Angela,Sanchez,2,BSN
+Hernandez,Manuel,Ramirez,3,BSN
+Jimenez,Beatriz,Torres,3,BSN
+Lopez,Daniel,Flores,4,BSN
+Martinez,Gloria,Diaz,4,BSN
+Rodriguez,Francisco,Gonzales,1,BSPSY
+Sanchez,Linda,Rivera,2,BSPSY
+Ramirez,Alejandro,Morales,3,BSPSY
+Valencia,Cristina,Castro,4,BSPSY
+Santos,Gabriel,Ramos,1,BSPHARM
+Reyes,Melissa,Gutierrez,2,BSPHARM
+Bautista,Rafael,Perez,3,BSPHARM
+Villanueva,Veronica,Hernandez,4,BSPHARM
+Aquino,Eduardo,Jimenez,1,BSMLS
+Torres,Monica,Lopez,2,BSMLS
+Flores,Oscar,Martinez,3,BSMLS
+Diaz,Sandra,Rodriguez,4,BSMLS
