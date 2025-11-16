@@ -198,7 +198,6 @@
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             background-color: var(--light-green);
             min-height: 100vh;
-            display: flex;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -423,12 +422,10 @@
         /* Main Content Area */
         .main-content {
             background-color: var(--light-green);
-            flex: 1;
             margin-left: 16rem;
             min-height: 100vh;
             width: calc(100% - 16rem);
             position: relative;
-            contain: layout style;
         }
 
         /* Prevent layout shifts */
