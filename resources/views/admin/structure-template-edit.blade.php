@@ -249,7 +249,13 @@ function structureTemplateEditor() {
         },
 
         loadExistingStructure(structure) {
-            if (!structure || !structure.children) return;
+            // Reset before hydrating so repeated Alpine init cycles do not append duplicates
+            this.components = [];
+            this.nextId = 1;
+
+            if (!structure || !Array.isArray(structure.children) || structure.children.length === 0) {
+                return;
+            }
 
             structure.children.forEach(child => {
                 const component = {
