@@ -154,7 +154,19 @@
                                             </div>
                                             <div class="col-md-2">
                                                 <label class="form-label small mb-0">Max Components</label>
-                                                <input type="number" class="form-control form-control-sm" x-model.number="component.max_items" :name="`components[${component.id}][max_items]`" min="1" max="5" step="1">
+                                                <input
+                                                    type="number"
+                                                    class="form-control form-control-sm"
+                                                    x-model.number="component.max_items"
+                                                    :name="`components[${component.id}][max_items]`"
+                                                    min="1"
+                                                    max="5"
+                                                    step="1"
+                                                    :disabled="hasSubComponents(component.id)"
+                                                    :class="{'bg-light text-muted': hasSubComponents(component.id)}"
+                                                    x-effect="if (hasSubComponents(component.id)) component.max_items = null"
+                                                >
+                                                <small class="text-muted d-block" x-text="hasSubComponents(component.id) ? 'Disabled when sub-components exist' : 'Limit: 1-5'"></small>
                                             </div>
                                             <div class="col-md-1">
                                                 <label class="form-label small mb-0">&nbsp;</label>
@@ -322,6 +334,10 @@ function structureTemplateEditor() {
 
         getSubComponents(parentId) {
             return this.components.filter(c => c.parent_id === parentId);
+        },
+
+        hasSubComponents(parentId) {
+            return this.components.some(c => c.parent_id === parentId);
         }
     };
 }

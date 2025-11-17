@@ -1625,13 +1625,46 @@
             }
         }
 
+        function syncMainComponentMaxState(mainComponentId) {
+            if (!mainComponentId) {
+                return;
+            }
+
+            const mainComponent = document.querySelector(`.component-item[data-component-id="${mainComponentId}"][data-is-main="true"]`);
+            if (!mainComponent) {
+                return;
+            }
+
+            const maxInput = mainComponent.querySelector('.component-max-items');
+            const helperText = mainComponent.querySelector('.component-max-helper');
+            const subContainer = mainComponent.querySelector(`.subcomponents-container[data-parent-id="${mainComponentId}"]`);
+            const hasSubComponents = subContainer ? subContainer.querySelectorAll('.component-item').length > 0 : false;
+
+            if (!maxInput) {
+                return;
+            }
+
+            maxInput.disabled = hasSubComponents;
+            maxInput.classList.toggle('bg-light', hasSubComponents);
+            maxInput.classList.toggle('text-muted', hasSubComponents);
+
+            if (hasSubComponents) {
+                maxInput.value = '';
+                if (helperText) {
+                    helperText.textContent = 'Disabled when sub-components exist';
+                }
+            } else if (helperText) {
+                helperText.textContent = 'Limit: 1-5';
+            }
+        }
+
         function addComponent(type = '', weight = '', label = '', isMain = true, parentId = null, maxItems = '') {
             componentCounter++;
             const currentId = componentCounter;
             const isSubComponent = !isMain;
 
             const componentHtml = `
-                <div class="component-item card mb-3 ${isSubComponent ? 'ms-4 border-start border-3 border-primary' : ''}" data-component-id="${currentId}" data-is-main="${isMain}">
+                <div class="component-item card mb-3 ${isSubComponent ? 'ms-4 border-start border-3 border-primary' : ''}" data-component-id="${currentId}" data-is-main="${isMain}" data-parent-component="${parentId || ''}">
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="mb-0 fw-semibold ${isSubComponent ? 'text-secondary' : 'text-primary'}">
@@ -1662,7 +1695,7 @@
                             <div class="col-md-3">
                                 <label class="form-label small fw-semibold">Max Components</label>
                                 <input type="number" class="form-control form-control-sm component-max-items" name="components[${currentId}][max_items]" value="${maxItems}" min="1" max="5" step="1" placeholder="1-5">
-                                <small class="text-muted">Limit: 1-5</small>
+                                ${!isSubComponent ? '<small class="text-muted component-max-helper">Limit: 1-5</small>' : '<small class="text-muted">Limit: 1-5</small>'}
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small fw-semibold">Label</label>
@@ -1716,8 +1749,13 @@
                     const componentId = this.dataset.componentId;
                     const component = document.querySelector(`.component-item[data-component-id="${componentId}"]`);
                     if (component) {
+                        const parentComponentId = component.dataset.parentComponent || '';
+                        const isMainComponent = component.dataset.isMain === 'true';
                         component.remove();
                         updateWeightWarning();
+                        if (!isMainComponent && parentComponentId) {
+                            syncMainComponentMaxState(parentComponentId);
+                        }
                     }
                 });
             }
@@ -1730,6 +1768,12 @@
                         addComponent('', '', '', false, parentIdValue);
                     });
                 }
+            }
+
+            if (isSubComponent && parentId) {
+                syncMainComponentMaxState(parentId);
+            } else {
+                syncMainComponentMaxState(currentId);
             }
 
             return currentId;

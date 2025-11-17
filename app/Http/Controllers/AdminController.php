@@ -247,7 +247,7 @@ class AdminController extends Controller
         }
 
         $periodContext = $this->resolveFormulaPeriodContext();
-        $selectedSemester = $periodContext['semester'];
+            $selectedSemester = $periodContext['semester'] ?? null;
         $selectedAcademicPeriodId = $periodContext['academic_period_id'];
         $selectedAcademicYear = $periodContext['academic_year'];
         $academicPeriods = $periodContext['academic_periods'];
@@ -1339,6 +1339,21 @@ class AdminController extends Controller
         }
 
         $periodContext = $this->resolveFormulaPeriodContext();
+        $structureConfig = $template->structure_config ?? [];
+
+        if ($this->isNewTemplateFormat(is_array($structureConfig) ? $structureConfig : [])) {
+            $structureConfig = $this->convertNewFormatToOld($structureConfig);
+        }
+
+        try {
+            $structureConfig = FormulaStructure::normalize($structureConfig);
+        } catch (\Throwable $exception) {
+            throw ValidationException::withMessages([
+                'structure_config' => 'The stored template structure could not be rendered: ' . $exception->getMessage(),
+            ]);
+        }
+
+        $template->structure_config = $structureConfig;
 
         return view('admin.structure-template-edit', [
             'template' => $template,
@@ -3269,6 +3284,7 @@ class AdminController extends Controller
             $activityType = $entry['activity_type'] ?? 'component';
             $label = $entry['label'] ?? 'Component';
             $weight = isset($entry['weight']) ? (float) $entry['weight'] / 100.0 : 0.0;
+            $maxAssessments = $this->normalizeMaxAssessments($entry['max_items'] ?? null);
             
             $key = Str::slug($activityType, '_');
             
@@ -3280,6 +3296,7 @@ class AdminController extends Controller
                     'label' => $label,
                     'activity_type' => $activityType,
                     'weight' => $weight,
+                    'max_assessments' => $maxAssessments,
                 ];
             } else {
                 // Has sub-components, create a composite node
@@ -3290,6 +3307,7 @@ class AdminController extends Controller
                     $subLabel = $sub['label'] ?? 'Component';
                     $subWeight = isset($sub['weight']) ? (float) $sub['weight'] / 100.0 : 0.0;
                     $subKey = Str::slug($key . '.' . $subActivityType, '_');
+                    $subMaxAssessments = $this->normalizeMaxAssessments($sub['max_items'] ?? null);
                     
                     $subChildren[] = [
                         'key' => $subKey,
@@ -3297,6 +3315,7 @@ class AdminController extends Controller
                         'label' => $subLabel,
                         'activity_type' => $key . '.' . $subActivityType,
                         'weight' => $subWeight,
+                        'max_assessments' => $subMaxAssessments,
                     ];
                 }
                 
@@ -3316,6 +3335,25 @@ class AdminController extends Controller
             'label' => 'Period Grade',
             'children' => $children,
         ];
+    }
+
+    private function normalizeMaxAssessments($value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $intValue = (int) $value;
+
+        if ($intValue < 1) {
+            return null;
+        }
+
+        return min($intValue, 5);
     }
 
     private function normalizeTemplateIdentifier(?string $value, string $fallback): string
@@ -3643,12 +3681,26 @@ class AdminController extends Controller
                 $counter++;
             }
 
+            $structureConfig = $templateRequest->structure_config ?? [];
+
+            if ($this->isNewTemplateFormat(is_array($structureConfig) ? $structureConfig : [])) {
+                $structureConfig = $this->convertNewFormatToOld($structureConfig);
+            }
+
+            try {
+                $structureConfig = FormulaStructure::normalize($structureConfig);
+            } catch (\Throwable $exception) {
+                throw ValidationException::withMessages([
+                    'structure_config' => 'The submitted template structure could not be normalized: ' . $exception->getMessage(),
+                ]);
+            }
+
             // Create the structure template
             StructureTemplate::create([
                 'template_key' => $templateKey,
                 'label' => $templateRequest->label,
                 'description' => $templateRequest->description,
-                'structure_config' => $templateRequest->structure_config,
+                'structure_config' => $structureConfig,
                 'is_system_default' => false,
                 'is_deleted' => false,
                 'created_by' => Auth::id(),
