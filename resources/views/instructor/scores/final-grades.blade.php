@@ -1,6 +1,16 @@
 @extends('layouts.app')
 
+@php
+    $termLabels = [
+        'prelim' => 'Prelim',
+        'midterm' => 'Midterm',
+        'prefinal' => 'Prefinal',
+        'final' => 'Final',
+    ];
+@endphp
+
 @section('content')
+
 <div class="container-fluid px-4 py-4">
     <h1 class="h4 fw-bold mb-4">📈 Final Grades</h1>
 
@@ -19,8 +29,9 @@
         </form>
 
         @if(!empty($finalData) && count($finalData) > 0)
-            <button onclick="printTable()" class="btn btn-success">
-                🖨️ Print Table
+            <button type="button" class="btn btn-success shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#printOptionsModal">
+                <i class="bi bi-printer-fill"></i>
+                <span>Print Options</span>
             </button>
         @endif
     </div>
@@ -108,6 +119,90 @@
     @endif
 </div>
 
+{{-- Print Options Modal --}}
+<div class="modal fade" id="printOptionsModal" tabindex="-1" aria-labelledby="printOptionsModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="printOptionsModalLabel">
+                    <i class="bi bi-printer me-2"></i>Print Options
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card border-success mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-calendar-event me-2"></i>Individual Terms</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-outline-success" onclick="printSpecificTable('prelim'); closePrintModal();">
+                                        <i class="bi bi-printer me-2"></i>Print Prelim Term Sheet
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="printSpecificTable('midterm'); closePrintModal();">
+                                        <i class="bi bi-printer me-2"></i>Print Midterm Term Sheet
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="printSpecificTable('prefinal'); closePrintModal();">
+                                        <i class="bi bi-printer me-2"></i>Print Prefinal Term Sheet
+                                    </button>
+                                    <button class="btn btn-outline-success" onclick="printSpecificTable('final'); closePrintModal();">
+                                        <i class="bi bi-printer me-2"></i>Print Final Term Sheet
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card border-success mb-3">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0"><i class="bi bi-table me-2"></i>Complete Report</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-success" onclick="printSpecificTable('summary'); closePrintModal();">
+                                        <i class="bi bi-table me-2"></i>Print Final Summary
+                                    </button>
+                                </div>
+                                <hr>
+                                <div class="text-muted small">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Final Summary:</strong> Shows all term grades and final averages<br>
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    <strong>Term Sheets:</strong> Detailed activities and scores per term
+                                </div>
+                                
+                                <div class="mt-2 small text-muted">
+                                    ⚠️ To remove the URL or headers/footers printed by your browser, uncheck <em>Headers &amp; footers</em> in the print dialog. If you need a PDF without headers/footers, please use the "Export PDF" option or ask me to generate server-side PDFs.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info border-0 bg-light">
+                    <div class="d-flex">
+                        <div class="flex-shrink-0">
+                            <i class="bi bi-printer text-info" style="font-size: 1.5rem;"></i>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="alert-heading mb-1">Print Settings</h6>
+                            <p class="mb-1">All printouts are optimized for <strong>A4 portrait</strong> format with professional styling.</p>
+                            <small class="text-muted">Make sure your printer is set to A4 paper size for best results.</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x-circle me-2"></i>Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- View Notes Modal (Read-Only for Instructors) --}}
 <div class="modal fade" id="viewNotesModal" tabindex="-1" aria-labelledby="viewNotesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -146,6 +241,17 @@
 
 @push('scripts')
 <script>
+    const termReportUrl = "{{ route('instructor.final-grades.term-report') }}";
+    const bannerUrl = "{{ asset('images/banner-header.png') }}";
+
+    // Close print modal helper
+    function closePrintModal() {
+        const modal = bootstrap.Modal.getInstance(document.getElementById('printOptionsModal'));
+        if (modal) {
+            modal.hide();
+        }
+    }
+
     // View Notes Modal Handler
     document.addEventListener('DOMContentLoaded', function() {
         const viewNotesModal = new bootstrap.Modal(document.getElementById('viewNotesModal'), {
@@ -168,13 +274,132 @@
                 viewNotesModal.show();
             });
         });
+
     });
 
-    // Print Table Function
-    function printTable() {
+    // Print specific table function (handles both summary and term sheets)
+    function printSpecificTable(tableType) {
+        const subjectSelect = document.querySelector("select[name='subject_id']");
+        if (!subjectSelect || !subjectSelect.value) {
+            alert('Please select a subject first.');
+            return;
+        }
+
+        if (tableType === 'summary') {
+            // Print the final summary table
+            printFinalSummary();
+        } else {
+            // Print individual term sheet — fetch HTML then print via iframe to avoid about:blank footers
+            const subjectId = subjectSelect.value;
+            const url = new URL(termReportUrl);
+            url.searchParams.set('subject_id', subjectId);
+            url.searchParams.set('term', tableType);
+
+            fetch(url.toString(), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Unable to prepare the term sheet.');
+                }
+                return response.text();
+            })
+            .then(html => {
+                printHtml(html);
+            })
+            .catch(error => {
+                console.error(error);
+                alert(error.message || 'Failed to generate the term sheet. Please try again.');
+            });
+        }
+        }
+
+    // Print HTML via hidden iframe (preferred) with window.open fallback
+    function printHtml(html) {
+        try {
+            const iframe = document.createElement('iframe');
+            iframe.style.position = 'fixed';
+            iframe.style.right = '0';
+            iframe.style.bottom = '0';
+            iframe.style.width = '0';
+            iframe.style.height = '0';
+            iframe.style.border = '0';
+            iframe.style.visibility = 'hidden';
+            iframe.setAttribute('id', 'aca_print_iframe');
+            // Use srcdoc when available
+            if ('srcdoc' in iframe) {
+                iframe.srcdoc = html;
+            } else {
+                // Fallback for older browsers — use a Blob URL to avoid printing the current page URL
+                try {
+                    const blob = new Blob([html], { type: 'text/html' });
+                    iframe.src = URL.createObjectURL(blob);
+                } catch (e) {
+                    iframe.src = 'about:blank';
+                }
+            }
+            document.body.appendChild(iframe);
+
+            const onLoad = () => {
+                try {
+                    const win = iframe.contentWindow || iframe;
+                    win.focus();
+                    // Give browser a moment to render
+                    setTimeout(() => {
+                        try {
+                            win.print();
+                        } finally {
+                            // Remove iframe after printing
+                            setTimeout(() => { document.body.removeChild(iframe); }, 500);
+                        }
+                    }, 250);
+                } catch (e) {
+                    console.error('Iframe print failed, falling back to window.open', e);
+                    try { document.body.removeChild(iframe); } catch (e2) {}
+                    // Fallback to Blob URL opened in new window (better than opening a route)
+                    try {
+                        const blob2 = new Blob([html], { type: 'text/html' });
+                        const blobUrl = URL.createObjectURL(blob2);
+                        const w = window.open(blobUrl, '_blank', 'width=900,height=650');
+                        if (!w) { alert('Please allow pop-ups to print the report.'); return; }
+                        // Attempt to print once the new window loads
+                        w.addEventListener('load', function(){
+                            try { w.print(); } finally { setTimeout(() => URL.revokeObjectURL(blobUrl), 1000); }
+                        });
+                    } catch (e2) {
+                        const w = window.open('', '', 'width=900,height=650');
+                        if (!w) { alert('Please allow pop-ups to print the report.'); return; }
+                        w.document.open(); w.document.write(html); w.document.close();
+                        setTimeout(() => w.print(), 400);
+                    }
+                }
+            };
+
+            if ('srcdoc' in iframe) {
+                iframe.onload = onLoad;
+            } else {
+                // Write content into iframe
+                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                doc.open(); doc.write(html); doc.close();
+                onLoad();
+            }
+        } catch (e) {
+            console.error('printHtml error', e);
+            // Last resort fallback
+            const w = window.open('', '', 'width=900,height=650');
+            if (!w) { alert('Please allow pop-ups to print the report.'); return; }
+            w.document.open(); w.document.write(html); w.document.close();
+            setTimeout(() => w.print(), 400);
+        }
+    }
+
+    // Print Final Summary Function
+    function printFinalSummary() {
         const content = document.getElementById('print-area').innerHTML;
         const subject = document.querySelector("select[name='subject_id']").selectedOptions[0].text;
-        const bannerUrl = "{{ asset('images/banner-header.png') }}";
         
         // Count passed and failed students from the data
         @php
@@ -225,8 +450,20 @@
             day: 'numeric' 
         });
     
-        const printWindow = window.open('', '', 'width=900,height=650');
-        printWindow.document.write(`
+        // Helper to format numeric score strings: drop trailing .00
+        const formatScore = (txt) => {
+            if (!txt && txt !== 0) return '';
+            const raw = String(txt).trim();
+            // Extract numeric portion (allow negative, decimals)
+            const cleaned = raw.replace(/[^0-9.\-]/g, '');
+            if (cleaned === '') return raw;
+            const n = parseFloat(cleaned);
+            if (isNaN(n)) return raw;
+            if (Math.abs(n - Math.round(n)) < 0.0001) return String(Math.round(n));
+            return String(Math.round(n * 100) / 100);
+        };
+
+        const html = `
             <html>
                 <head>
                     <title>Grade Report - ${subject}</title>
@@ -633,11 +870,11 @@
                                     <tr>
                                         <td>${index + 1}</td>
                                         <td>${row.cells[0].textContent.trim()}</td>
-                                        <td>${row.cells[1].textContent.trim()}</td>
-                                        <td>${row.cells[2].textContent.trim()}</td>
-                                        <td>${row.cells[3].textContent.trim()}</td>
-                                        <td>${row.cells[4].textContent.trim()}</td>
-                                        <td>${row.cells[5].textContent.trim()}</td>
+                                        <td>${formatScore(row.cells[1].textContent)}</td>
+                                        <td>${formatScore(row.cells[2].textContent)}</td>
+                                        <td>${formatScore(row.cells[3].textContent)}</td>
+                                        <td>${formatScore(row.cells[4].textContent)}</td>
+                                        <td>${formatScore(row.cells[5].textContent)}</td>
                                         <td>
                                             ${row.cells[6].textContent.trim().includes('Passed') 
                                                 ? `<span class="print-badge passed">Passed</span>`
@@ -658,13 +895,9 @@
                     </div>
                 </body>
             </html>
-        `);
-        printWindow.document.close();
-        
-        // Wait for resources to load then print
-        setTimeout(() => {
-            printWindow.print();
-        }, 500);
+        `;
+        // Use iframe-based printing to avoid browser URL footers when possible
+        printHtml(html);
     }
 </script>
 @endpush

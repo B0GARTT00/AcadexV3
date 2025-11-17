@@ -59,17 +59,13 @@
         @else
             @include('instructor.partials.term-stepper')
             @include('instructor.partials.activity-header', ['subject' => $subject, 'term' => $term, 'activityTypes' => $activityTypes])
-            <form id="gradeForm" method="POST" action="{{ route('instructor.grades.store') }}">
+            <form id="gradeForm" method="POST" action="{{ route('instructor.grades.store') }}" data-no-page-loader="true">
                 @csrf
                 <input type="hidden" name="subject_id" value="{{ $subject->id }}">
                 <input type="hidden" name="term" value="{{ $term }}">
                 @include('instructor.partials.grade-table')
             </form>
         @endif
-    </div>
-
-    <div id="fadeOverlay" class="fade-overlay d-none">
-        <div class="spinner"></div>
     </div>
 </div>
 
@@ -88,29 +84,6 @@
 @push('styles')
 <link rel="stylesheet" href="{{ asset('css/grade-table.css') }}">
 <style>
-.fade-overlay {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100%; height: 100%;
-    background: rgba(255, 255, 255, 0.75);
-    z-index: 9999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    backdrop-filter: blur(4px);
-    transition: opacity 0.3s ease-in-out;
-}
-.fade-overlay.d-none {
-    display: none !important;
-}
-.spinner {
-    border: 4px solid #e5e7eb;
-    border-top: 4px solid #4da674;
-    border-radius: 50%;
-    width: 40px;
-    height: 40px;
-    animation: spin 0.6s linear infinite;
-}
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
@@ -135,224 +108,107 @@
 @include('instructor.partials.grade-script')
 
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const cards = document.querySelectorAll('#subject-selection .subject-card[data-url]');
+    if (!cards.length) {
+        return;
+    }
+
+    cards.forEach(card => {
+        if (card.dataset.clickBound === 'true') {
+            return;
+        }
+
+        card.dataset.clickBound = 'true';
+        card.setAttribute('role', 'button');
+        card.tabIndex = 0;
+
+        const navigate = () => {
+            const url = card.dataset.url;
+            if (url) {
+                window.location.href = url;
+            }
+        };
+
+        card.addEventListener('click', (event) => {
+            if (event.defaultPrevented) {
+                return;
+            }
+
+            if (event.target.closest('a, button, input, label, select, textarea')) {
+                return;
+            }
+
+            navigate();
+        });
+
+        card.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                navigate();
+            }
+        });
+    });
+});
+
 // Make function globally available
 window.initializeCourseOutcomeDropdowns = initializeCourseOutcomeDropdowns;
 
-    
-    // Global function to show unsaved changes modal
-    window.showUnsavedChangesModal = function(onConfirm, onCancel = null) {
-        // Create modal if it doesn't exist
-        let modal = document.getElementById('unsavedChangesModal');
-        if (!modal) {
-            modal = document.createElement('div');
-            modal.innerHTML = `
-                <div class="modal fade" id="unsavedChangesModal" tabindex="-1" aria-labelledby="unsavedChangesModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content border-0 shadow-lg">
-                            <div class="modal-header bg-warning text-dark border-0">
-                                <h5 class="modal-title d-flex align-items-center" id="unsavedChangesModalLabel">
-                                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                                    Unsaved Changes
-                                </h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                            </div>
-                            <div class="modal-body">
-                                <p class="mb-3">You have unsaved changes that will be lost if you continue.</p>
-                                <p class="mb-0 text-muted">Are you sure you want to leave without saving?</p>
-                            </div>
-                            <div class="modal-footer border-0">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                                <button type="button" class="btn btn-warning" id="confirmLeaveBtn">Leave Without Saving</button>
-                            </div>
+// Global function to show unsaved changes modal
+window.showUnsavedChangesModal = function(onConfirm, onCancel = null) {
+    // Create modal if it doesn't exist
+    let modal = document.getElementById('unsavedChangesModal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.innerHTML = `
+            <div class="modal fade" id="unsavedChangesModal" tabindex="-1" aria-labelledby="unsavedChangesModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg">
+                        <div class="modal-header bg-warning text-dark border-0">
+                            <h5 class="modal-title d-flex align-items-center" id="unsavedChangesModalLabel">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                                Unsaved Changes
+                            </h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p class="mb-3">You have unsaved changes that will be lost if you continue.</p>
+                            <p class="mb-0 text-muted">Are you sure you want to leave without saving?</p>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-warning" id="confirmLeaveBtn">Leave Without Saving</button>
                         </div>
                     </div>
                 </div>
-            `;
-            document.body.appendChild(modal.firstElementChild);
-        }
-        
-        const modalInstance = new bootstrap.Modal(document.getElementById('unsavedChangesModal'), {
-            backdrop: false
-        });
-        const confirmBtn = document.getElementById('confirmLeaveBtn');
-        
-        // Remove any existing event listeners
-        const newConfirmBtn = confirmBtn.cloneNode(true);
-        confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
-        
-        // Add new event listener
-        newConfirmBtn.addEventListener('click', function() {
-            modalInstance.hide();
-            if (onConfirm) onConfirm();
-        });
-        
-        // Handle cancel
-        document.getElementById('unsavedChangesModal').addEventListener('hidden.bs.modal', function() {
-            if (onCancel) onCancel();
-        }, { once: true });
-        
-        modalInstance.show();
-    };
-
-// Wait for DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', function() {
-    const overlay = document.getElementById('fadeOverlay');
-    
-    // Make overlay globally accessible
-    window.gradeOverlay = overlay;
-    
-    // Handle subject card clicks using event delegation
-    const subjectSelectionArea = document.getElementById('subject-selection');
-    if (subjectSelectionArea) {
-        subjectSelectionArea.addEventListener('click', function(e) {
-            const subjectCard = e.target.closest('.subject-card[data-url]');
-            if (!subjectCard) return;
-            
-            e.preventDefault();
-            e.stopPropagation();
-            
-            const url = subjectCard.dataset.url;
-            console.log('Subject card clicked, URL:', url);
-            
-            if (!url) {
-                console.error('No URL found for subject card');
-                return;
-            }
-            
-            // Check for unsaved changes before subject navigation (only if function exists and we're in grades view)
-            if (typeof checkForChanges === 'function' && document.getElementById('studentTableBody')) {
-                try {
-                    const { hasChanges } = checkForChanges();
-                    if (hasChanges) {
-                        showUnsavedChangesModal(() => {
-                            // User confirmed, proceed with navigation
-                            navigateToSubject(url, window.gradeOverlay || document.getElementById('fadeOverlay'));
-                        });
-                        return;
-                    }
-                } catch (error) {
-                    console.error('Error checking for changes:', error);
-                }
-            }
-            
-            // No unsaved changes, proceed directly
-            navigateToSubject(url, window.gradeOverlay || document.getElementById('fadeOverlay'));
-        });
-    }
-    
-    function loadGradeSection(url, overlay) {
-        if (!url) {
-            return Promise.reject(new Error('Missing grade section URL.'));
-        }
-
-        const overlayRef = overlay || window.gradeOverlay || document.getElementById('fadeOverlay');
-        if (overlayRef) overlayRef.classList.remove('d-none');
-
-        return fetch(url, {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
-        })
-        .then(res => {
-            if (!res.ok) {
-                throw new Error(`Request failed with status ${res.status}`);
-            }
-            return res.text();
-        })
-        .then(html => {
-            const parser = new DOMParser();
-            const doc = parser.parseFromString(html, 'text/html');
-            const newGradeSection = doc.querySelector('#grade-section');
-            const currentSection = document.getElementById('grade-section');
-
-            if (!newGradeSection || !currentSection) {
-                throw new Error('Grade section markup missing from response.');
-            }
-
-            currentSection.replaceWith(newGradeSection);
-
-            if (typeof bindGradeInputEvents === 'function') {
-                bindGradeInputEvents();
-            }
-            if (typeof initializeCourseOutcomeDropdowns === 'function') {
-                initializeCourseOutcomeDropdowns();
-            }
-            if (typeof initializeStudentSearch === 'function') {
-                initializeStudentSearch();
-            }
-
-            if (overlayRef) overlayRef.classList.add('d-none');
-            return true;
-        })
-        .catch(error => {
-            if (overlayRef) overlayRef.classList.add('d-none');
-            throw error;
-        });
+            </div>
+        `;
+        document.body.appendChild(modal.firstElementChild);
     }
 
-    // Extract subject navigation logic to reusable function
-    function navigateToSubject(url, overlay) {
-        console.log('Navigating to subject URL:', url);
-        loadGradeSection(url, overlay).catch(error => {
-            console.error('Error loading grades:', error);
-            alert('Failed to load subject grades.');
-        });
-    }
-
-    // Handle term step clicks
-    document.addEventListener('click', function(e) {
-        const button = e.target.closest('.term-step');
-        if (!button) return;
-        
-        const term = button.dataset.term;
-        const subjectInput = document.querySelector('input[name="subject_id"]');
-        if (!term || !subjectInput) return;
-        
-        const subjectId = subjectInput.value;
-        if (!subjectId) return;
-        
-        // Check for unsaved changes before term navigation (only if function exists and we're in grades view)
-        if (typeof checkForChanges === 'function' && document.getElementById('studentTableBody')) {
-            const { hasChanges } = checkForChanges();
-            if (hasChanges) {
-                showUnsavedChangesModal(() => {
-                    // User confirmed, proceed with navigation
-                    navigateToTerm(subjectId, term, window.gradeOverlay || document.getElementById('fadeOverlay'));
-                });
-                return;
-            }
-        }
-        
-        // No unsaved changes, proceed directly
-        navigateToTerm(subjectId, term, window.gradeOverlay || document.getElementById('fadeOverlay'));
+    const modalInstance = new bootstrap.Modal(document.getElementById('unsavedChangesModal'), {
+        backdrop: false
     });
-    
-    // Extract term navigation logic to reusable function
-    function navigateToTerm(subjectId, term, overlay) {
-        const url = `/instructor/grades/partial?subject_id=${subjectId}&term=${term}`;
-        loadGradeSection(url, overlay).catch(error => {
-            console.error('Error loading term data:', error);
-            alert('Failed to load term data.');
-        });
-    }
+    const confirmBtn = document.getElementById('confirmLeaveBtn');
 
-    function refreshGradeSection() {
-        const subjectInput = document.querySelector('input[name="subject_id"]');
-        const termInput = document.querySelector('input[name="term"]');
+    // Remove any existing event listeners
+    const newConfirmBtn = confirmBtn.cloneNode(true);
+    confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
 
-        if (!subjectInput || !termInput) {
-            return Promise.resolve();
-        }
+    // Add new event listener
+    newConfirmBtn.addEventListener('click', function() {
+        modalInstance.hide();
+        if (onConfirm) onConfirm();
+    });
 
-        const url = `/instructor/grades/partial?subject_id=${encodeURIComponent(subjectInput.value)}&term=${encodeURIComponent(termInput.value)}`;
+    // Handle cancel
+    document.getElementById('unsavedChangesModal').addEventListener('hidden.bs.modal', function() {
+        if (onCancel) onCancel();
+    }, { once: true });
 
-        return loadGradeSection(url)
-            .catch(error => {
-                console.error('Error refreshing grade section:', error);
-                throw new Error('Grades were saved, but the table could not refresh automatically. Please reload the page.');
-            });
-    }
+    modalInstance.show();
+};
 
-    window.refreshGradeSection = refreshGradeSection;
-    
-});
+// The rest of the navigation/partial loading functions are implemented inside the included grade-script partial.
 </script>
 @endpush

@@ -247,7 +247,8 @@
                         $status = $summary['status'];
                     @endphp
                     <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                        <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $status }}" data-url="{{ $buildRoute('admin.gradesFormula.department', ['department' => $department->id]) }}" style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <a href="{{ $buildRoute('admin.gradesFormula.department', ['department' => $department->id]) }}" class="text-decoration-none text-reset">
+                            <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $status }}" data-url="{{ $buildRoute('admin.gradesFormula.department', ['department' => $department->id]) }}" style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;">
                             {{-- Top header --}}
                             <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
                                 <div class="wildcard-circle position-absolute start-50 translate-middle"
@@ -284,7 +285,8 @@
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                            </div>
+                        </a>
                     </div>
                 @endforeach
 

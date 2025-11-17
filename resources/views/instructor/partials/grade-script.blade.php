@@ -832,6 +832,77 @@
             initializeCourseOutcomeDropdowns();
         }
     });
+
+    // Refresh the grade section via AJAX so computed grades stay in sync after saving
+    window.refreshGradeSection = function() {
+        return new Promise((resolve) => {
+            const section = document.getElementById('grade-section');
+            const gradeForm = document.getElementById('gradeForm');
+            if (!section || !gradeForm) {
+                resolve();
+                return;
+            }
+
+            const subjectId = gradeForm.querySelector('input[name="subject_id"]')?.value;
+            const termValue = gradeForm.querySelector('input[name="term"]')?.value;
+            if (!subjectId || !termValue) {
+                resolve();
+                return;
+            }
+
+            const overlay = document.getElementById('fadeOverlay');
+            overlay?.classList.add('active');
+
+            const refreshUrl = new URL(window.location.href);
+            refreshUrl.searchParams.set('subject_id', subjectId);
+            refreshUrl.searchParams.set('term', termValue);
+
+            fetch(refreshUrl.toString(), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to refresh grades');
+                }
+                return response.text();
+            })
+            .then(html => {
+                const tempWrapper = document.createElement('div');
+                tempWrapper.innerHTML = html.trim();
+                const newSection = tempWrapper.querySelector('#grade-section');
+                if (!newSection) {
+                    throw new Error('Grade section markup missing in response');
+                }
+
+                section.replaceWith(newSection);
+                form = document.getElementById('gradeForm');
+
+                if (typeof window.bindGradeInputEvents === 'function') {
+                    window.bindGradeInputEvents();
+                }
+                if (typeof window.initializeCourseOutcomeDropdowns === 'function') {
+                    window.initializeCourseOutcomeDropdowns();
+                }
+                if (typeof window.initializeStudentSearch === 'function') {
+                    window.initializeStudentSearch();
+                }
+
+                resolve();
+            })
+            .catch(error => {
+                console.error('Unable to refresh grade section:', error);
+                alert('Grades were saved, but we could not reload the table automatically. Please refresh the page.');
+                resolve();
+            })
+            .finally(() => {
+                overlay?.classList.remove('active');
+            });
+        });
+    };
     // Modify the beforeunload event handler
     window.addEventListener('beforeunload', function(e) {
         // Don't show warning if form is being submitted or no unsaved changes

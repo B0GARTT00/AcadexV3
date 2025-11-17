@@ -223,6 +223,7 @@ Route::prefix('instructor')
 
         // Final Grades
         Route::get('/final-grades', [FinalGradeController::class, 'index'])->name('final-grades.index');
+        Route::get('/final-grades/term-report', [FinalGradeController::class, 'termReport'])->name('final-grades.term-report');
         Route::post('/final-grades/generate', [FinalGradeController::class, 'generate'])->name('final-grades.generate');
 
         // Activities

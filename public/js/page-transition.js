@@ -65,6 +65,10 @@
     document.addEventListener('submit', function(e) {
         const form = e.target;
         if (form && !form.hasAttribute('target')) {
+            if (form.hasAttribute('data-no-page-loader')) {
+                return;
+            }
+
             isNavigating = true;
             pageLoadStart = Date.now();
             document.body.classList.remove('loaded');
