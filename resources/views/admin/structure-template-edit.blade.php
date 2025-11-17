@@ -127,14 +127,14 @@
                 </div>
 
                 <div class="border rounded-3 p-3 bg-light">
-                    <template x-if="components.length === 0">
+                    <template x-if="mainComponents().length === 0">
                         <div class="text-center text-muted py-4">
                             <i class="bi bi-inbox fs-1 opacity-50"></i>
                             <p class="mb-0 mt-2">No components added yet. Click "Add Main Component" to start.</p>
                         </div>
                     </template>
 
-                    <template x-for="(component, index) in components" :key="component.id">
+                    <template x-for="(component, index) in mainComponents()" :key="component.id">
                         <div class="card mb-2 border">
                             <div class="card-body py-2 px-3">
                                 <div class="d-flex align-items-start gap-2">
@@ -334,6 +334,10 @@ function structureTemplateEditor() {
 
         getSubComponents(parentId) {
             return this.components.filter(c => c.parent_id === parentId);
+        },
+
+        mainComponents() {
+            return this.components.filter(c => c.is_main);
         },
 
         hasSubComponents(parentId) {
