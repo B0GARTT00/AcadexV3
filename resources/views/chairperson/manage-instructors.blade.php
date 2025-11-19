@@ -141,7 +141,8 @@
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#confirmDeactivateModal"
                                                 data-instructor-id="{{ $instructor->id }}"
-                                                data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                                data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}"
+                                                data-deactivate-url="{{ route('chairperson.deactivateInstructor', $instructor->id) }}">
                                                 <i class="bi bi-person-x-fill"></i> Deactivate
                                             </button>
                                         </div>
@@ -187,12 +188,13 @@
                                         </span>
                                     </td>
                                     <td class="text-center">
-                                        <button type="button"
-                                            class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#confirmActivateModal"
-                                            data-id="{{ $instructor->id }}"
-                                            data-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                            <button type="button"
+                                                class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#confirmActivateModal"
+                                                data-id="{{ $instructor->id }}"
+                                                data-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}"
+                                                data-activate-url="{{ route('chairperson.activateInstructor', $instructor->id) }}">
                                             <i class="bi bi-person-check-fill"></i>
                                             Activate
                                         </button>
@@ -407,19 +409,76 @@
     if (deactivateModal) {
         deactivateModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('deactivateForm').action = `/chairperson/instructors/${button.getAttribute('data-instructor-id')}/deactivate`;
+            // Prefer server-generated URL from data attribute (safer). Fallback to building the URL.
+            const deactivateUrl = button.getAttribute('data-deactivate-url') || `/chairperson/instructors/${button.getAttribute('data-instructor-id')}/deactivate`;
+            document.getElementById('deactivateForm').action = deactivateUrl;
             document.getElementById('instructorName').textContent = button.getAttribute('data-instructor-name');
         });
     }
+    // Guard deactivate form submit to ensure action is set
+    const deactivateFormEl = document.getElementById('deactivateForm');
+    if (deactivateFormEl) {
+        deactivateFormEl.addEventListener('submit', function(e) {
+            const action = this.getAttribute('action') || '';
+            if (!action || !action.includes('/deactivate')) {
+                e.preventDefault();
+                console.warn('Deactivate form action invalid:', action);
+                alert('Unable to determine the instructor to deactivate. Please re-open the dialog and try again.');
+                return false;
+            }
+        });
+    }
+
+    // Also make sure clicking Deactivate buttons sets the action immediately (robust fallback)
+    document.querySelectorAll('button[data-bs-target="#confirmDeactivateModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function (e) {
+            const form = document.getElementById('deactivateForm');
+            const url = btn.getAttribute('data-deactivate-url') || (`/chairperson/instructors/${btn.getAttribute('data-instructor-id')}/deactivate`);
+            if (form) {
+                form.action = url;
+                // Also populate the modal name immediately (fallback if modal show event doesn't supply relatedTarget)
+                const name = btn.getAttribute('data-instructor-name') || '';
+                const nameEl = document.getElementById('instructorName');
+                if (nameEl) nameEl.textContent = name;
+            }
+        });
+    });
 
     // Handling the activate modal (new modal)
     if (activateModal) {
         activateModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('activateForm').action = `/chairperson/instructors/${button.getAttribute('data-id')}/activate`;
+            const activateUrl = button.getAttribute('data-activate-url') || `/chairperson/instructors/${button.getAttribute('data-id')}/activate`;
+            document.getElementById('activateForm').action = activateUrl;
             document.getElementById('activateName').textContent = button.getAttribute('data-name');
         });
     }
+    // Guard activate form submit
+    const activateFormEl = document.getElementById('activateForm');
+    if (activateFormEl) {
+        activateFormEl.addEventListener('submit', function(e) {
+            const action = this.getAttribute('action') || '';
+            if (!action || !action.includes('/activate')) {
+                e.preventDefault();
+                console.warn('Activate form action invalid:', action);
+                alert('Unable to determine the instructor to activate. Please re-open the dialog and try again.');
+                return false;
+            }
+        });
+    }
+
+    // Also make sure clicking Activate buttons sets the action immediately (robust fallback)
+    document.querySelectorAll('button[data-bs-target="#confirmActivateModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function (e) {
+            const form = document.getElementById('activateForm');
+            const url = btn.getAttribute('data-activate-url') || (`/chairperson/instructors/${btn.getAttribute('data-id')}/activate`);
+            if (form) {
+                form.action = url;
+                const nameEl = document.getElementById('activateName');
+                if (nameEl) nameEl.textContent = btn.getAttribute('data-name') || '';
+            }
+        });
+    });
 
     // Handling the GE request modal
     if (requestGEModal) {
