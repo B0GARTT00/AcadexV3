@@ -1,16 +1,11 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-4 py-5">
+<div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-1">Welcome Back, {{ Auth::user()->name }}! 👋</h2>
             <p class="text-muted mb-0">Here's what's happening with your classes today.</p>
-        </div>
-        <div class="d-flex align-items-center gap-3">
-            <a href="{{ route('instructor.grades.index') }}" class="btn btn-success rounded-pill px-3 shadow-sm">
-                <i class="bi bi-plus-lg"></i> Manage Grades
-            </a>
         </div>
     </div>
 

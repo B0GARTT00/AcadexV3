@@ -304,6 +304,31 @@
         .course-outcome-chevron.rotated {
             transform: rotate(180deg);
         }
+
+        /* Grades Submenu Styles */
+        .grades-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            will-change: max-height;
+        }
+
+        .grades-submenu.show {
+            max-height: 200px;
+            transition: max-height 0.2s ease-in;
+        }
+
+        .grades-chevron {
+            transition: transform 0.2s ease;
+            font-size: 0.8rem;
+            display: inline-block;
+            width: 16px;
+            text-align: center;
+        }
+
+        .grades-chevron.rotated {
+            transform: rotate(180deg);
+        }
         
         /* Prevent sidebar from affecting header */
         .sidebar-wrapper {
@@ -656,6 +681,40 @@
             if (isCourseOutcomePage) {
                 const submenu = document.getElementById('courseOutcomeSubmenu');
                 const chevron = document.querySelector('.course-outcome-chevron');
+                
+                if (submenu && chevron) {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
+                }
+            }
+        });
+    </script>
+
+    <!-- Grades Submenu Handler -->
+    <script>
+        function toggleGradesMenu() {
+            const submenu = document.getElementById('gradesSubmenu');
+            const chevron = document.querySelector('.grades-chevron');
+            
+            if (submenu && chevron) {
+                if (submenu.classList.contains('show')) {
+                    submenu.classList.remove('show');
+                    chevron.classList.remove('rotated');
+                } else {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
+                }
+            }
+        }
+        
+        // Auto-expand if on Grades pages
+        document.addEventListener('DOMContentLoaded', function() {
+            const isGradesPage = window.location.pathname.includes('/grades') || 
+                                window.location.pathname.includes('/final-grades');
+            
+            if (isGradesPage) {
+                const submenu = document.getElementById('gradesSubmenu');
+                const chevron = document.querySelector('.grades-chevron');
                 
                 if (submenu && chevron) {
                     submenu.classList.add('show');

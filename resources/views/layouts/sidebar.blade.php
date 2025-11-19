@@ -35,13 +35,39 @@
                             <span>Manage Students</span>
                         </a>
                     </li>
+                    
+                    {{-- Grades Collapsible Menu --}}
+                    @php
+                        $isGradesActive = request()->routeIs('instructor.grades.*') || request()->routeIs('instructor.final-grades.*');
+                    @endphp
                     <li class="nav-item">
-                        <a href="{{ route('instructor.grades.index') }}" 
-                           class="nav-link {{ request()->routeIs('instructor.grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-card-checklist me-3"></i>
-                            <span>Manage Grades</span>
+                        <a class="nav-link d-flex align-items-center sidebar-link grades-toggle {{ $isGradesActive ? 'active' : '' }}" 
+                           onclick="toggleGradesMenu()"
+                           style="cursor: pointer;">
+                            <i class="bi bi-card-checklist me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                            <span style="flex: 1;">Grades</span>
+                            <i class="bi bi-chevron-down ms-auto grades-chevron {{ $isGradesActive ? 'rotated' : '' }}" style="flex-shrink: 0;"></i>
                         </a>
+                        <div class="grades-submenu {{ $isGradesActive ? 'show' : '' }}" id="gradesSubmenu">
+                            <ul class="nav nav-pills flex-column ms-3">
+                                <li class="nav-item">
+                                    <a href="{{ route('instructor.grades.index') }}" 
+                                       class="nav-link {{ request()->routeIs('instructor.grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-pencil-square me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                                        <span>Manage Grades</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('instructor.final-grades.index') }}" 
+                                       class="nav-link {{ request()->routeIs('instructor.final-grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-graph-up me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                                        <span>Final Grades</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
+                    
                     <li class="nav-item">
                         <a href="{{ route('instructor.activities.index') }}" 
                            class="nav-link {{ request()->routeIs('instructor.activities.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
@@ -80,14 +106,6 @@
                                 </li>
                             </ul>
                         </div>
-                    </li>
-                    
-                    <li class="nav-item">
-                        <a href="{{ route('instructor.final-grades.index') }}" 
-                           class="nav-link {{ request()->routeIs('instructor.final-grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-graph-up me-3"></i>
-                            <span>Final Grades</span>
-                        </a>
                     </li>
                 </ul>
             </div>

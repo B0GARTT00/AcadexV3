@@ -2,13 +2,16 @@
 
 @section('content')
 <div class="container-fluid px-4 py-4">
-    <h1 class="text-2xl font-bold mb-4">🎓 Manage Students</h1>
+    <h1 class="text-2xl font-bold mb-4 d-flex align-items-center">
+        <i class="bi bi-people-fill text-success me-2" style="font-size: 2rem; line-height: 1; vertical-align: middle;"></i>
+        <span>Manage Students</span>
+    </h1>
 
     {{-- Subject Selection --}}
     <form method="GET" action="{{ route('instructor.students.index') }}" class="mb-4">
-        <label class="form-label fw-medium mb-1">Select Subject</label>
+        <label class="form-label fw-medium mb-1">Select Course</label>
         <select name="subject_id" class="form-select" onchange="handleSubjectChange(this)">
-            <option value="">-- Select Subject --</option>
+            <option value="">-- Select Course --</option>
             @foreach($subjects as $subject)
                 <option value="{{ $subject->id }}" {{ request('subject_id') == $subject->id ? 'selected' : '' }}>
                     {{ $subject->subject_code }} - {{ $subject->subject_description }}
@@ -17,12 +20,14 @@
         </select>
     </form>
 
-    {{-- Add Student Button --}}
-    <div class="mb-3 text-end">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
-            + Enroll Student
-        </button>
-    </div>
+    {{-- Add Student Button (only shows when a subject is selected) --}}
+    @if(request('subject_id'))
+        <div class="mb-3 text-end">
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollStudentModal">
+                + Enroll Student
+            </button>
+        </div>
+    @endif
 
     {{-- Students Table --}}
     @if($students && $students->count())
@@ -92,10 +97,20 @@
             @csrf
             <div class="modal-content shadow-sm border-0 rounded-3">
                 <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="enrollStudentModalLabel">📥 Enroll New Student</h5>
+                    <h5 class="modal-title" id="enrollStudentModalLabel">
+                        📥 Enroll student to 
+                        @if(request('subject_id'))
+                            @php
+                                $selectedSubject = $subjects->firstWhere('id', request('subject_id'));
+                            @endphp
+                            {{ $selectedSubject ? $selectedSubject->subject_code . ' - ' . $selectedSubject->subject_description : '' }}
+                        @endif
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
+                    <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
+                    <input type="hidden" name="course_id" value="{{ Auth::user()->course_id }}">
                     <div class="row g-3">
                         <div class="col-md-6">
                             <label class="form-label">First Name <span class="text-danger">*</span></label>
@@ -115,20 +130,8 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Assign Subject <span class="text-danger">*</span></label>
-                            <select name="subject_id" class="form-select" required>
-                                <option value="">-- Select Subject --</option>
-                                @foreach($subjects as $subject)
-                                    <option value="{{ $subject->id }}">
-                                        {{ $subject->subject_code }} - {{ $subject->subject_description }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12">
                             <label class="form-label">Course</label>
                             <input type="text" class="form-control bg-light" value="{{ Auth::user()->course->course_code }} - {{ Auth::user()->course->course_description }}" readonly>
-                            <input type="hidden" name="course_id" value="{{ Auth::user()->course_id }}">
                         </div>
                     </div>
                 </div>
