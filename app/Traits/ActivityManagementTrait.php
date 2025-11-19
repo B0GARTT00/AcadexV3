@@ -275,4 +275,136 @@ trait ActivityManagementTrait
 
         return false;
     }
+
+    protected function getTermLabelMap(): array
+    {
+        return [
+            'prelim' => 'Prelim',
+            'midterm' => 'Midterm',
+            'prefinal' => 'Prefinal',
+            'final' => 'Final',
+        ];
+    }
+
+    protected function buildComponentAlignmentSnapshot(Subject $subject, array $termLabels, ?string $limitToTerm = null): array
+    {
+        $subject->loadMissing('academicPeriod');
+
+        $formulaSettings = GradesFormulaService::getSettings(
+            $subject->id,
+            $subject->course_id,
+            $subject->department_id,
+            optional($subject->academicPeriod)->semester,
+            $subject->academic_period_id,
+        );
+
+        $structureDetails = collect($formulaSettings['meta']['weight_details'] ?? [])
+            ->map(function (array $detail) {
+                $activityType = mb_strtolower($detail['activity_type']);
+                return [
+                    'activity_type' => $activityType,
+                    'label' => $detail['label'] ?? FormulaStructure::formatLabel($activityType),
+                    'weight_percent' => $detail['weight_percent'],
+                    'overall_weight_percent' => $detail['overall_weight_percent'] ?? $detail['weight_percent'],
+                    'relative_weight_percent' => $detail['relative_weight_percent'] ?? $detail['weight_percent'],
+                    'max_assessments' => $detail['max_assessments'] ?? null,
+                    'base_type' => FormulaStructure::baseActivityType($activityType),
+                ];
+            })
+            ->values();
+
+        $allowedTypes = $structureDetails->pluck('activity_type')->all();
+
+        $groupedCounts = Activity::selectRaw('term, LOWER(type) as type, COUNT(*) as total')
+            ->where('subject_id', $subject->id)
+            ->where('is_deleted', false)
+            ->when($limitToTerm, fn ($query) => $query->where('term', $limitToTerm))
+            ->groupBy('term', 'type')
+            ->get()
+            ->groupBy('term');
+
+        $alignmentSummary = [
+            'missing' => 0,
+            'exceeds' => 0,
+            'extra' => 0,
+        ];
+
+        $termSnapshots = [];
+
+        foreach ($termLabels as $termKey => $termLabel) {
+            if ($limitToTerm && $termKey !== $limitToTerm) {
+                continue;
+            }
+
+            $termCounts = $groupedCounts->get($termKey, collect());
+            $components = [];
+
+            foreach ($structureDetails as $component) {
+                $match = $termCounts->firstWhere('type', $component['activity_type']);
+                $actualCount = $match ? (int) $match->total : 0;
+
+                $minRequired = $component['relative_weight_percent'] > 0 ? 1 : 0;
+                if ($component['base_type'] === 'exam') {
+                    $minRequired = max(1, $minRequired);
+                }
+
+                $maxAllowed = $component['max_assessments'];
+                $availableSlots = $maxAllowed !== null
+                    ? max(0, (int) $maxAllowed - $actualCount)
+                    : null;
+
+                $isMissing = $minRequired > 0 && $actualCount < $minRequired;
+                $exceeds = $maxAllowed !== null && $actualCount > $maxAllowed;
+                $status = $isMissing ? 'missing' : ($availableSlots === 0 && $maxAllowed !== null ? 'full' : 'ok');
+
+                if ($isMissing) {
+                    $alignmentSummary['missing']++;
+                } elseif ($exceeds) {
+                    $alignmentSummary['exceeds']++;
+                }
+
+                $components[] = [
+                    'type' => $component['activity_type'],
+                    'label' => $component['label'],
+                    'weight' => $component['weight_percent'],
+                    'overall_weight' => $component['overall_weight_percent'],
+                    'relative_weight' => $component['relative_weight_percent'],
+                    'count' => $actualCount,
+                    'min_required' => $minRequired,
+                    'max_allowed' => $maxAllowed,
+                    'available_slots' => $availableSlots,
+                    'status' => $status,
+                ];
+            }
+
+            $extras = $termCounts
+                ->filter(fn ($row) => ! in_array($row->type, $allowedTypes, true))
+                ->map(fn ($row) => [
+                    'type' => $row->type,
+                    'count' => (int) $row->total,
+                ])
+                ->values()
+                ->all();
+
+            if (! empty($extras)) {
+                $alignmentSummary['extra'] += count($extras);
+            }
+
+            $termSnapshots[$termKey] = [
+                'label' => $termLabel,
+                'components' => $components,
+                'extras' => $extras,
+                'all_full' => ! empty($components) && collect($components)->every(function ($component) {
+                    return $component['max_allowed'] !== null && $component['available_slots'] === 0;
+                }),
+            ];
+        }
+
+        return [
+            'terms' => $termSnapshots,
+            'structure_details' => $structureDetails,
+            'alignment_summary' => $alignmentSummary,
+            'allowed_types' => $allowedTypes,
+        ];
+    }
 } 

@@ -70,7 +70,7 @@
 
                     <div class="col-md-6">
                         <label class="form-label">Number of Items</label>
-                        <input type="number" name="number_of_items" class="form-control" min="1" value="{{ old('number_of_items') }}" required>
+                        <input type="number" name="number_of_items" class="form-control" min="1" value="{{ old('number_of_items', 100) }}" required>
                     </div>
 
                     <div class="col-md-12">

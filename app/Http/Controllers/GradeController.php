@@ -76,6 +76,7 @@ class GradeController extends Controller
     
         $academicPeriodId = session('active_academic_period_id');
         $term = $request->term ?? 'prelim';
+        $termLabels = $this->getTermLabelMap();
     
         $subjects = Subject::where(function($query) use ($academicPeriodId) {
             $query->where('instructor_id', Auth::id())
@@ -117,6 +118,7 @@ class GradeController extends Controller
             $activityTypes = [];
             $passingGrade = null;
             $formulaMeta = null;
+            $componentStatus = null;
     
         if ($request->filled('subject_id')) {
             $subject = Subject::where('id', $request->subject_id)
@@ -147,6 +149,9 @@ class GradeController extends Controller
             $passingGrade = $formulaSettings['passing_grade'] ?? null;
             $formulaMeta = $formulaSettings['meta'] ?? null;
 
+            $componentSnapshot = $this->buildComponentAlignmentSnapshot($subject, $termLabels, $term);
+            $componentStatus = $componentSnapshot['terms'][$term] ?? null;
+
             // Get all course outcomes for this subject and term's academic period
             $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
                 ->where('is_deleted', false)
@@ -173,12 +178,33 @@ class GradeController extends Controller
     
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return view('instructor.partials.grade-body', compact(
-                'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes', 'activityTypes', 'passingGrade', 'formulaMeta'
+                'subject',
+                'term',
+                'students',
+                'activities',
+                'scores',
+                'termGrades',
+                'courseOutcomes',
+                'activityTypes',
+                'passingGrade',
+                'formulaMeta',
+                'componentStatus'
             ));
         }
 
         return view('instructor.manage-grades', compact(
-            'subjects', 'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes', 'activityTypes', 'passingGrade', 'formulaMeta'
+            'subjects',
+            'subject',
+            'term',
+            'students',
+            'activities',
+            'scores',
+            'termGrades',
+            'courseOutcomes',
+            'activityTypes',
+            'passingGrade',
+            'formulaMeta',
+            'componentStatus'
         ));
     }
 
@@ -383,6 +409,10 @@ class GradeController extends Controller
         $activityTypes = array_keys($formulaSettings['weights']);
         $passingGrade = $formulaSettings['passing_grade'] ?? null;
         $formulaMeta = $formulaSettings['meta'] ?? null;
+
+        $termLabels = $this->getTermLabelMap();
+        $componentSnapshot = $this->buildComponentAlignmentSnapshot($subject, $termLabels, $term);
+        $componentStatus = $componentSnapshot['terms'][$term] ?? null;
         
         $courseOutcomes = \App\Models\CourseOutcomes::where('subject_id', $subject->id)
             ->where('is_deleted', false)
@@ -413,7 +443,17 @@ class GradeController extends Controller
         }
 
         return view('instructor.partials.grade-body', compact(
-            'subject', 'term', 'students', 'activities', 'scores', 'termGrades', 'courseOutcomes', 'activityTypes', 'passingGrade', 'formulaMeta'
+            'subject',
+            'term',
+            'students',
+            'activities',
+            'scores',
+            'termGrades',
+            'courseOutcomes',
+            'activityTypes',
+            'passingGrade',
+            'formulaMeta',
+            'componentStatus'
         ));
     }
 

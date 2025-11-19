@@ -58,7 +58,12 @@
             @endif
         @else
             @include('instructor.partials.term-stepper')
-            @include('instructor.partials.activity-header', ['subject' => $subject, 'term' => $term, 'activityTypes' => $activityTypes])
+            @include('instructor.partials.activity-header', [
+                'subject' => $subject,
+                'term' => $term,
+                'activityTypes' => $activityTypes,
+                'componentStatus' => $componentStatus ?? null,
+            ])
             <form id="gradeForm" method="POST" action="{{ route('instructor.grades.store') }}" data-no-page-loader="true">
                 @csrf
                 <input type="hidden" name="subject_id" value="{{ $subject->id }}">

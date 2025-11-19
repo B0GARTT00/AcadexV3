@@ -46,12 +46,7 @@ class ActivityController extends Controller
             ->orderBy('subject_code')
             ->get();
 
-        $termLabels = [
-            'prelim' => 'Prelim',
-            'midterm' => 'Midterm',
-            'prefinal' => 'Prefinal',
-            'final' => 'Final',
-        ];
+        $termLabels = $this->getTermLabelMap();
 
         $selectedSubject = null;
         $selectedTerm = null;
@@ -97,24 +92,10 @@ class ActivityController extends Controller
                 $selectedSubjectPeriodId,
             );
 
-            $structureDetails = collect($formulaSettings['meta']['weight_details'] ?? [])
-                ->map(function ($detail) {
-                    $activityType = mb_strtolower($detail['activity_type']);
-                    $baseType = FormulaStructure::baseActivityType($activityType);
-
-                    return [
-                        'activity_type' => $activityType,
-                        'label' => $detail['label'] ?? FormulaStructure::formatLabel($activityType),
-                        'weight_percent' => $detail['relative_weight_percent'] ?? $detail['weight_percent'],
-                        'overall_weight_percent' => $detail['weight_percent'],
-                        'relative_weight_percent' => $detail['relative_weight_percent'] ?? $detail['weight_percent'],
-                        'max_assessments' => $detail['max_assessments'] ?? null,
-                        'base_type' => $baseType,
-                    ];
-                })
-                ->values();
-
-            $allowedTypes = $structureDetails->pluck('activity_type')->all();
+            $componentSnapshot = $this->buildComponentAlignmentSnapshot($selectedSubject, $termLabels);
+            $structureDetails = $componentSnapshot['structure_details'];
+            $componentStatuses = $componentSnapshot['terms'];
+            $alignmentSummary = $componentSnapshot['alignment_summary'];
 
             $existingCount = Activity::where('subject_id', $selectedSubject->id)
                 ->where('is_deleted', false)
@@ -134,69 +115,6 @@ class ActivityController extends Controller
                 ->orderBy('created_at')
                 ->get();
 
-            $groupedCounts = Activity::selectRaw('term, LOWER(type) as type, COUNT(*) as total')
-                ->where('subject_id', $selectedSubject->id)
-                ->where('is_deleted', false)
-                ->groupBy('term', 'type')
-                ->get()
-                ->groupBy('term');
-
-            $componentStatuses = [];
-
-            foreach ($termLabels as $termKey => $termLabel) {
-                $termCounts = $groupedCounts->get($termKey, collect());
-                $termComponents = [];
-
-                foreach ($structureDetails as $component) {
-                    $match = $termCounts->firstWhere('type', $component['activity_type']);
-                    $actualCount = $match ? (int) $match->total : 0;
-                    $minRequired = $component['weight_percent'] > 0 ? 1 : 0;
-
-                    if ($component['base_type'] === 'exam') {
-                        $minRequired = 1;
-                    }
-
-                    $maxAllowed = $component['max_assessments'];
-                    $isMissing = $minRequired > 0 && $actualCount < $minRequired;
-                    $exceeds = $maxAllowed !== null && $actualCount > $maxAllowed;
-
-                    if ($isMissing) {
-                        $alignmentSummary['missing']++;
-                    } elseif ($exceeds) {
-                        $alignmentSummary['exceeds']++;
-                    }
-
-                    $termComponents[] = [
-                        'type' => $component['activity_type'],
-                        'label' => $component['label'],
-                        'weight' => $component['weight_percent'],
-                        'overall_weight' => $component['overall_weight_percent'],
-                        'count' => $actualCount,
-                        'min_required' => $minRequired,
-                        'max_allowed' => $maxAllowed,
-                        'status' => $isMissing ? 'missing' : ($exceeds ? 'exceeds' : 'ok'),
-                    ];
-                }
-
-                $extras = $termCounts
-                    ->filter(fn ($row) => ! in_array($row->type, $allowedTypes, true))
-                    ->map(fn ($row) => [
-                        'type' => $row->type,
-                        'count' => (int) $row->total,
-                    ])
-                    ->values()
-                    ->all();
-
-                if (! empty($extras)) {
-                    $alignmentSummary['extra'] += count($extras);
-                }
-
-                $componentStatuses[$termKey] = [
-                    'label' => $termLabel,
-                    'components' => $termComponents,
-                    'extras' => $extras,
-                ];
-            }
         }
 
         $isAligned = $alignmentSummary['missing'] === 0
@@ -257,8 +175,9 @@ class ActivityController extends Controller
             'term' => 'required|in:prelim,midterm,prefinal,final',
             'type' => 'required|string',
             'title' => 'required|string|max:255',
-            'number_of_items' => 'required|integer|min:1',
+            'number_of_items' => 'nullable|integer|min:1',
             'course_outcome_id' => 'nullable|exists:course_outcomes,id',
+            'create_single' => 'sometimes|boolean',
         ]);
     
     $subject = Subject::with('academicPeriod')->findOrFail($validated['subject_id']);
@@ -330,6 +249,11 @@ class ActivityController extends Controller
             ? max(1, min($desiredBulkCount, $availableSlots))
             : 1;
 
+        // Respect inline/quick-add requests originating from the Manage Grades modal
+        if ($request->boolean('create_single')) {
+            $createCount = 1;
+        }
+
         $baseTitle = trim($validated['title']);
         if ($baseTitle === '') {
             $baseTitle = FormulaStructure::formatLabel($normalizedType);
@@ -347,7 +271,7 @@ class ActivityController extends Controller
         $sequenceStart = $existingCount + 1;
         $actorId = Auth::id();
         $courseOutcomeId = $request->course_outcome_id;
-        $numberOfItems = $request->number_of_items;
+        $numberOfItems = $request->integer('number_of_items') ?? 100;
 
         DB::transaction(function () use (
             $subject,

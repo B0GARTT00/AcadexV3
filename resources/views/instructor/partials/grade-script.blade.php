@@ -3,6 +3,7 @@
     let hasUnsavedChanges = false;
     let checkForChanges; // Declare the function variable globally
     let form; // Declare form globally
+    let termChangeInProgress = false;
 
     function bindGradeInputEvents() {
         console.log("Binding grade input events...");
@@ -826,6 +827,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log("Grade script loaded");
         bindGradeInputEvents();
+        initializeTermStepperNavigation();
         
         // Also initialize course outcome dropdowns on initial load
         if (typeof initializeCourseOutcomeDropdowns === 'function') {
@@ -889,6 +891,12 @@
                 }
                 if (typeof window.initializeStudentSearch === 'function') {
                     window.initializeStudentSearch();
+                }
+                if (typeof window.initializeActivityComponentGuard === 'function') {
+                    window.initializeActivityComponentGuard();
+                }
+                if (typeof window.initializeTermStepperNavigation === 'function') {
+                    window.initializeTermStepperNavigation();
                 }
 
                 resolve();
@@ -1098,6 +1106,98 @@
 
     // Export for external use
     window.initializeCourseOutcomeDropdowns = initializeCourseOutcomeDropdowns;
+
+    function initializeTermStepperNavigation() {
+        const termButtons = document.querySelectorAll('.term-step[data-term]');
+        if (!termButtons.length) {
+            return;
+        }
+
+        termButtons.forEach(button => {
+            if (!button || button.dataset.termBound === 'true') {
+                return;
+            }
+
+            button.dataset.termBound = 'true';
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                const targetTerm = button.dataset.term;
+                handleTermSelection(targetTerm);
+            });
+        });
+    }
+
+    function handleTermSelection(targetTerm) {
+        if (!targetTerm || termChangeInProgress) {
+            return;
+        }
+
+        const currentActive = document.querySelector('.term-step.active');
+        const currentTerm = currentActive?.dataset.term || null;
+        if (currentTerm === targetTerm) {
+            return;
+        }
+
+        const proceedWithSwitch = () => {
+            const gradeForm = document.getElementById('gradeForm');
+            const subjectId = gradeForm?.querySelector('input[name="subject_id"]')?.value;
+            const termInput = gradeForm?.querySelector('input[name="term"]');
+
+            if (termInput) {
+                termInput.value = targetTerm;
+            }
+
+            const updatedUrl = new URL(window.location.href);
+            if (subjectId) {
+                updatedUrl.searchParams.set('subject_id', subjectId);
+            }
+            updatedUrl.searchParams.set('term', targetTerm);
+            window.history.replaceState({}, '', updatedUrl.toString());
+
+            if (!gradeForm || !subjectId) {
+                window.location.href = updatedUrl.toString();
+                return;
+            }
+
+            hasUnsavedChanges = false;
+
+            if (typeof window.refreshGradeSection === 'function') {
+                termChangeInProgress = true;
+                const refreshPromise = window.refreshGradeSection();
+                if (refreshPromise && typeof refreshPromise.finally === 'function') {
+                    refreshPromise.finally(() => {
+                        termChangeInProgress = false;
+                    });
+                } else {
+                    termChangeInProgress = false;
+                }
+            } else {
+                window.location.href = updatedUrl.toString();
+            }
+        };
+
+        const formSubmitting = form ? form.submitting : false;
+        if (typeof checkForChanges === 'function' && !formSubmitting) {
+            const { hasChanges } = checkForChanges();
+            if (hasChanges) {
+                const confirmSwitch = () => {
+                    hasUnsavedChanges = false;
+                    proceedWithSwitch();
+                };
+
+                if (typeof window.showUnsavedChangesModal === 'function') {
+                    window.showUnsavedChangesModal(confirmSwitch);
+                } else if (confirm('You have unsaved changes that will be lost. Continue?')) {
+                    confirmSwitch();
+                }
+                return;
+            }
+        }
+
+        proceedWithSwitch();
+    }
+
+    window.initializeTermStepperNavigation = initializeTermStepperNavigation;
 
         // Function to update course outcome dropdowns after term change
         window.updateCourseOutcomeDropdowns = function(subjectId, term) {
