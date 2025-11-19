@@ -55,6 +55,17 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
+        // Check if user exists but is deactivated before attempting authentication
+        $user = \App\Models\User::where('email', $this->input('email'))->first();
+        
+        if ($user && !$user->is_active) {
+            RateLimiter::hit($this->throttleKey());
+            
+            throw ValidationException::withMessages([
+                'email' => 'Your account is on hold, please contact your coordinator or the admin.',
+            ]);
+        }
+
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 

@@ -164,7 +164,7 @@ class GECoordinatorController extends Controller
         // Find the instructor (don't restrict to GE department since they might be from another department)
         $instructor = User::where('id', $id)
             ->where('role', 0)
-            ->where('can_teach_ge', true)
+            ->where('is_active', true)
             ->firstOrFail();
             
         // Remove GE teaching capability AND deactivate the account
