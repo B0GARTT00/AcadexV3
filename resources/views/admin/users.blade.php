@@ -171,6 +171,13 @@
     </div>
 
     {{-- Warning Message --}}
+    @if (isset($hasDisabledUntilColumn) && ! $hasDisabledUntilColumn)
+        <div class="alert alert-danger mb-4">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            The <code>disabled_until</code> column is missing from the <code>users</code> table. Please run the latest migrations to restore disable-account behavior.
+        </div>
+    @endif
+
     <div class="alert alert-warning mb-4">
         <i class="fas fa-exclamation-triangle me-2"></i>
         These users have higher access. Add one at your own discretion.
@@ -192,7 +199,22 @@
                     <tbody>
                         @forelse($users as $user)
                             <tr>
-                                <td class="fw-semibold">{{ $user->name }}</td>
+                                <td class="fw-semibold">
+                                    {{ $user->name }}
+                                    @if ($user->is_active)
+                                        <span class="ms-2 badge bg-success-subtle text-success fw-semibold">Active</span>
+                                    @else
+                                        <span class="ms-2 badge bg-secondary text-white fw-semibold">Disabled</span>
+                                        @if (isset($hasDisabledUntilColumn) && $hasDisabledUntilColumn && $user->disabled_until)
+                                                    @php $until = new \Carbon\Carbon($user->disabled_until); @endphp
+                                                    @if ($until->year >= 9999)
+                                                        <small class="d-block text-muted mt-1">Indefinitely</small>
+                                                    @else
+                                                        <small class="d-block text-muted mt-1">Until: {{ $until->format('M d, Y h:i A') }}</small>
+                                                    @endif
+                                                @endif
+                                    @endif
+                                </td>
                                 <td>
                                     @switch($user->role)
                                         @case(0)
@@ -223,9 +245,16 @@
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <button type="button" class="btn btn-sm btn-danger" onclick="openChooseDisableModal({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Disable Account">
-                                        <i class="bi bi-person-slash"></i> Disable
-                                    </button>
+                                    @if($user->is_active)
+                                        <button type="button" class="btn btn-sm btn-danger" onclick="openChooseDisableModal({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Disable Account">
+                                            <i class="bi bi-person-slash"></i> Disable
+                                        </button>
+                                    @else
+                                        <span class="badge bg-secondary px-3 py-2">Disabled</span>
+                                        <button type="button" class="btn btn-sm btn-success ms-2" onclick="enableUser({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Re-enable Account">
+                                            <i class="bi bi-person-plus"></i> Enable
+                                        </button>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
@@ -503,6 +532,40 @@
 
 @push('scripts')
 <script>
+    function enableUser(userId, userName) {
+        Swal.fire({
+            title: 'Re-enable Account?',
+            html: `Are you sure you want to re-enable <strong>${userName}</strong>?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#198754',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Re-enable'
+        }).then((result) => {
+            if (!result.isConfirmed) return;
+            const token = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+            fetch(`/admin/users/${userId}/enable`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': token
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({ icon: 'success', title: 'Success', text: data.message, confirmButtonColor: '#198754' });
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    Swal.fire({ icon: 'error', title: 'Error', text: data.message || 'Failed to re-enable user', confirmButtonColor: '#198754' });
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Failed to re-enable user', confirmButtonColor: '#198754' });
+            });
+        })
+    }
     function openChooseDisableModal(userId, userName) {
         document.getElementById('chooseDisableUserName').textContent = userName;
         const form = document.getElementById('chooseDisableForm');
@@ -571,48 +634,80 @@
         const formData = new FormData();
         formData.append('duration', duration);
         formData.append('_token', document.querySelector('input[name="_token"]').value);
+        // Disable submit button early so we can safely restore it on early returns
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn ? submitBtn.innerHTML : null;
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Disabling...';
+        }
+
         if (duration === 'custom') {
             const customVal = document.getElementById('customDisableDatetime').value;
             if (!customVal) {
                 alert('Please select a custom date and time.');
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
                 return;
             }
             formData.append('custom_disable_datetime', customVal);
         }
-        // Disable submit button
-        const submitBtn = form.querySelector('button[type="submit"]');
-        const originalText = submitBtn.innerHTML;
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Disabling...';
+        // submitBtn already disabled above
         fetch(form.action, {
             method: 'POST',
             body: formData,
         })
-        .then(response => response.json())
+        .then(async response => {
+            let parsed = null;
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                parsed = await response.json();
+            }
+            if (!response.ok) {
+                const errMsg = parsed?.message || parsed || (await response.text().catch(() => null)) || response.statusText;
+                throw errMsg;
+            }
+            return parsed;
+        })
         .then(data => {
-            if (data.success) {
+            if (data && data.success) {
                 // Hide modal
                 const modal = bootstrap.Modal.getInstance(document.getElementById('chooseDisableModal'));
                 modal.hide();
                 // Show success message
-                const alert = document.createElement('div');
-                alert.className = 'alert alert-success alert-dismissible fade show';
-                alert.innerHTML = `
+                const successAlert = document.createElement('div');
+                successAlert.className = 'alert alert-success alert-dismissible fade show';
+                successAlert.innerHTML = `
                     <i class="bi bi-check-circle me-2"></i>${data.message}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 `;
-                document.querySelector('.container.py-4').insertBefore(alert, document.querySelector('.d-flex.justify-content-between'));
+                // Find a container to insert the alert into. The page uses 'container-fluid' but search both to be safe.
+                const container = document.querySelector('.container-fluid.py-4') || document.querySelector('.container.py-4') || document.body;
+                const headerRef = document.querySelector('.d-flex.justify-content-between');
+                if (container) {
+                    if (headerRef && container.contains(headerRef)) {
+                        container.insertBefore(successAlert, headerRef);
+                    } else if (container.firstChild) {
+                        container.insertBefore(successAlert, container.firstChild);
+                    } else {
+                        container.appendChild(successAlert);
+                    }
+                } else {
+                    document.body.appendChild(successAlert);
+                }
                 // Optionally reload page after 2 seconds
                 setTimeout(() => location.reload(), 2000);
             } else {
-                alert('Error: ' + (data.message || 'Failed to disable user.'));
+                // When response is OK but data.success is false, show its message
+                throw (data?.message || 'Failed to disable user.');
             }
         })
         .catch(error => {
             console.error('Error:', error);
-            alert('An error occurred while disabling the user.');
+            const message = typeof error === 'string' ? error : (error?.message || 'An error occurred while disabling the user.');
+            alert(message);
         })
         .finally(() => {
             submitBtn.disabled = false;
