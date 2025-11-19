@@ -36,7 +36,10 @@ class ActivityController extends Controller
 
         $academicPeriodId = session('active_academic_period_id');
 
-        $subjects = Subject::where('instructor_id', Auth::id())
+                $subjects = Subject::where(function($q) {
+                        $q->where('instructor_id', Auth::id())
+                            ->orWhereHas('instructors', function($q2) { $q2->where('instructor_id', Auth::id()); });
+                })
             ->where('is_deleted', false)
             ->when($academicPeriodId, fn ($query) => $query->where('academic_period_id', $academicPeriodId))
             ->with(['course', 'department', 'academicPeriod'])
@@ -400,7 +403,10 @@ class ActivityController extends Controller
 
         $subject = Subject::with('academicPeriod')
             ->where('id', $validated['subject_id'])
-            ->where('instructor_id', Auth::id())
+            ->where(function($q) {
+                $q->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($qr) { $qr->where('instructor_id', Auth::id()); });
+            })
             ->where('is_deleted', false)
             ->firstOrFail();
 
