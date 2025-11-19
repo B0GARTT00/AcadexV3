@@ -68,7 +68,7 @@
                                     <a href="{{ route('instructor.course_outcomes.index') }}" 
                                        class="nav-link {{ request()->routeIs('instructor.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
                                         <i class="bi bi-book me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Manage Course Outcome</span>
+                                        <span>View Course Outcome</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
