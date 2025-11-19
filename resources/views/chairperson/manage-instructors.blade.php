@@ -111,7 +111,8 @@
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#requestGEAssignmentModal"
                                                     data-instructor-id="{{ $instructor->id }}"
-                                                    data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                                    data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}"
+                                                    data-request-ge-url="{{ route('chairperson.requestGEAssignment', $instructor->id) }}">
                                                     <i class="bi bi-journal-plus"></i> Request GE
                                                 </button>
                                             @elseif($hasRequest && !$canTeachGE && $requestStatus === 'approved')
@@ -121,7 +122,8 @@
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#requestGEAssignmentModal"
                                                     data-instructor-id="{{ $instructor->id }}"
-                                                    data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                                    data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}"
+                                                    data-request-ge-url="{{ route('chairperson.requestGEAssignment', $instructor->id) }}">
                                                     <i class="bi bi-journal-plus"></i> Request GE Again
                                                 </button>
                                             @else
@@ -131,7 +133,8 @@
                                                     data-bs-toggle="modal"
                                                     data-bs-target="#requestGEAssignmentModal"
                                                     data-instructor-id="{{ $instructor->id }}"
-                                                    data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                                    data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}"
+                                                    data-request-ge-url="{{ route('chairperson.requestGEAssignment', $instructor->id) }}">
                                                     <i class="bi bi-journal-plus"></i> Request GE
                                                 </button>
                                             @endif
@@ -484,10 +487,36 @@
     if (requestGEModal) {
         requestGEModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('requestGEForm').action = `/chairperson/instructors/${button.getAttribute('data-instructor-id')}/request-ge-assignment`;
+            const reqUrl = button.getAttribute('data-request-ge-url') || `/chairperson/instructors/${button.getAttribute('data-instructor-id')}/request-ge-assignment`;
+            document.getElementById('requestGEForm').action = reqUrl;
             document.getElementById('requestGEName').textContent = button.getAttribute('data-instructor-name');
         });
     }
+    // Guard request ge form submit to ensure action is set
+    const requestGEFormEl = document.getElementById('requestGEForm');
+    if (requestGEFormEl) {
+        requestGEFormEl.addEventListener('submit', function(e) {
+            const action = this.getAttribute('action') || '';
+            if (!action || action.indexOf('/request-ge-assignment') === -1) {
+                e.preventDefault();
+                console.warn('Request GE form action invalid:', action);
+                alert('Unable to determine the instructor to request GE assignment for. Please re-open the dialog and try again.');
+                return false;
+            }
+        });
+    }
+    // Click fallback to set request form action and name
+    document.querySelectorAll('button[data-bs-target="#requestGEAssignmentModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function (e) {
+            const form = document.getElementById('requestGEForm');
+            const url = btn.getAttribute('data-request-ge-url') || (`/chairperson/instructors/${btn.getAttribute('data-instructor-id')}/request-ge-assignment`);
+            if (form) {
+                form.action = url;
+                const nameEl = document.getElementById('requestGEName');
+                if (nameEl) nameEl.textContent = btn.getAttribute('data-instructor-name') || '';
+            }
+        });
+    });
 </script>
 @endpush
 @endsection
