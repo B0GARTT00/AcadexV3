@@ -8,9 +8,14 @@
             <p class="text-muted mb-0">Monitor system activity and user management</p>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center gap-2">
-                <input type="date" name="date" class="form-control form-control-sm shadow-none border-success-subtle" value="{{ $selectedDate }}" onchange="this.form.submit()">
-            </form>
+            <div class="bg-white p-1 rounded-pill shadow-sm border d-flex align-items-center">
+                <div class="bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center ms-1" style="width: 38px; height: 38px;">
+                    <i class="bi bi-calendar-date fs-5"></i>
+                </div>
+                <div class="px-3 py-1">
+                    <span class="text-dark fw-bold" style="font-size: 0.9rem;">{{ $selectedDate }}</span>
+                </div>
+            </div>
         </div>
     </div>
 
