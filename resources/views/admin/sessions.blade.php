@@ -815,8 +815,37 @@
                         url.searchParams.delete('tab');
                     }
                     window.history.pushState({}, '', url);
+                    // Ensure pagination links include the updated tab param after switching tabs
+                    try { updatePaginationLinksWithTab(); } catch (err) { /* ignore */ }
                 });
             });
+
+            // Persist tab selection in pagination links (ensures clicking page keeps tab)
+            function updatePaginationLinksWithTab() {
+                const currentTabParam = new URLSearchParams(window.location.search).get('tab');
+                if (!currentTabParam) return;
+
+                // For each pagination link under the tab panes, append tab param if missing
+                document.querySelectorAll('.tab-pane').forEach(pane => {
+                    const paneName = pane.id === 'logs-pane' ? 'logs' : 'sessions';
+                    pane.querySelectorAll('.pagination a').forEach(link => {
+                        try {
+                            const url = new URL(link.href, window.location.origin);
+                            // Only set tab if it matches the pane and is missing
+                            if (url.searchParams.get('tab') !== paneName) {
+                                url.searchParams.set('tab', paneName);
+                                link.href = url.toString();
+                            }
+                        } catch (e) {
+                            // ignore invalid URLs
+                        }
+                    });
+                });
+            }
+
+            // Update pagination links once on load and whenever we update history
+            updatePaginationLinksWithTab();
+            window.addEventListener('popstate', updatePaginationLinksWithTab);
         });
 
         // Show success/error messages
