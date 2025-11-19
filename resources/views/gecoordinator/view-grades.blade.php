@@ -1,11 +1,111 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">
-        <i class="bi bi-bar-chart-fill text-success me-2"></i>
-        Students' Final Grades
-    </h1>
+<style>
+    /* Container wrapper for consistent styling */
+    .page-wrapper {
+        background-color: #EAF8E7;
+        min-height: 100vh;
+        padding: 0;
+        margin: 0;
+    }
+
+    .page-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 1.5rem 1rem;
+    }
+
+    /* Page title styling */
+    .page-title {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid rgba(77, 166, 116, 0.2);
+    }
+
+    .page-title h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .page-title h1 i {
+        color: #198754;
+        font-size: 2rem;
+        margin-right: 0.75rem;
+    }
+
+    .page-subtitle {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    /* Content wrapper */
+    .content-wrapper {
+        background-color: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    /* Breadcrumb styling */
+    .breadcrumb {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 0.5rem;
+        padding: 1rem 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        margin-bottom: 1.5rem;
+    }
+
+    .breadcrumb-item {
+        font-weight: 500;
+        font-size: 0.95rem;
+    }
+
+    .breadcrumb-item a {
+        color: #4da674;
+        text-decoration: none;
+        transition: all 0.2s;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+    }
+
+    .breadcrumb-item a:hover {
+        color: #3d8a5e;
+        background-color: rgba(77, 166, 116, 0.1);
+    }
+
+    .breadcrumb-item.active {
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+        color: #6c757d;
+        font-weight: bold;
+        font-size: 1.2rem;
+        padding: 0 0.5rem;
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="page-container">
+        <!-- Page Title -->
+        <div class="page-title">
+            <h1>
+                <i class="bi bi-clipboard-data"></i>
+                View Grades
+            </h1>
+            <p class="page-subtitle">View and monitor students' final grades by instructor and subject</p>
+        </div>
+
+        <div class="content-wrapper">
 
     {{-- Breadcrumb Navigation --}}
     <nav aria-label="breadcrumb">
@@ -16,13 +116,23 @@
             @if (!empty($selectedInstructorId) && empty($selectedSubjectId))
                 <li class="breadcrumb-item active" aria-current="page">Select Subject</li>
             @elseif (!empty($selectedInstructorId) && !empty($selectedSubjectId))
-                <li class="breadcrumb-item active" aria-current="page">Students' Final Grades</li>
+                <li class="breadcrumb-item">
+                    <a href="{{ route('gecoordinator.viewGrades', ['instructor_id' => $selectedInstructorId]) }}">Select Subject</a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">Students' Grades</li>
             @endif
         </ol>
     </nav>
 
     {{-- Step 1: Instructor Selection --}}
     @if (empty($selectedInstructorId) && empty($selectedSubjectId))
+        @if($instructors->isEmpty())
+            <div class="text-center py-5">
+                <i class="bi bi-inbox fs-1 text-muted mb-3 d-block" style="font-size: 4rem;"></i>
+                <h5 class="text-muted mb-2">No Data Available</h5>
+                <p class="text-muted">There are currently no instructors with assigned subjects.</p>
+            </div>
+        @else
         <div class="row g-4 px-4 py-4">
             @foreach($instructors as $instructor)
                 <div class="col-md-4">
@@ -55,6 +165,7 @@
                 </div>
             @endforeach
         </div>
+        @endif
     @elseif (empty($selectedSubjectId))
         {{-- Step 2: Subject Selection --}}
         @if (!empty($subjects))
@@ -91,7 +202,7 @@
             </div>
         @endif
     @else
-        {{-- Step 3: Display Students' Final Grades --}}
+        {{-- Step 3: Display Students' Grades --}}
         {{-- Students Table --}}
         @if (!empty($students) && count($students))
             <div class="bg-white shadow-lg rounded-4 overflow-x-auto">
@@ -151,5 +262,7 @@
             </div>
         @endif
     @endif
+        </div>
+    </div>
 </div>
 @endsection
