@@ -121,6 +121,10 @@ class GradeController extends Controller
         if ($request->filled('subject_id')) {
             $subject = Subject::where('id', $request->subject_id)
                 ->when($academicPeriodId, fn($q) => $q->where('academic_period_id', $academicPeriodId))
+                ->where(function($q) {
+                    $q->where('instructor_id', Auth::id())
+                      ->orWhereHas('instructors', function($qr) { $qr->where('instructor_id', Auth::id()); });
+                })
                 ->firstOrFail();
 
             if ($academicPeriodId && $subject->academic_period_id !== (int) $academicPeriodId) {
@@ -189,7 +193,12 @@ class GradeController extends Controller
             'course_outcomes' => 'array',
         ]);
     
-        $subject = Subject::findOrFail($request->subject_id);
+        $subject = Subject::where('id', $request->subject_id)
+            ->where(function($q) {
+                $q->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($qr) { $qr->where('instructor_id', Auth::id()); });
+            })
+            ->firstOrFail();
         $termId = $this->getTermId($request->term);
         $activities = $this->getOrCreateDefaultActivities($subject->id, $request->term);
         $formulaSettings = GradesFormulaService::getSettings(

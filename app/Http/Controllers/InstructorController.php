@@ -69,7 +69,10 @@ class InstructorController extends Controller
         if ($request->filled('subject_id')) {
             $subject = Subject::findOrFail($request->subject_id);
 
-            if ($subject->instructor_id !== Auth::id()) {
+            // Allow access if instructor is primary instructor or assigned via pivot
+            $isPrimary = $subject->instructor_id === Auth::id();
+            $isPivotAssigned = $subject->instructors()->where('instructor_id', Auth::id())->exists();
+            if (!$isPrimary && !$isPivotAssigned) {
                 abort(403, 'Unauthorized access to subject.');
             }
 

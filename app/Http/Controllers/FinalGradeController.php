@@ -28,7 +28,10 @@ class FinalGradeController extends Controller
     {
         Gate::authorize('instructor');
 
-        $subjects = Subject::where('instructor_id', Auth::id())->get();
+                $subjects = Subject::where(function($q) {
+                        $q->where('instructor_id', Auth::id())
+                            ->orWhereHas('instructors', function($q2) { $q2->where('instructor_id', Auth::id()); });
+                })->get();
         $finalData = [];
 
         if ($request->filled('subject_id')) {
@@ -98,7 +101,12 @@ class FinalGradeController extends Controller
             'subject_id' => 'required|exists:subjects,id',
         ]);
 
-        $subject = Subject::findOrFail($request->subject_id);
+        $subject = Subject::where('id', $request->subject_id)
+            ->where(function($q) {
+                $q->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($qr) { $qr->where('instructor_id', Auth::id()); });
+            })
+            ->firstOrFail();
         $subjectId = $subject->id;
 
         $students = Student::whereHas('subjects', fn($q) => $q->where('subject_id', $subjectId))->get();
@@ -163,7 +171,10 @@ class FinalGradeController extends Controller
 
         $subject = Subject::with('course')
             ->where('id', $validated['subject_id'])
-            ->where('instructor_id', Auth::id())
+            ->where(function($q) {
+                $q->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($qr) { $qr->where('instructor_id', Auth::id()); });
+            })
             ->firstOrFail();
 
         $students = Student::whereHas('subjects', fn ($query) => $query->where('subject_id', $subject->id))

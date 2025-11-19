@@ -72,7 +72,10 @@ class StudentController extends Controller
     
         $courses = Course::where('department_id', Auth::user()->department_id)->get();
     
-        $subjects = Subject::where('instructor_id', Auth::id())
+                $subjects = Subject::where(function($q) {
+                        $q->where('instructor_id', Auth::id())
+                            ->orWhereHas('instructors', function($q2) { $q2->where('instructor_id', Auth::id()); });
+                })
             ->where('academic_period_id', $academicPeriodId)
             ->get();
     
@@ -98,6 +101,10 @@ class StudentController extends Controller
     
         $subject = Subject::where('id', $request->subject_id)
             ->where('academic_period_id', $academicPeriodId)
+            ->where(function($q) {
+                $q->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($qr) { $qr->where('instructor_id', Auth::id()); });
+            })
             ->firstOrFail();
     
         $student = Student::create([
