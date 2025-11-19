@@ -1,38 +1,46 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-4">
+<div class="container-fluid py-4">
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h4 text-dark fw-bold mb-0">🏢 Departments</h1>
-        <button class="btn btn-success" onclick="showModal()">+ Add Department</button>
+        <div>
+            <h1 class="h3 text-dark fw-bold mb-0">🏢 Departments</h1>
+            <p class="text-muted mb-0">Manage academic departments</p>
+        </div>
+        <button class="btn btn-success" onclick="showModal()">
+            <i class="bi bi-plus-lg me-1"></i> Add Department
+        </button>
     </div>
 
     {{-- Departments Table --}}
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <table class="table table-bordered mb-0">
-                <thead class="table-success">
-                    <tr>
-                        <th>ID</th>
-                        <th>Name</th>
-                        <th class="text-center">Created At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($departments as $department)
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="departmentsTable" class="table table-hover align-middle" style="width:100%">
+                    <thead class="table-light">
                         <tr>
-                            <td>{{ $department->id }}</td>
-                            <td>{{ $department->department_description }}</td>
-                            <td class="text-center">{{ $department->created_at->format('Y-m-d') }}</td>
+                            <th>ID</th>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th class="text-center">Created At</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" class="text-center text-muted fst-italic py-3">No departments found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($departments as $department)
+                            <tr>
+                                <td>{{ $department->id }}</td>
+                                <td class="fw-semibold">{{ $department->department_code }}</td>
+                                <td>{{ $department->department_description }}</td>
+                                <td class="text-center">{{ $department->created_at->format('Y-m-d') }}</td>
+                                {{-- Actions removed as requested --}}
+                            </tr>
+                        @empty
+                            {{-- DataTables will handle empty state --}}
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -49,15 +57,15 @@
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Department Code</label>
-                        <input type="text" name="department_code" class="form-control" required>
+                        <label class="form-label fw-semibold">Department Code</label>
+                        <input type="text" name="department_code" class="form-control" placeholder="e.g. CITE" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Department Description</label>
-                        <input type="text" name="department_description" class="form-control" required>
+                        <label class="form-label fw-semibold">Department Description</label>
+                        <input type="text" name="department_description" class="form-control" placeholder="e.g. College of Information Technology Education" required>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <button type="submit" class="btn btn-success">Save Department</button>
                 </div>
@@ -66,8 +74,22 @@
     </div>
 </div>
 
-{{-- JS --}}
+@push('scripts')
 <script>
+    $(document).ready(function() {
+        $('#departmentsTable').DataTable({
+            order: [[1, 'asc']], // Sort by Code by default
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search departments...",
+                lengthMenu: "Show _MENU_ entries",
+                info: "Showing _START_ to _END_ of _TOTAL_ departments",
+                emptyTable: "No departments found"
+            },
+            // Keep default ordering behavior after removing Actions column
+        });
+    });
+
     function showModal() {
         const modal = new bootstrap.Modal(document.getElementById('departmentModal'), {
             backdrop: false
@@ -75,4 +97,5 @@
         modal.show();
     }
 </script>
+@endpush
 @endsection

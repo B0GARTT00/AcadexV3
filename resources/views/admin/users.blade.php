@@ -163,7 +163,7 @@
     </script>
 @endpush
 
-<div class="container py-4">
+<div class="container-fluid py-4">
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h4 text-dark fw-bold mb-0">👥 Users</h1>
@@ -177,63 +177,63 @@
     </div>
 
     {{-- Users Table --}}
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <table class="table table-bordered mb-0">
-                <thead class="table-success">
-                    <tr>
-                        <th>Username</th>
-                        <th>User Role</th>
-                        <th>Active Sessions</th>
-                        <th class="text-center">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($users as $user)
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="usersTable" class="table table-hover align-middle" style="width:100%">
+                    <thead class="table-light">
                         <tr>
-                            <td>{{ $user->name }}</td>
-                            <td>
-                                @switch($user->role)
-                                    @case(0)
-                                        Instructor
-                                        @break
-                                    @case(1)
-                                        Chairperson
-                                        @break
-                                    @case(2)
-                                        Dean
-                                        @break
-                                    @case(3)
-                                        Admin
-                                        @break
-                                    @case(4)
-                                        GE Coordinator
-                                        @break
-                                    @case(5)
-                                        VPAA
-                                        @break
-                                    @default
-                                        Unknown
-                                @endswitch
-                            </td>
-                            <td class="text-center">
-                                <span class="badge bg-info session-count" data-user-id="{{ $user->id }}">
-                                    <i class="bi bi-hourglass-split"></i> Loading...
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-sm btn-danger" onclick="openChooseDisableModal({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Disable Account">
-                                    <i class="bi bi-person-slash"></i> Disable
-                                </button>
-                            </td>
+                            <th>Username</th>
+                            <th>User Role</th>
+                            <th>Active Sessions</th>
+                            <th class="text-center">Actions</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center text-muted fst-italic py-3">No users found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($users as $user)
+                            <tr>
+                                <td class="fw-semibold">{{ $user->name }}</td>
+                                <td>
+                                    @switch($user->role)
+                                        @case(0)
+                                            <span class="badge bg-secondary">Instructor</span>
+                                            @break
+                                        @case(1)
+                                            <span class="badge bg-primary">Chairperson</span>
+                                            @break
+                                        @case(2)
+                                            <span class="badge bg-info text-dark">Dean</span>
+                                            @break
+                                        @case(3)
+                                            <span class="badge bg-danger">Admin</span>
+                                            @break
+                                        @case(4)
+                                            <span class="badge bg-warning text-dark">GE Coordinator</span>
+                                            @break
+                                        @case(5)
+                                            <span class="badge bg-dark">VPAA</span>
+                                            @break
+                                        @default
+                                            <span class="badge bg-light text-dark border">Unknown</span>
+                                    @endswitch
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info session-count" data-user-id="{{ $user->id }}">
+                                        <i class="bi bi-hourglass-split"></i> Loading...
+                                    </span>
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-sm btn-danger" onclick="openChooseDisableModal({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Disable Account">
+                                        <i class="bi bi-person-slash"></i> Disable
+                                    </button>
+                                </td>
+                            </tr>
+                        @empty
+                            {{-- DataTables will handle empty state --}}
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -1152,5 +1152,24 @@
             });
         });
     </script>
+@endpush
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        $('#usersTable').DataTable({
+            order: [[1, 'asc'], [0, 'asc']], // Sort by Role then Name
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search users...",
+                lengthMenu: "Show _MENU_ entries",
+                info: "Showing _START_ to _END_ of _TOTAL_ users",
+                emptyTable: "No users found"
+            },
+            columnDefs: [
+                { orderable: false, targets: 3 } // Disable sorting on Actions column
+            ]
+        });
+    });
+</script>
 @endpush
 @endsection

@@ -300,14 +300,14 @@
                         <a href="{{ route('admin.courses') }}" 
                            class="nav-link {{ request()->routeIs('admin.courses') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-book me-3"></i>
-                            <span>Courses</span>
+                            <span>Programs</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.subjects') }}" 
                            class="nav-link {{ request()->routeIs('admin.subjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-journal-bookmark me-3"></i>
-                            <span>Subjects</span>
+                            <span>Courses</span>
                         </a>
                     </li>
                     <li class="nav-item">
