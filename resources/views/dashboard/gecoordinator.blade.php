@@ -7,11 +7,6 @@
             <h2 class="fw-bold text-dark mb-1">GE Coordinator Overview 👨‍💼</h2>
             <p class="text-muted mb-0">Monitor General Education program performance and faculty management</p>
         </div>
-        <div class="d-flex align-items-center gap-3">
-            <a href="{{ route('gecoordinator.instructors') }}" class="btn btn-success rounded-pill px-3 shadow-sm">
-                <i class="bi bi-person-plus"></i> Manage Instructors
-            </a>
-        </div>
     </div>
 
     {{-- Summary Cards --}}
