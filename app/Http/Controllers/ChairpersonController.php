@@ -62,6 +62,7 @@ class ChairpersonController extends Controller
                   ->where('course_id', Auth::user()->course_id);
             })
             ->where('department_id', '!=', $geDepartment->id)
+            ->whereNotNull('email_verified_at')
             ->get();
             
         return view('chairperson.manage-instructors', compact('instructors', 'pendingAccounts', 'geRequests'));

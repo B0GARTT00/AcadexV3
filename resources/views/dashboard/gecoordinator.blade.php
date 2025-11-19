@@ -9,7 +9,7 @@
         </div>
         <div class="d-flex align-items-center gap-3">
             <a href="{{ route('gecoordinator.instructors') }}" class="btn btn-success rounded-pill px-3 shadow-sm">
-                <i class="bi bi-person-plus"></i> Manage GE Instructors
+                <i class="bi bi-person-plus"></i> Manage Instructors
             </a>
         </div>
     </div>

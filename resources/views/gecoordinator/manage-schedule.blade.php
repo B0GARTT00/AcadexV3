@@ -25,10 +25,10 @@
                     <table class="min-w-full bg-white border border-gray-300">
                         <thead class="bg-gray-100">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
-                                    Subject Code
+                                <th class="border-bottom">
+                                    Course Code
                                 </th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">
+                                <th class="border-bottom">
                                     Subject Title
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b">

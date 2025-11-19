@@ -210,10 +210,10 @@
                 <h6 class="px-3 mb-2">DATA MANAGEMENT</h6>
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
-                        <a href="{{ route('curriculum.selectSubjects') }}" 
+                        <a href="{{ route('curriculum.selectSubjects') }}"
                            class="nav-link {{ request()->routeIs('curriculum.selectSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-file-earmark-arrow-up me-3"></i>
-                            <span>Import Subjects</span>
+                            <span>Import GE Courses</span>
                         </a>
                     </li>
                 </ul>
@@ -361,35 +361,41 @@
                         <a href="{{ route('gecoordinator.instructors') }}"
                            class="nav-link {{ request()->routeIs('gecoordinator.instructors') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-people me-3"></i>
-                            <span>Manage GE Instructors</span>
+                            <span>Manage Instructors</span>
                         </a>
                     </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">ACADEMIC RECORDS</h6>
+                <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
                         <a href="{{ route('gecoordinator.assign-subjects') }}"
                            class="nav-link {{ request()->routeIs('gecoordinator.assign-subjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-journal-plus me-3"></i>
-                            <span>Assign GE Subjects</span>
+                            <i class="bi bi-journal-plus me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                            <span>Manage Courses</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('gecoordinator.studentsByYear') }}"
-                           class="nav-link {{ request()->routeIs('gecoordinator.studentsByYear') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-person-lines-fill me-3"></i>
-                            <span>GE Students List</span>
+                        <a href="{{ route('curriculum.selectSubjects') }}"
+                           class="nav-link {{ request()->routeIs('curriculum.selectSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-file-earmark-arrow-up me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                            <span>Import Courses</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('gecoordinator.viewGrades') }}"
                            class="nav-link {{ request()->routeIs('gecoordinator.viewGrades') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-clipboard-data me-3"></i>
-                            <span>View GE Grades</span>
+                            <i class="bi bi-clipboard-data me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                            <span>View Grades</span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a href="{{ route('gecoordinator.course_outcomes.index') }}" 
-                           class="nav-link {{ request()->routeIs('gecoordinator.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-book me-3"></i>
-                            <span>Manage Course Outcome</span>
+                        <a href="{{ route('gecoordinator.studentsByYear') }}"
+                           class="nav-link {{ request()->routeIs('gecoordinator.studentsByYear') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-person-lines-fill me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                            <span>View Students</span>
                         </a>
                     </li>
                 </ul>
@@ -399,38 +405,38 @@
                 <h6 class="px-3 mb-2">REPORTS</h6>
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
-                        <a href="{{ route('gecoordinator.reports.co-program') }}" 
-                           class="nav-link {{ request()->routeIs('gecoordinator.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-diagram-3 me-3"></i>
-                            <span>Program CO Summary</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('gecoordinator.reports.co-course') }}" 
-                           class="nav-link {{ request()->routeIs('gecoordinator.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                        <a class="nav-link d-flex align-items-center sidebar-link manage-co-toggle"
+                           onclick="toggleManageCOMenu()"
+                           style="cursor: pointer;">
                             <i class="bi bi-book me-3"></i>
-                            <span>Course CO Summary</span>
+                            <span style="flex: 1;">Manage Course Outcome</span>
+                            <i class="bi bi-chevron-down ms-auto manage-co-chevron" style="flex-shrink: 0;"></i>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('gecoordinator.reports.co-student') }}" 
-                           class="nav-link {{ request()->routeIs('gecoordinator.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-person-lines-fill me-3"></i>
-                            <span>Student CO Report</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="sidebar-section">
-                <h6 class="px-3 mb-2">DATA MANAGEMENT</h6>
-                <ul class="nav nav-pills flex-column">
-                    <li class="nav-item">
-                        <a href="{{ route('curriculum.selectSubjects') }}"
-                           class="nav-link {{ request()->routeIs('curriculum.selectSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-file-earmark-arrow-up me-3"></i>
-                            <span>Import GE Subjects</span>
-                        </a>
+                        <div class="manage-co-submenu ms-3 mt-2" id="manageCOSubmenu" style="display: none;">
+                            <ul class="nav nav-pills flex-column">
+                                <li class="nav-item">
+                                    <a href="{{ route('gecoordinator.reports.co-program') }}" 
+                                       class="nav-link {{ request()->routeIs('gecoordinator.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link py-2">
+                                        <i class="bi bi-diagram-3 me-3"></i>
+                                        <span>Program CO Summary</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('gecoordinator.reports.co-course') }}" 
+                                       class="nav-link {{ request()->routeIs('gecoordinator.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link py-2">
+                                        <i class="bi bi-book me-3"></i>
+                                        <span>Course Outcome Summary</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('gecoordinator.reports.co-student') }}" 
+                                       class="nav-link {{ request()->routeIs('gecoordinator.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link py-2">
+                                        <i class="bi bi-person-lines-fill me-3"></i>
+                                        <span>Student CO Summary</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
                 </ul>
             </div>

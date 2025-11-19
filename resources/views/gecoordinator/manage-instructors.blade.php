@@ -13,150 +13,367 @@
     .nav-tabs .nav-link:hover {
         color: #4da674 !important;  /* Green color for hover state */
     }
+
+    /* Main container improvements */
+    .instructor-management-wrapper {
+        background-color: #EAF8E7;
+        min-height: 100vh;
+        padding: 0;
+        margin: 0;
+    }
+
+    .instructor-management-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 1.5rem 1rem;
+    }
+
+    /* Tab improvements */
+    .nav-tabs {
+        border-bottom: 2px solid #d0d0d0 !important;
+        margin-bottom: 1.5rem;
+    }
+
+    .nav-tabs .nav-link {
+        border: none !important;
+        border-radius: 0.5rem 0.5rem 0 0;
+        background-color: transparent;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        color: #666 !important;
+        padding: 0.75rem 1.5rem !important;
+    }
+
+    .nav-tabs .nav-link:hover {
+        background-color: rgba(77, 166, 116, 0.08) !important;
+        color: #4da674 !important;
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: white !important;
+        color: #4da674 !important;
+        border-bottom: 3px solid #4da674 !important;
+        box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Content styling */
+    .tab-content {
+        background-color: transparent;
+        border-radius: 0;
+        box-shadow: none;
+        padding: 0;
+    }
+
+    /* Table improvements */
+    .table-responsive {
+        border-radius: 0.5rem !important;
+        background-color: transparent;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background-color: #f8f9fa;
+        font-weight: 600;
+        color: #333;
+        border-color: #e0e0e0;
+        padding: 1rem !important;
+        border-bottom: 2px solid #d0d0d0;
+    }
+
+    .table tbody td {
+        padding: 1rem !important;
+        border-color: #e8e8e8;
+        vertical-align: middle;
+    }
+
+    .table tbody tr {
+        transition: background-color 0.2s ease;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f9f9f9;
+    }
+
+    /* Alert improvements */
+    .alert {
+        border-radius: 0.5rem !important;
+        border: 0 !important;
+        margin-bottom: 1.5rem;
+    }
+
+    .alert-warning {
+        background-color: #fef3cd !important;
+        color: #664d03 !important;
+    }
+
+    .alert-info {
+        background-color: #d1ecf1 !important;
+        color: #0c5460 !important;
+    }
+
+    .alert-success {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+    }
+
+    /* Button improvements */
+    .btn-sm {
+        padding: 0.45rem 0.9rem !important;
+        font-size: 0.875rem !important;
+        border-radius: 0.375rem !important;
+    }
+
+    /* Page title */
+    .page-title {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid rgba(77, 166, 116, 0.2);
+    }
+
+    /* Content wrapper with white background */
+    .content-wrapper {
+        background-color: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        padding: 1.5rem;
+        margin-top: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Tabs section */
+    .tabs-section {
+        width: 100%;
+    }
+
+    /* Pending approvals section - flexible and responsive */
+    .pending-approvals-section {
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        flex-grow: 1;
+        margin-top: 1.5rem;
+    }
+
+    /* Responsive grid layout */
+    @media (max-width: 768px) {
+        .content-wrapper {
+            padding: 1rem;
+            gap: 1rem;
+        }
+
+        .page-title {
+            margin-bottom: 1rem;
+        }
+    }
 </style>
 
-<div class="max-w-6xl mx-auto py-10 px-4" style="background-color: #EAF8E7; border-radius: 1rem;">
-    <h1 class="text-3xl font-bold mb-8 text-gray-800 flex items-center">
-        <i class="bi bi-person-lines-fill text-success me-3 fs-2"></i>
-        Instructor Account Management
-    </h1>
-
-    @if(session('status'))
-        <div class="alert alert-success shadow-sm rounded">
-            {{ session('status') }}
+<div class="instructor-management-wrapper">
+    <div class="instructor-management-container">
+        <div class="page-title">
+            <h1 class="text-3xl font-bold mb-2 text-gray-800 flex items-center">
+                <i class="bi bi-person-lines-fill text-success me-3 fs-2"></i>
+                Instructor Account Management
+            </h1>
+            <p class="text-muted mb-0 small">Manage instructor accounts, requests, and GE courses assignments</p>
         </div>
-    @endif
 
-    {{-- Bootstrap Tabs --}}
-    <ul class="nav nav-tabs" id="instructorTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <a class="nav-link active" id="active-instructors-tab" data-bs-toggle="tab" href="#active-instructors" role="tab" aria-controls="active-instructors" aria-selected="true">
-                Active Instructors
-            </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link" id="inactive-instructors-tab" data-bs-toggle="tab" href="#inactive-instructors" role="tab" aria-controls="inactive-instructors" aria-selected="false">
-                Inactive Instructors
-            </a>
-        </li>
-        <li class="nav-item" role="presentation">
-            <a class="nav-link" id="ge-requests-tab" data-bs-toggle="tab" href="#ge-requests" role="tab" aria-controls="ge-requests" aria-selected="false">
-                GE Subject Requests
-            </a>
-        </li>
-    </ul>
+        @if(session('status'))
+            <div class="alert alert-success shadow-sm rounded">
+                {{ session('status') }}
+            </div>
+        @endif
 
-    <div class="tab-content mt-3" id="instructorTabsContent">
-        {{-- Active Instructors Tab --}}
-        <div class="tab-pane fade show active" id="active-instructors" role="tabpanel" aria-labelledby="active-instructors-tab">
-            <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                <i class="bi bi-people-fill text-primary me-2 fs-5"></i>
-                 Active Instructors
-            </h2>
+        <div class="content-wrapper">
+            <div class="tabs-section">
+                {{-- Bootstrap Tabs --}}
+                <ul class="nav nav-tabs" id="instructorTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link active" id="active-instructors-tab" data-bs-toggle="tab" href="#active-instructors" role="tab" aria-controls="active-instructors" aria-selected="true">
+                            Active Instructors
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="inactive-instructors-tab" data-bs-toggle="tab" href="#inactive-instructors" role="tab" aria-controls="inactive-instructors" aria-selected="false">
+                            Inactive Instructors
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="ge-requests-tab" data-bs-toggle="tab" href="#ge-requests" role="tab" aria-controls="ge-requests" aria-selected="false">
+                            GE Courses Requests
+                        </a>
+                    </li>
+                </ul>
 
-            @if($instructors->isEmpty())
-                <div class="alert alert-warning shadow-sm rounded">No active instructors.</div>
-            @else
-            <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
-                <table class="table table-bordered align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Instructor Name</th>
-                            <th>Email Address</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($instructors as $instructor)
-                            @if($instructor->is_active)
-                                <tr>
-                                    <td>{{ $instructor->last_name }}, {{ $instructor->first_name }} {{ $instructor->middle_name }}</td>
-                                    <td>{{ $instructor->email }}</td>
-                                    <td class="text-center">
-                                        <span class="badge border border-success text-success px-3 py-2 rounded-pill">
-                                            Active
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="button"
-                                            class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#confirmDeactivateModal"
-                                            data-instructor-id="{{ $instructor->id }}"
-                                            data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
-                                            <i class="bi bi-person-x-fill"></i> Deactivate
-                                        </button>
-                                    </td>
-                                </tr>
+                <div class="tab-content mt-3" id="instructorTabsContent">
+                    {{-- Active Instructors Tab --}}
+                    <div class="tab-pane fade show active" id="active-instructors" role="tabpanel" aria-labelledby="active-instructors-tab">
+                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
+                            <i class="bi bi-people-fill text-primary me-2 fs-5"></i>
+                            Active Instructors
+                        </h2>
+
+                        @if($instructors->isEmpty())
+                            <div class="alert alert-warning shadow-sm rounded">No active instructors.</div>
+                        @else
+                            <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
+                                <table class="table table-bordered align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Instructor Name</th>
+                                            <th>Email Address</th>
+                                            <th class="text-center">Status</th>
+                                            <th class="text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($instructors as $instructor)
+                                            @if($instructor->is_active)
+                                                <tr>
+                                                    <td>{{ $instructor->last_name }}, {{ $instructor->first_name }} {{ $instructor->middle_name }}</td>
+                                                    <td>{{ $instructor->email }}</td>
+                                                    <td class="text-center">
+                                                        <span class="badge border border-success text-success px-3 py-2 rounded-pill">
+                                                            Active
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-center">
+                                                        <button type="button"
+                                                            class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#confirmDeactivateModal"
+                                                            data-instructor-id="{{ $instructor->id }}"
+                                                            data-instructor-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                                            <i class="bi bi-person-x-fill"></i> Deactivate
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @endif
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>        
+                        @endif
+
+                        {{-- Pending Account Approvals --}}
+                        <section>
+                            <h2 class="text-lg font-semibold mb-2 text-gray-700 flex items-center">
+                                <i class="bi bi-person-check-fill text-warning me-2 fs-6"></i>
+                                Pending For Approvals
+                            </h2>
+
+                            @if($pendingAccounts->isEmpty())
+                                <div class="alert alert-info shadow-sm rounded">No pending instructor applications.</div>
+                            @else
+                                <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
+                                    <table class="table table-bordered align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Applicant Name</th>
+                                                <th>Email Address</th>
+                                                <th>Department</th>
+                                                <th>Course</th>
+                                                <th class="text-center">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($pendingAccounts as $account)
+                                                <tr>
+                                                    <td>{{ $account->last_name }}, {{ $account->first_name }} {{ $account->middle_name }}</td>
+                                                    <td>{{ $account->email }}</td>
+                                                    <td>{{ $account->department?->department_code ?? 'N/A' }}</td>
+                                                    <td>{{ $account->course?->course_code ?? 'N/A' }}</td>
+                                                    <td class="text-center">
+                                                        <button type="button"
+                                                            class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#confirmApproveModal"
+                                                            data-id="{{ $account->id }}"
+                                                            data-name="{{ $account->last_name }}, {{ $account->first_name }}">
+                                                            <i class="bi bi-check-circle-fill"></i> Approve
+                                                        </button>
+
+                                                        <button type="button"
+                                                            class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 ms-2"
+                                                            data-bs-toggle="modal"
+                                                            data-bs-target="#confirmRejectModal"
+                                                            data-id="{{ $account->id }}"
+                                                            data-name="{{ $account->last_name }}, {{ $account->first_name }}">
+                                                            <i class="bi bi-x-circle-fill"></i> Reject
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
                             @endif
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>        
-            @endif
-        </div>
+                        </section>
+                    </div>
 
-        {{-- Inactive Instructors Tab --}}
-        <div class="tab-pane fade" id="inactive-instructors" role="tabpanel" aria-labelledby="inactive-instructors-tab">
-            <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                <i class="bi bi-person-x-fill text-secondary me-2 fs-5"></i>
-                 Inactive Instructors
-            </h2>
+                    {{-- Inactive Instructors Tab --}}
+                    <div class="tab-pane fade" id="inactive-instructors" role="tabpanel" aria-labelledby="inactive-instructors-tab">
+                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
+                            <i class="bi bi-person-x-fill text-secondary me-2 fs-5"></i>
+                            Inactive Instructors
+                        </h2>
 
-            @if($instructors->isEmpty())
-                <div class="alert alert-warning shadow-sm rounded">No inactive instructors.</div>
-            @else
-            <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
-                <table class="table table-bordered align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Instructor Name</th>
-                            <th>Email Address</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($instructors as $instructor)
-                            @if(!$instructor->is_active)
-                                <tr>
-                                    <td>{{ $instructor->last_name }}, {{ $instructor->first_name }} {{ $instructor->middle_name }}</td>
-                                    <td>{{ $instructor->email }}</td>
-                                    <td class="text-center">
-                                        <span class="badge border border-secondary text-secondary px-3 py-2 rounded-pill">
-                                            Inactive
-                                        </span>
-                                    </td>
-                                    <td class="text-center">
-                                        <button type="button"
-                                            class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
-                                            data-bs-toggle="modal"
-                                            data-bs-target="#confirmActivateModal"
-                                            data-id="{{ $instructor->id }}"
-                                            data-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
-                                            <i class="bi bi-person-check-fill"></i>
-                                            Activate
-                                        </button>
-                                    </td>
-                                </tr>
-                            @endif
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>        
-            @endif
-        </div>
-    </div>
+                        @php
+                            $inactiveInstructors = $instructors->filter(fn($i) => !$i->is_active);
+                        @endphp
 
-    {{-- GE Subject Requests Tab --}}
-    <div class="tab-pane fade" id="ge-requests" role="tabpanel" aria-labelledby="ge-requests-tab">
-        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-            <i class="bi bi-journal-plus text-warning me-2 fs-5"></i>
-            GE Subject Requests
-        </h2>
+                        @if($inactiveInstructors->isEmpty())
+                            <div class="alert alert-warning shadow-sm rounded">No inactive instructors.</div>
+                        @else
+                            <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
+                                <table class="table table-bordered align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Instructor Name</th>
+                                            <th>Email Address</th>
+                                            <th class="text-center">Status</th>
+                                            <th class="text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($inactiveInstructors as $instructor)
+                                            <tr>
+                                                <td>{{ $instructor->last_name }}, {{ $instructor->first_name }} {{ $instructor->middle_name }}</td>
+                                                <td>{{ $instructor->email }}</td>
+                                                <td class="text-center">
+                                                    <span class="badge border border-secondary text-secondary px-3 py-2 rounded-pill">
+                                                        Inactive
+                                                    </span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <button type="button"
+                                                        class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#confirmActivateModal"
+                                                        data-id="{{ $instructor->id }}"
+                                                        data-name="{{ $instructor->last_name }}, {{ $instructor->first_name }}">
+                                                        <i class="bi bi-person-check-fill"></i>
+                                                        Activate
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>        
+                        @endif
+                    </div>
 
-        @php
+                    {{-- GE Courses Requests Tab --}}
+                    <div class="tab-pane fade" id="ge-requests" role="tabpanel" aria-labelledby="ge-requests-tab">
+                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
+                            <i class="bi bi-journal-plus text-warning me-2 fs-5"></i>
+            GE Courses Requests
+        </h2>        @php
             $geRequests = \App\Models\GESubjectRequest::with(['instructor', 'requestedBy'])
                 ->where('status', 'pending')
                 ->orderBy('created_at', 'desc')
@@ -164,7 +381,7 @@
         @endphp
 
         @if($geRequests->isEmpty())
-            <div class="alert alert-info shadow-sm rounded">No pending GE subject requests.</div>
+            <div class="alert alert-warning shadow-sm rounded">No pending GE courses requests.</div>
         @else
             <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
                 <table class="table table-bordered align-middle mb-0">
@@ -208,66 +425,15 @@
                     </tbody>
                 </table>
             </div>
-        @endif
-    </div>
-
-    {{-- Pending Account Approvals --}}
-    <section class="mt-4">
-        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-            <i class="bi bi-person-check-fill text-warning me-2 fs-5"></i>
-            Pending For Approvals
-        </h2>
-
-        @if($pendingAccounts->isEmpty())
-            <div class="alert alert-info shadow-sm rounded">No pending instructor applications.</div>
-        @else
-            <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
-                <table class="table table-bordered align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Applicant Name</th>
-                            <th>Email Address</th>
-                            <th>Department</th>
-                            <th>Course</th>
-                            <th class="text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($pendingAccounts as $account)
-                            <tr>
-                                <td>{{ $account->last_name }}, {{ $account->first_name }} {{ $account->middle_name }}</td>
-                                <td>{{ $account->email }}</td>
-                                <td>{{ $account->department?->department_code ?? 'N/A' }}</td>
-                                <td>{{ $account->course?->course_code ?? 'N/A' }}</td>
-                                <td class="text-center">
-                                    <button type="button"
-                                        class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#confirmApproveModal"
-                                        data-id="{{ $account->id }}"
-                                        data-name="{{ $account->last_name }}, {{ $account->first_name }}">
-                                        <i class="bi bi-check-circle-fill"></i> Approve
-                                    </button>
-
-                                    <button type="button"
-                                        class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 ms-2"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#confirmRejectModal"
-                                        data-id="{{ $account->id }}"
-                                        data-name="{{ $account->last_name }}, {{ $account->first_name }}">
-                                        <i class="bi bi-x-circle-fill"></i> Reject
-                                    </button>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        @endif
+                    </div>
+                </div>
             </div>
-        @endif
-    </section>
+
+            {{-- Pending Account Approvals section removed from here as it's now inside each tab --}}
+        </div>
+    </div>
 </div>
-
-
 
 {{-- Modals --}}
 <div class="modal fade" id="confirmDeactivateModal" tabindex="-1" aria-labelledby="confirmDeactivateModalLabel" aria-hidden="true">

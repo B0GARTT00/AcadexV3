@@ -104,6 +104,7 @@ class GECoordinatorController extends Controller
             
         $pendingAccounts = UnverifiedUser::with('department', 'course')
             ->where('department_id', $geDepartment->id)
+            ->whereNotNull('email_verified_at')
             ->get();
         
         return view('gecoordinator.manage-instructors', compact('instructors', 'pendingAccounts'));

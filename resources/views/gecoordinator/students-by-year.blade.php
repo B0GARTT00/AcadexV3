@@ -4,7 +4,7 @@
 <div class="max-w-6xl mx-auto py-8 px-4">
     <h1 class="text-2xl font-bold mb-6">
         <i class="bi bi-people-fill text-success me-2"></i>
-        GE Students List
+        View Students
     </h1>
 
     @if($students->isEmpty())
