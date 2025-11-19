@@ -192,7 +192,7 @@
 {{-- Drop Confirmation Modal --}}
 <div class="modal fade" id="confirmDropModal" tabindex="-1" aria-labelledby="confirmDropModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form method="POST" id="dropStudentForm">
+        <form method="POST" id="dropStudentForm" action="" onsubmit="return ensureDropFormActionSet(this)">
             @csrf
             @method('DELETE')
             <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
@@ -248,21 +248,37 @@ document.addEventListener('DOMContentLoaded', function () {
     const dropConfirmation = document.getElementById('dropConfirmation');
     const confirmDropBtn = document.getElementById('confirmDropBtn');
 
+    // Also make sure clicking Drop buttons sets the action immediately (robust fallback)
+    document.querySelectorAll('button[data-bs-target="#confirmDropModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function (e) {
+            const dropUrl = btn.getAttribute('data-drop-url');
+            const studentId = btn.getAttribute('data-student-id');
+            const form = document.getElementById('dropStudentForm');
+            if (dropUrl) {
+                form.action = dropUrl;
+            } else if (studentId) {
+                form.action = `/instructor/students/${studentId}/drop`;
+            }
+        });
+    });
+
     dropModal.addEventListener('show.bs.modal', function (event) {
-    const button = event.relatedTarget || {};
-    const studentId = button.getAttribute ? button.getAttribute('data-student-id') : null;
-    const dropUrl = button.getAttribute ? button.getAttribute('data-drop-url') : null;
-    const studentName = button.getAttribute ? button.getAttribute('data-student-name') : '';
-    const form = dropModal.querySelector('#dropStudentForm');
+        const button = event.relatedTarget || {};
+        const studentId = button.getAttribute ? button.getAttribute('data-student-id') : null;
+        const dropUrl = button.getAttribute ? button.getAttribute('data-drop-url') : null;
+        const studentName = button.getAttribute ? button.getAttribute('data-student-name') : '';
+        const form = dropModal.querySelector('#dropStudentForm');
         const placeholder = dropModal.querySelector('#studentNamePlaceholder');
 
+        // Set the form action server-side if possible
         if (dropUrl) {
-            form.action = dropUrl;
+            form.setAttribute('action', dropUrl);
         } else if (studentId) {
-            form.action = `/instructor/students/${studentId}/drop`;
+            form.setAttribute('action', `/instructor/students/${studentId}/drop`);
+        } else {
+            form.setAttribute('action', '');
         }
         placeholder.textContent = studentName;
-        
         dropConfirmation.value = '';
         confirmDropBtn.disabled = true;
     });
@@ -306,6 +322,20 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 });
+</script>
+<script>
+function ensureDropFormActionSet(form) {
+    // Ensure the form action points to the expected drop endpoint
+    const action = form.getAttribute('action') || '';
+    // Expect a URL like /instructor/students/{id}/drop
+    const match = action.match(/\/instructor\/students\/([^\/]+)\/drop$/);
+    if (!match) {
+        console.warn('drop form action invalid on submit:', action);
+        alert('Unable to determine the student to drop. Please re-open the Drop dialog and try again.');
+        return false;
+    }
+    return true;
+}
 </script>
 <script>
 function ensureManageFormActionSet(form) {
