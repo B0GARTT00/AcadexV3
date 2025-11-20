@@ -1,25 +1,64 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-3 py-3" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
-    <div class="row mb-3">
-        <div class="col">
-            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="p-3 rounded-circle" style="background: linear-gradient(135deg, #198754, #20c997);">
-                        <i class="bi bi-diagram-3 text-white" style="font-size: 1.5rem;"></i>
-                    </div>
-                    <div>
-                        <h3 class="fw-bold mb-1" style="color: #198754;">Structure Formula Requests</h3>
-                        <p class="text-muted mb-0">Create and manage your custom grading structure formula requests</p>
-                    </div>
+<style>
+    .import-courses-wrapper {
+        min-height: 100vh;
+        background-color: #EAF8E7;
+        padding: 0;
+        margin: 0;
+    }
+
+    .import-courses-container {
+        max-width: 100%;
+        padding: 2rem 2rem;
+    }
+
+    .page-title {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid rgba(77, 166, 116, 0.2);
+    }
+
+    .page-title h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .page-title h1 i {
+        color: #198754;
+        font-size: 2rem;
+        margin-right: 0.75rem;
+    }
+
+    .page-subtitle {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+</style>
+
+<div class="import-courses-wrapper">
+    <div class="import-courses-container">
+        <!-- Page Title -->
+        <div class="page-title">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1>
+                        <i class="bi bi-diagram-3"></i>
+                        Structure Formula Requests
+                    </h1>
+                    <p class="page-subtitle">Create and manage your custom grading structure formula requests</p>
                 </div>
                 <a href="{{ route('chairperson.structureTemplates.create') }}" class="btn btn-success">
                     <i class="bi bi-plus-circle me-1"></i>New Formula Request
                 </a>
             </div>
         </div>
-    </div>
 
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
@@ -46,42 +85,38 @@
         $rejectedRequests = $requests->where('status', 'rejected');
     @endphp
 
-    <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body py-3">
-            <div class="d-flex gap-2 align-items-center justify-content-between flex-wrap">
-                <div class="d-flex gap-3">
-                    <div class="text-center">
-                        <div class="fw-bold text-warning" style="font-size: 1.5rem;">{{ $pendingRequests->count() }}</div>
-                        <small class="text-muted">Pending</small>
-                    </div>
-                    <div class="text-center">
-                        <div class="fw-bold text-success" style="font-size: 1.5rem;">{{ $approvedRequests->count() }}</div>
-                        <small class="text-muted">Approved</small>
-                    </div>
-                    <div class="text-center">
-                        <div class="fw-bold text-danger" style="font-size: 1.5rem;">{{ $rejectedRequests->count() }}</div>
-                        <small class="text-muted">Rejected</small>
-                    </div>
+    <div class="card border-0 shadow-sm mb-0">
+        <div class="card-body py-3" style="border-radius: 0.75rem 0.75rem 0 0;">
+            <div class="d-flex gap-3 align-items-center justify-content-center flex-wrap">
+                <div class="text-center">
+                    <div class="fw-bold text-warning" style="font-size: 1.5rem;">{{ $pendingRequests->count() }}</div>
+                    <small class="text-muted">Pending</small>
+                </div>
+                <div class="text-center">
+                    <div class="fw-bold text-success" style="font-size: 1.5rem;">{{ $approvedRequests->count() }}</div>
+                    <small class="text-muted">Approved</small>
+                </div>
+                <div class="text-center">
+                    <div class="fw-bold text-danger" style="font-size: 1.5rem;">{{ $rejectedRequests->count() }}</div>
+                    <small class="text-muted">Rejected</small>
                 </div>
             </div>
         </div>
-    </div>
 
     @if ($requests->isEmpty())
-        <div class="card border-0 shadow-sm">
-            <div class="card-body text-center py-5">
-                <div class="mb-3">
-                    <i class="bi bi-diagram-3" style="font-size: 4rem; color: #dee2e6;"></i>
-                </div>
-                <h5 class="text-muted mb-2">No Formula Requests Yet</h5>
-                <p class="text-muted mb-3">Create your first custom grading structure formula request.</p>
-                <a href="{{ route('chairperson.structureTemplates.create') }}" class="btn btn-success">
-                    <i class="bi bi-plus-circle me-1"></i>Create New Request
-                </a>
+        <div class="card-body text-center py-5" style="border-top: 2px solid #e9ecef;">
+            <div class="mb-3">
+                <i class="bi bi-diagram-3" style="font-size: 4rem; color: #dee2e6;"></i>
             </div>
+            <h5 class="text-muted mb-2">No Formula Requests Yet</h5>
+            <p class="text-muted mb-3">Create your first custom grading structure formula request.</p>
+            <a href="{{ route('chairperson.structureTemplates.create') }}" class="btn btn-success">
+                <i class="bi bi-plus-circle me-1"></i>Create New Request
+            </a>
         </div>
     @else
-        <div class="row g-4">
+        <div class="card-body p-3" style="border-top: 2px solid #e9ecef;">
+            <div class="row g-4">
             @foreach ($requests as $request)
                 @php
                     $statusBadge = match ($request->status) {
@@ -158,8 +193,11 @@
                     </div>
                 </div>
             @endforeach
+            </div>
         </div>
     @endif
+    </div>
+    </div>
 </div>
 @endsection
 

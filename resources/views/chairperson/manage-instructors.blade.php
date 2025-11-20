@@ -3,23 +3,91 @@
 @section('content')
 
 <style>
-    /* Change Active Tab Color */
-    .nav-tabs .nav-link.inactive {
-        color: #4da674 !important;  /* Green color */
-        border-color: #4da674 !important;  /* Green border for active tab */
+    .import-courses-wrapper {
+        min-height: 100vh;
+        background-color: #EAF8E7;
+        padding: 0;
+        margin: 0;
     }
 
-    /* Optionally, change the hover color for non-active tabs */
+    .import-courses-container {
+        max-width: 100%;
+        padding: 2rem 2rem;
+    }
+
+    .page-title {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid rgba(77, 166, 116, 0.2);
+    }
+
+    .page-title h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .page-title h1 i {
+        color: #198754;
+        font-size: 2rem;
+        margin-right: 0.75rem;
+    }
+
+    .page-subtitle {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    .nav-tabs {
+        background: #f8f9fa;
+        border-radius: 0.75rem 0.75rem 0 0;
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 0;
+        padding: 0.5rem 1rem 0 1rem;
+    }
+    .nav-tabs .nav-link {
+        color: #6c757d;
+        font-weight: 500;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.75rem 0.75rem 0 0;
+        margin-right: 0.25rem;
+        background: transparent;
+        transition: all 0.2s;
+    }
     .nav-tabs .nav-link:hover {
-        color: #4da674 !important;  /* Green color for hover state */
+        color: #4da674;
+        border-bottom-color: #4da674;
+        background: #eaf8e7;
+    }
+    .nav-tabs .nav-link.active {
+        color: #4da674;
+        background: #fff;
+        border-bottom-color: #4da674;
+        box-shadow: 0 -2px 8px rgba(77,166,116,0.06);
+    }
+
+    .tab-content .tab-pane .table-responsive {
+        border-radius: 0 0 0.75rem 0.75rem !important;
+        border-top: none;
     }
 </style>
 
-<div class="max-w-6xl mx-auto py-10 px-4" style="background-color: #EAF8E7; border-radius: 1rem;">
-    <h1 class="text-3xl font-bold mb-8 text-gray-800 flex items-center">
-        <i class="bi bi-person-lines-fill text-success me-3 fs-2"></i>
-        Instructor Account Management
-    </h1>
+<div class="import-courses-wrapper">
+    <div class="import-courses-container">
+        <!-- Page Title -->
+        <div class="page-title">
+            <h1>
+                <i class="bi bi-person-lines-fill"></i>
+                Instructor Account Management
+            </h1>
+            <p class="page-subtitle">Manage instructor accounts, view status, and assign GE subject permissions</p>
+        </div>
 
     @if(session('status'))
         <div class="alert alert-success shadow-sm rounded">
@@ -41,13 +109,9 @@
         </li>
     </ul>
 
-    <div class="tab-content mt-3" id="instructorTabsContent">
+    <div class="tab-content" id="instructorTabsContent">
         {{-- Active Instructors Tab --}}
         <div class="tab-pane fade show active" id="active-instructors" role="tabpanel" aria-labelledby="active-instructors-tab">
-            <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                <i class="bi bi-people-fill text-primary me-2 fs-5"></i>
-                 Active Instructors
-            </h2>
 
             @if($instructors->isEmpty())
                 <div class="alert alert-warning shadow-sm rounded">No active instructors.</div>
@@ -161,10 +225,6 @@
 
         {{-- Inactive Instructors Tab --}}
         <div class="tab-pane fade" id="inactive-instructors" role="tabpanel" aria-labelledby="inactive-instructors-tab">
-            <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                <i class="bi bi-person-x-fill text-secondary me-2 fs-5"></i>
-                 Inactive Instructors
-            </h2>
 
             @if($instructors->isEmpty())
                 <div class="alert alert-warning shadow-sm rounded">No inactive instructors.</div>
@@ -519,4 +579,7 @@
     });
 </script>
 @endpush
+
+    </div>
+</div>
 @endsection

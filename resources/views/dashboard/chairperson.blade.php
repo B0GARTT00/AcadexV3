@@ -279,7 +279,7 @@
                                             <div class="d-flex align-items-center">
                                                 <i class="bi bi-journal-plus text-success me-2"></i>
                                                 <div>
-                                                    <strong>Assign Subjects:</strong>
+                                                    <strong>Assign Courses:</strong>
                                                     <span class="d-block text-muted small">Manage teaching loads and course assignments</span>
                                                 </div>
                                             </div>
@@ -319,7 +319,7 @@
                                     <i class="bi bi-journal-plus text-success fs-5"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-1">Assign Subjects</h6>
+                                    <h6 class="mb-1">Assign Courses</h6>
                                     <small class="text-muted d-block">Manage teaching loads</small>
                                 </div>
                                 <div class="ms-auto">

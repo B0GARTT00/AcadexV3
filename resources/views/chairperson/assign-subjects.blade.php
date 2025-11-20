@@ -9,22 +9,107 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="d-flex justify-content-between align-items-center mb-6">
-        <h1 class="text-2xl font-bold">
-            <i class="bi bi-person-badge text-success me-2"></i>
-            Assign Courses to Instructors
-        </h1>
+<style>
+    .import-courses-wrapper {
+        min-height: 100vh;
+        background-color: #EAF8E7;
+        padding: 0;
+        margin: 0;
+    }
 
-        <!-- View Mode Switcher -->
-        <div class="d-flex align-items-center">
-            <label for="viewMode" class="me-2 fw-semibold">View Mode:</label>
-            <select id="viewMode" class="form-select form-select-sm w-auto" onchange="toggleViewMode()">
-                <option value="year" selected>Year View</option>
-                <option value="full">Full View</option>
-            </select>
+    .import-courses-container {
+        max-width: 100%;
+        padding: 2rem 2rem;
+    }
+
+    .page-title {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid rgba(77, 166, 116, 0.2);
+    }
+
+    .page-title h1 {
+        font-size: 1.75rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin: 0 0 0.5rem 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .page-title h1 i {
+        color: #198754;
+        font-size: 2rem;
+        margin-right: 0.75rem;
+    }
+
+    .page-subtitle {
+        color: #6c757d;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+
+    .nav-tabs {
+        background: #f8f9fa;
+        border-radius: 0.75rem 0.75rem 0 0;
+        border-bottom: 2px solid #e9ecef;
+        margin-bottom: 0;
+        padding: 0.5rem 1rem 0 1rem;
+    }
+
+    .nav-tabs .nav-link {
+        color: #6c757d;
+        font-weight: 500;
+        border: none;
+        border-bottom: 3px solid transparent;
+        padding: 0.75rem 1.25rem;
+        border-radius: 0.75rem 0.75rem 0 0;
+        margin-right: 0.25rem;
+        background: transparent;
+        transition: all 0.2s;
+    }
+
+    .nav-tabs .nav-link:hover {
+        color: #4da674;
+        border-bottom-color: #4da674;
+        background: #eaf8e7;
+    }
+
+    .nav-tabs .nav-link.active {
+        color: #4da674;
+        background: #fff;
+        border-bottom-color: #4da674;
+        box-shadow: 0 -2px 8px rgba(77,166,116,0.06);
+    }
+
+    .tab-content .tab-pane .table-responsive {
+        border-radius: 0 0 0.75rem 0.75rem !important;
+        border-top: none;
+    }
+</style>
+
+<div class="import-courses-wrapper">
+    <div class="import-courses-container">
+        <!-- Page Title -->
+        <div class="page-title">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h1>
+                        <i class="bi bi-person-badge"></i>
+                        Assign Courses to Instructors
+                    </h1>
+                    <p class="page-subtitle">Assign subjects to instructors by year level or view all assignments</p>
+                </div>
+                <!-- View Mode Switcher -->
+                <div class="d-flex align-items-center">
+                    <label for="viewMode" class="me-2 fw-semibold">View Mode:</label>
+                    <select id="viewMode" class="form-select form-select-sm w-auto" onchange="toggleViewMode()">
+                        <option value="year" selected>Year View</option>
+                        <option value="full">Full View</option>
+                    </select>
+                </div>
+            </div>
         </div>
-    </div>
 
     @if (session('success'))
         <div class="alert alert-success">{{ session('success') }}</div>
@@ -63,18 +148,18 @@
                      id="level-{{ $level }}"
                      role="tabpanel"
                      aria-labelledby="year-level-{{ $level }}">
-                    <div class="bg-white shadow rounded-4 overflow-x-auto mt-3">
-                        @if ($subjectsByYear->isNotEmpty())
-                            <table class="table table-bordered align-middle mb-0">
-                                <thead class="table-success">
-                                    <tr>
-                                        <th>Subject Code</th>
-                                        <th>Description</th>
-                                        <th>Assigned Instructor</th>
-                                        <th class="text-center">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                    @if ($subjectsByYear->isNotEmpty())
+                    <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
+                        <table class="table table-bordered align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Course Code</th>
+                                    <th>Description</th>
+                                    <th>Assigned Instructor</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
                                     @foreach ($subjectsByYear as $subject)
                                         <tr>
                                             <td>{{ $subject->subject_code }}</td>
@@ -97,14 +182,14 @@
                                             </td>
                                         </tr>
                                     @endforeach
-                                </tbody>
-                            </table>
-                        @else
-                        <div class="bg-warning bg-opacity-25 text-warning border border-warning px-4 py-3 rounded-4 shadow-sm">
-                            No subjects available for {{ ordinalSuffix($level) }} Year.
-                        </div>
-                        @endif
+                            </tbody>
+                        </table>
                     </div>
+                    @else
+                    <div class="bg-warning bg-opacity-25 text-warning border border-warning px-4 py-3 rounded-4 shadow-sm">
+                        No subjects available for {{ ordinalSuffix($level) }} Year.
+                    </div>
+                    @endif
                 </div>
             @endfor
         </div>
@@ -135,7 +220,7 @@
                                     <table class="table table-hover align-middle mb-0">
                                         <thead class="table-success">
                                             <tr>
-                                                <th class="border-0 py-3">Subject Code</th>
+                                                <th class="border-0 py-3">Course Code</th>
                                                 <th class="border-0 py-3">Description</th>
                                                 <th class="border-0 py-3">Assigned Instructor</th>
                                                 <th class="border-0 py-3 text-center">Action</th>
@@ -323,4 +408,7 @@
     }
 </style>
 @endpush
+
+    </div>
+</div>
 @endsection

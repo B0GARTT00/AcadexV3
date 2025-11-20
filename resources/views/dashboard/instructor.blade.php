@@ -21,7 +21,7 @@
                     'trend' => 'Currently enrolled'
                 ],
                 [
-                    'label' => 'Subjects Load',
+                    'label' => 'Course Load',
                     'icon' => 'bi bi-journal-text',
                     'value' => $enrolledSubjectsCount,
                     'color' => 'info',
@@ -119,7 +119,7 @@
                 <div class="card-body p-4">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="fw-semibold mb-0">
-                            <i class="bi bi-bar-chart-fill me-2"></i>Subject Completion Status
+                            <i class="bi bi-bar-chart-fill me-2"></i>Course Completion Status
                         </h5>
                     </div>
                     <div class="mb-4" style="height: 300px;">
@@ -129,7 +129,7 @@
                         <table class="table table-hover align-middle mb-0">
                             <thead class="table-light">
                                 <tr>
-                                    <th>Subject Code</th>
+                                    <th>Course Code</th>
                                     <th>Description</th>
                                     <th class="text-center">Completion</th>
                                 </tr>
