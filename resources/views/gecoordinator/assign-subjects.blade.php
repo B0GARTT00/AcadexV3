@@ -343,7 +343,8 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <p class="mb-3">Are you sure you want to unassign <strong id="unassignInstructorName"></strong>?</p>
+                <p class="mb-3">Are you sure you want to unassign the selected instructor(s)?</p>
+                <ul id="unassignList" class="mb-3 list-unstyled small text-muted" aria-live="polite"></ul>
                 <div class="alert alert-warning d-flex align-items-center">
                     <i class="bi bi-info-circle-fill me-2"></i>
                     <div>This action cannot be undone.</div>
@@ -366,8 +367,8 @@
 <script>
     let currentSubjectId = null;
     let currentModalMode = 'view'; // 'view', 'unassign', or 'edit'
-    let currentUnassignInstructorId = null;
-    let currentUnassignInstructorName = null;
+    let currentUnassignInstructorIds = [];
+    let currentUnassignInstructorNames = [];
 
     // Function to show Bootstrap toasts (top-right floating) for consistency
     function showNotification(type, message) {
@@ -549,22 +550,55 @@
             } else {
                 const listGroup = document.createElement('div');
                 listGroup.className = 'list-group mb-3';
+                // Header with select all and bulk unassign
+                const header = document.createElement('div');
+                header.className = 'd-flex justify-content-between align-items-center mb-2 px-2';
+                header.innerHTML = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="assignedSelectAll">
+                        <label class="form-check-label small ms-1" for="assignedSelectAll">Select All</label>
+                    </div>
+                    <div>
+                        <span class="badge bg-light text-dark me-3">${assignedInstructors.length} assigned</span>
+                        <button class="btn btn-outline-danger btn-sm" id="unassignSelectedBtn">Unassign Selected</button>
+                    </div>`;
+                listGroup.appendChild(header);
+
                 assignedInstructors.forEach(instructor => {
                     const item = document.createElement('div');
                     item.className = 'list-group-item d-flex justify-content-between align-items-center';
                     const instructorInfo = `
                         <div class="d-flex align-items-center">
+                            <input class="form-check-input assigned-checkbox me-2" type="checkbox" value="${instructor.id}" id="assignedCheckbox-${instructor.id}">
                             <i class="bi bi-person-fill text-success me-2"></i>
-                            <span>${instructor.name}</span>
+                            <label for="assignedCheckbox-${instructor.id}" class="mb-0">${instructor.name}</label>
                         </div>`;
                     item.innerHTML = instructorInfo + `
-                        <button class="btn btn-outline-danger btn-sm" 
-                                onclick="confirmUnassignInstructor(${instructor.id}, '${instructor.name.replace(/'/g, "\\'")}')">
-                            <i class="bi bi-x-lg"></i>
-                        </button>`;
+                        <div>
+                            <button class="btn btn-outline-danger btn-sm" 
+                                    onclick="confirmUnassignInstructor(${instructor.id}, '${instructor.name.replace(/'/g, "\\'")}')">
+                                <i class="bi bi-x-lg"></i>
+                            </button>
+                        </div>`;
                     listGroup.appendChild(item);
                 });
                 instructorList.appendChild(listGroup);
+
+                // Setup after render
+                setTimeout(() => {
+                    const selectAll = document.getElementById('assignedSelectAll');
+                    const unassignSelectedBtn = document.getElementById('unassignSelectedBtn');
+                    selectAll?.addEventListener('change', () => {
+                        document.querySelectorAll('.assigned-checkbox').forEach(ch => ch.checked = selectAll.checked);
+                    });
+                    unassignSelectedBtn?.addEventListener('click', () => {
+                        const checkedEls = Array.from(document.querySelectorAll('.assigned-checkbox:checked'));
+                        const ids = checkedEls.map(el => el.value);
+                        const names = checkedEls.map(el => el.nextElementSibling?.textContent?.trim() || '');
+                        if (ids.length === 0) { showNotification('error', 'No instructors selected'); return; }
+                        confirmUnassignInstructor(ids, names);
+                    });
+                }, 0);
             }
 
             // Build assign form (only show instructors that are not already assigned)
@@ -578,34 +612,67 @@
 
             if (filteredAvailable.length > 0) {
                 const formDiv = document.createElement('div');
-                formDiv.className = 'd-flex gap-2 align-items-center';
+                formDiv.className = 'mb-3';
 
-                const select = document.createElement('select');
-                select.className = 'form-select form-select-sm w-100';
-                select.id = 'modal_assign_select';
-                const defaultOption = new Option('-- Choose Instructor --', '');
-                select.appendChild(defaultOption);
+                // Search field for available instructors
+                const searchDiv = document.createElement('div');
+                searchDiv.className = 'mb-2';
+                searchDiv.innerHTML = `<input class="form-control form-control-sm" id="availableSearchInput" placeholder="Search available instructors..." aria-label="Search available instructors" />`;
+                formDiv.appendChild(searchDiv);
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'd-flex justify-content-between align-items-center mb-2';
+                actionsDiv.innerHTML = `
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="availableSelectAll">
+                        <label class="form-check-label small ms-1" for="availableSelectAll">Select All</label>
+                    </div>
+                    <div>
+                        <span class="badge bg-light text-dark me-3">${filteredAvailable.length} available</span>
+                        <button class="btn btn-success btn-sm" id="assignSelectedBtn">Assign Selected</button>
+                    </div>`;
+                formDiv.appendChild(actionsDiv);
+
+                const listGroupAvailable = document.createElement('div');
+                listGroupAvailable.className = 'list-group';
+                listGroupAvailable.id = 'availableListGroup';
                 filteredAvailable.forEach(instr => {
-                    const opt = new Option(instr.name, instr.id);
-                    select.appendChild(opt);
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item d-flex align-items-center';
+                    item.innerHTML = `
+                        <input class="form-check-input available-checkbox me-2" type="checkbox" value="${instr.id}" id="availableCheckbox-${instr.id}">
+                        <label for="availableCheckbox-${instr.id}" class="mb-0">${instr.name}</label>`;
+                    listGroupAvailable.appendChild(item);
                 });
-
-                const assignBtn = document.createElement('button');
-                assignBtn.className = 'btn btn-success btn-sm';
-                assignBtn.type = 'button';
-                assignBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Assign';
-                assignBtn.onclick = function() {
-                    const instructorId = select.value;
-                    if (!instructorId) {
-                        showNotification('error', 'Please select an instructor to assign.');
-                        return;
-                    }
-                    assignInstructorInline(currentSubjectId, instructorId, assignBtn);
-                };
-
-                formDiv.appendChild(select);
-                formDiv.appendChild(assignBtn);
+                formDiv.appendChild(listGroupAvailable);
                 assignBody.appendChild(formDiv);
+
+                // Setup events
+                setTimeout(() => {
+                    const selectAllAv = document.getElementById('availableSelectAll');
+                    const assignSelectedBtn = document.getElementById('assignSelectedBtn');
+                    selectAllAv?.addEventListener('change', () => {
+                        document.querySelectorAll('.available-checkbox').forEach(ch => ch.checked = selectAllAv.checked);
+                    });
+                    const availableSearchInput = document.getElementById('availableSearchInput');
+                    availableSearchInput?.addEventListener('input', (e) => {
+                        const q = e.target.value.toLowerCase();
+                        document.querySelectorAll('#availableListGroup .list-group-item').forEach(item => {
+                            const t = item.textContent.trim().toLowerCase();
+                            item.style.display = t.includes(q) ? '' : 'none';
+                        });
+                    });
+                    assignSelectedBtn?.addEventListener('click', () => {
+                        const ids = Array.from(document.querySelectorAll('.available-checkbox:checked')).map(el => el.value);
+                        if (ids.length === 0) { showNotification('error', 'No instructors selected'); return; }
+                        assignMultipleInstructors(currentSubjectId, ids, assignSelectedBtn);
+                    });
+                    // focus the search field for keyboard users
+                    const firstSearch = document.getElementById('availableSearchInput');
+                    if (firstSearch) {
+                        firstSearch.focus();
+                    }
+                }, 0);
                 assignCard.appendChild(assignBody);
                 instructorList.appendChild(assignCard);
             } else {
@@ -689,14 +756,27 @@
         currentSubjectId = null;
     }
     
-    function confirmUnassignInstructor(instructorId, instructorName) {
-        // Store the instructor data
-        currentUnassignInstructorId = instructorId;
-        currentUnassignInstructorName = instructorName;
-        
-        // Update modal content
-        document.getElementById('unassignInstructorName').textContent = instructorName;
-        
+    function confirmUnassignInstructor(instructorIdOrArray, instructorNameOrArray = null) {
+        // Normalize to arrays
+        if (Array.isArray(instructorIdOrArray)) {
+            currentUnassignInstructorIds = instructorIdOrArray;
+            currentUnassignInstructorNames = Array.isArray(instructorNameOrArray) ? instructorNameOrArray : [];
+        } else {
+            currentUnassignInstructorIds = [instructorIdOrArray];
+            currentUnassignInstructorNames = [instructorNameOrArray || ''];
+        }
+
+        // Update modal content list
+        const list = document.getElementById('unassignList');
+        if (list) {
+            list.innerHTML = '';
+            currentUnassignInstructorNames.forEach(n => {
+                const li = document.createElement('li');
+                li.textContent = n;
+                list.appendChild(li);
+            });
+        }
+
         // Show the confirmation modal
         const confirmModal = new bootstrap.Modal(document.getElementById('confirmUnassignModal'), {
             backdrop: false
@@ -707,46 +787,42 @@
     // Handle the confirm unassign button click
     document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('confirmUnassignBtn').addEventListener('click', function() {
-            if (!currentUnassignInstructorId || !currentSubjectId) {
+            if (!currentUnassignInstructorIds || currentUnassignInstructorIds.length === 0 || !currentSubjectId) {
                 showNotification('error', 'Missing instructor or subject information');
                 return;
             }
-            
+
             // Disable the button to prevent double clicks
             this.disabled = true;
+            const origHtml = this.innerHTML;
             this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
-            
+
             // Hide the confirmation modal
             const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmUnassignModal'));
             confirmModal.hide();
             
-            // Perform the unassign operation
-            fetch('{{ route("gecoordinator.unassignInstructor") }}', {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({
-                    subject_id: currentSubjectId,
-                    instructor_id: currentUnassignInstructorId
-                })
-            })
-            .then(response => {
-                if (!response.ok) {
-                    return response.json().then(err => {
-                        throw new Error(err.message || 'Failed to unassign instructor');
-                    });
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (!data.success) {
-                    throw new Error(data.message || 'Failed to unassign instructor');
-                }
-                showNotification('success', 'Instructor has been unassigned successfully.');
+            // Perform the unassign operation for all selected instructors
+            Promise.all(currentUnassignInstructorIds.map(id => {
+                return fetch('{{ route("gecoordinator.unassignInstructor") }}', {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ subject_id: currentSubjectId, instructor_id: id })
+                }).then(res => {
+                    if (!res.ok) {
+                        return res.json().then(err => { throw new Error(err.message || 'Failed to unassign instructor'); }).catch(() => { throw new Error('Failed to unassign instructor'); });
+                    }
+                    return res.json();
+                });
+            }))
+            .then(results => {
+                const successCount = results.filter(r => r && r.success).length;
+                if (successCount === 0) throw new Error('No instructor was unassigned');
+                showNotification('success', `${successCount} instructor(s) unassigned successfully.`);
                 // Refresh the modal content and update the table count instead of reloading the page
                 setTimeout(() => {
                     openInstructorListModal(currentSubjectId, document.getElementById('instructorListSubjectName').textContent, 'edit');
@@ -764,7 +840,10 @@
             .finally(() => {
                 // Re-enable the button
                 this.disabled = false;
-                this.innerHTML = '<i class="bi bi-person-dash me-1"></i> Yes, unassign';
+                this.innerHTML = origHtml || '<i class="bi bi-person-dash me-1"></i> Yes, unassign';
+                // Reset selection state
+                currentUnassignInstructorIds = [];
+                currentUnassignInstructorNames = [];
             });
         });
     });
@@ -866,6 +945,50 @@
             yearView.classList.remove('d-none');
             fullView.classList.add('d-none');
         }
+    }
+
+    function assignMultipleInstructors(subjectId, instructorIds, button) {
+        button.disabled = true;
+        const orig = button.innerHTML;
+        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Assigning...';
+
+        Promise.all(instructorIds.map(id => {
+            const formData = new FormData();
+            formData.append('subject_id', subjectId);
+            formData.append('instructor_id', id);
+            return fetch('{{ route("gecoordinator.assignInstructor") }}', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: formData
+            }).then(res => {
+                if (!res.ok) {
+                    return res.json().then(err => { throw err; });
+                }
+                return res.json();
+            });
+        }))
+        .then(results => {
+            const successCount = results.filter(r => r && r.success).length;
+            if (successCount === 0) throw new Error('No instructors were assigned');
+            showNotification('success', `${successCount} instructor(s) assigned successfully!`);
+            // Refresh modal and counts
+            setTimeout(() => {
+                openInstructorListModal(subjectId, document.getElementById('instructorListSubjectName').textContent, 'edit');
+                refreshSubjectInstructorCount(subjectId);
+            }, 400);
+        })
+        .catch(error => {
+            console.error('Error assigning multiple instructors:', error);
+            showNotification('error', error.message || 'Failed to assign selected instructors');
+        })
+        .finally(() => {
+            button.disabled = false;
+            button.innerHTML = orig;
+        });
     }
 
     // Render server-side flash messages as toasts (session)
