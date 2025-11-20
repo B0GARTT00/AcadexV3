@@ -167,6 +167,20 @@
         background-color: white;
     }
 
+    /* Make header title + subject display on a single line with ellipsis if too long */
+    #instructorListModal .modal-title {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    #instructorListModal .modal-title #instructorListSubjectName {
+        color: rgba(255, 255, 255, 0.95);
+        font-size: 1.05rem;
+        font-weight: 600;
+        margin-left: 0.6rem;
+    }
+
     #assignedInstructorsListTab::-webkit-scrollbar,
     #availableInstructorsListTab::-webkit-scrollbar {
         width: 6px;
@@ -528,11 +542,11 @@
         <div class="modal-content rounded-4 shadow">
             <div class="modal-header bg-success text-white d-flex align-items-start">
                 <div class="flex-grow-1">
-                    <h5 class="modal-title mb-1" id="instructorListModalLabel">
+                    <h5 class="modal-title mb-1 d-flex align-items-center" id="instructorListModalLabel">
                         <i class="bi bi-people-fill me-2"></i>
                         <span id="instructorListModalTitle">Manage Instructors</span>
+                        <span id="instructorListSubjectName" class="ms-2 fw-semibold" style="font-size: 1.1rem;"></span>
                     </h5>
-                    <div class="fw-semibold" style="font-size: 1.1rem;" id="instructorListSubjectName"></div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
