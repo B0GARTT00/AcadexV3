@@ -5,6 +5,9 @@
             <i class="bi bi-calendar-event me-2" style="font-size: 1.125rem; display: inline-block; width: 20px; height: 20px; text-align: center; flex-shrink: 0; line-height: 1;"></i>
             @php
                 $activePeriod = \App\Models\AcademicPeriod::find(session('active_academic_period_id'));
+                if (!$activePeriod) {
+                    $activePeriod = \App\Models\AcademicPeriod::where('is_deleted', false)->latest()->first();
+                }
             @endphp
             @if($activePeriod)
                 @php

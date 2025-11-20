@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-1">
-                <i class="bi bi-book text-success me-2"></i>Course CO Summary
+                <i class="bi bi-book text-success me-2"></i>Course Outcomes Summary
             </h2>
             <p class="text-muted mb-0">Select a course to view detailed Course Outcome compliance</p>
         </div>
@@ -15,9 +15,6 @@
                     <i class="bi bi-calendar3 me-1"></i>{{ $academicYear }} – {{ $semester }}
                 </span>
             @endif
-            <a href="{{ route('vpaa.dashboard') }}" class="btn btn-outline-secondary rounded-pill">
-                <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
-            </a>
         </div>
     </div>
 

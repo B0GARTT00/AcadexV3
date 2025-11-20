@@ -204,21 +204,21 @@
                         <a href="{{ route('chairperson.reports.co-program') }}" 
                            class="nav-link {{ request()->routeIs('chairperson.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-diagram-3 me-3"></i>
-                            <span>Program CO Summary</span>
+                            <span>Program Outcomes Summary</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('chairperson.reports.co-course') }}" 
                            class="nav-link {{ request()->routeIs('chairperson.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-book me-3"></i>
-                            <span>Course CO Summary</span>
+                            <span>Course Outcomes Summary</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('chairperson.reports.co-student') }}" 
                            class="nav-link {{ request()->routeIs('chairperson.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-person-lines-fill me-3"></i>
-                            <span>Student CO Report</span>
+                            <span>Student Outcomes Summary</span>
                         </a>
                     </li>
                 </ul>
@@ -274,21 +274,21 @@
                         <a href="{{ route('dean.reports.co-program') }}" 
                            class="nav-link {{ request()->routeIs('dean.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-diagram-3 me-3"></i>
-                            <span>Program CO Summary</span>
+                            <span>Program Outcomes Summary</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('dean.reports.co-course') }}" 
                            class="nav-link {{ request()->routeIs('dean.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-book me-3"></i>
-                            <span>Course CO Summary</span>
+                            <span>Course Outcomes Summary</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('dean.reports.co-student') }}" 
                            class="nav-link {{ request()->routeIs('dean.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-person-lines-fill me-3"></i>
-                            <span>Student CO Report</span>
+                            <span>Student Outcomes Summary</span>
                         </a>
                     </li>
                 </ul>
@@ -483,21 +483,21 @@
                         <a href="{{ route('vpaa.reports.co-program') }}" 
                            class="nav-link {{ request()->routeIs('vpaa.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-diagram-3 me-3"></i>
-                            <span>Program CO Summary</span>
+                            <span>Program Outcomes Summary</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('vpaa.reports.co-course') }}" 
                            class="nav-link {{ request()->routeIs('vpaa.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-book me-3"></i>
-                            <span>Course CO Summary</span>
+                            <span>Course Outcomes Summary</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('vpaa.reports.co-student') }}" 
                            class="nav-link {{ request()->routeIs('vpaa.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-person-lines-fill me-3"></i>
-                            <span>Student CO Report</span>
+                            <span>Student Outcomes Summary</span>
                         </a>
                     </li>
                 </ul>
