@@ -435,19 +435,31 @@ class GECoordinatorController extends Controller
             $academicPeriodId = 1;
         }
         
-        // Fetch all active instructors who have GE subjects assigned
-        $instructors = User::where([
-            ['role', 0],
-            ['is_active', true],
-        ])
-        ->whereHas('subjects', function($query) use ($academicPeriodId) {
-            $query->where('course_id', 1) // GE courses have course_id = 1
-                  ->where('academic_period_id', $academicPeriodId)
-                  ->where('is_deleted', false);
-        })
-        ->orderBy('last_name')
-        ->get();
+        // Fetch all active instructors who are either:
+        // - From the GE department, or
+        // - Marked as can_teach_ge, or
+        // - Assigned to GE subjects in the selected academic period.
+        $geDepartment = Department::where('department_code', 'GE')->first();
+        $instructors = User::where('role', 0)
+            ->where('is_active', true)
+            ->where(function($query) use ($academicPeriodId, $geDepartment) {
+                $query->whereHas('subjects', function($q) use ($academicPeriodId) {
+                        $q->where('course_id', 1)
+                          ->where('academic_period_id', $academicPeriodId)
+                          ->where('is_deleted', false);
+                    })
+                    ->orWhere('department_id', $geDepartment->id)
+                    ->orWhere('can_teach_ge', true);
+            })
+            ->orderBy('last_name')
+            ->get();
     
+        // Ensure selected instructor is in the list of accessible instructors
+        if ($selectedInstructorId && !$instructors->pluck('id')->contains((int)$selectedInstructorId)) {
+            $selectedInstructorId = null;
+            $selectedSubjectId = null;
+        }
+
         // Subjects are loaded only when an instructor is selected
         $subjects = [];
         if ($selectedInstructorId) {
