@@ -493,7 +493,7 @@
         {{-- VPAA --}}
         @if ($role === 5)
             <div class="sidebar-section">
-                <h6 class="px-3 mb-2">VPAA DASHBOARD</h6>
+                <h6 class="px-3 mb-2">ACADEMIC RECORDS</h6>
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
                         <a href="{{ route('vpaa.departments') }}" 
@@ -519,21 +519,21 @@
                         <a href="{{ route('vpaa.reports.co-program') }}" 
                            class="nav-link {{ request()->routeIs('vpaa.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-diagram-3 me-3"></i>
-                            <span>Program CO Summary</span>
+                            <span>Program Outcomes Summary</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('vpaa.reports.co-course') }}" 
                            class="nav-link {{ request()->routeIs('vpaa.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-book me-3"></i>
-                            <span>Course CO Summary</span>
+                            <span>Course Outcomes Summary</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('vpaa.reports.co-student') }}" 
                            class="nav-link {{ request()->routeIs('vpaa.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-person-lines-fill me-3"></i>
-                            <span>Student CO Report</span>
+                            <span>Student Outcomes Summary</span>
                         </a>
                     </li>
                 </ul>
