@@ -153,7 +153,7 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($subjectsByYear as $subject)
-                                        <tr>
+                                        <tr data-subject-id="{{ $subject->id }}">
                                             <td>{{ $subject->subject_code }}</td>
                                             <td>{{ $subject->subject_description }}</td>
                                             <td class="text-center">
@@ -222,7 +222,7 @@
                                         </thead>
                                         <tbody>
                                             @foreach ($subjectsByYear as $subject)
-                                                <tr>
+                                                <tr data-subject-id="{{ $subject->id }}">
                                                     <td class="fw-medium">{{ $subject->subject_code }}</td>
                                                     <td>{{ $subject->subject_description }}</td>
                                                     <td class="text-center">
@@ -396,6 +396,7 @@
     let currentUnassignInstructorNames = [];
     let currentAssignInstructorIds = [];
     let currentAssignInstructorNames = [];
+    const buttonOrigMap = {};
 
     // Function to show Bootstrap toasts (top-right floating) for consistency
     function showNotification(type, message) {
@@ -623,6 +624,13 @@
                         const ids = checkedEls.map(el => el.value);
                         const names = checkedEls.map(el => el.nextElementSibling?.textContent?.trim() || '');
                         if (ids.length === 0) { showNotification('error', 'No instructors selected'); return; }
+                        // set spinner on the unassignSelectedBtn
+                        unassignSelectedBtn.dataset.origHtml = unassignSelectedBtn.innerHTML;
+                        buttonOrigMap['unassignSelectedBtn'] = unassignSelectedBtn.dataset.origHtml;
+                        unassignSelectedBtn.disabled = true;
+                        unassignSelectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Processing...';
+                        // mark pending button so that if the confirmation modal is cancelled we can restore it
+                        pendingFormSubmitButton = unassignSelectedBtn;
                         confirmUnassignInstructor(ids, names);
                     });
                 }, 0);
@@ -694,6 +702,13 @@
                         const ids = checkedEls.map(el => el.value);
                         const names = checkedEls.map(el => el.nextElementSibling?.textContent?.trim() || '');
                         if (ids.length === 0) { showNotification('error', 'No instructors selected'); return; }
+                        // set spinner on the assignSelected button (dataset origHtml will be used to restore)
+                        assignSelectedBtn.dataset.origHtml = assignSelectedBtn.innerHTML;
+                        buttonOrigMap['assignSelectedBtn'] = assignSelectedBtn.dataset.origHtml;
+                        assignSelectedBtn.disabled = true;
+                        // mark pending button so the confirm modal can restore this button if canceled
+                        pendingFormSubmitButton = assignSelectedBtn;
+                        assignSelectedBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Processing...';
                         confirmAssignInstructor(ids, names);
                     });
                     // focus the search field for keyboard users
@@ -716,9 +731,13 @@
         }
 
         function assignInstructorInline(subjectId, instructorId, button) {
-            button.disabled = true;
-            const orig = button.innerHTML;
-            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Assigning...';
+            const btn = findButtonElement(button, 'assignSingleBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.dataset.origHtml = btn.dataset.origHtml || btn.innerHTML;
+                if (btn.id) buttonOrigMap[btn.id] = btn.dataset.origHtml;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Assigning...';
+            }
 
             const formData = new FormData();
             formData.append('subject_id', subjectId);
@@ -748,32 +767,18 @@
                 } else {
                     throw new Error(data.message || 'Failed to assign instructor');
                 }
-
-                    function refreshSubjectInstructorCount(subjectId) {
-                        // Fetch current assigned instructors for the subject and update all matching view-count elements
-                        fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
-                            .then(resp => {
-                                if (!resp.ok) return resp.json().then(err => { throw new Error(err.message || 'Failed to load instructors'); }).catch(() => { throw new Error('Failed to load instructors'); });
-                                return resp.json();
-                            })
-                            .then(list => {
-                                const count = Array.isArray(list) ? list.length : (list.length || 0);
-                                document.querySelectorAll(`button.subject-view-btn[data-subject-id="${subjectId}"] .view-count`).forEach(el => {
-                                    el.textContent = count;
-                                });
-                            })
-                            .catch(err => {
-                                console.error('Error updating instructor count:', err);
-                            });
-                    }
             })
             .catch(error => {
                 console.error('Error:', error);
                 showNotification('error', error.message || 'Failed to assign instructor');
             })
             .finally(() => {
-                button.disabled = false;
-                button.innerHTML = orig;
+                const enableBtn = findButtonElement(button, 'assignSingleBtn');
+                if (enableBtn) {
+                    enableBtn.disabled = false;
+                    enableBtn.innerHTML = enableBtn.dataset.origHtml || buttonOrigMap['assignSingleBtn'] || enableBtn.innerHTML;
+                    delete enableBtn.dataset.origHtml;
+                }
             });
         }
     
@@ -824,6 +829,7 @@
             // Disable the button to prevent double clicks
             this.disabled = true;
             const origHtml = this.innerHTML;
+            buttonOrigMap['confirmUnassignBtn'] = origHtml;
             this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
 
             // Hide the confirmation modal
@@ -873,6 +879,22 @@
                 // Reset selection state
                 currentUnassignInstructorIds = [];
                 currentUnassignInstructorNames = [];
+                // Also ensure any 'unassignSelectedBtn' is re-enabled even if DOM was re-rendered
+                const unassignBtn = document.getElementById('unassignSelectedBtn');
+                if (unassignBtn) {
+                    unassignBtn.disabled = false;
+                        unassignBtn.innerHTML = unassignBtn.dataset.origHtml || buttonOrigMap['unassignSelectedBtn'] || unassignBtn.innerHTML;
+                        if (unassignBtn.dataset.origHtml) delete unassignBtn.dataset.origHtml;
+                }
+                // Try to restore a set of known buttons in case the modal re-rendered them
+                ['assignSelectedBtn', 'confirmAssignSelectedBtn', 'assignSingleBtn', 'unassignSelectedBtn', 'confirmUnassignBtn'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.disabled = false;
+                        el.innerHTML = el.dataset.origHtml || buttonOrigMap[id] || el.innerHTML;
+                        if (el.dataset.origHtml) delete el.dataset.origHtml;
+                    }
+                });
             });
         });
 
@@ -885,7 +907,8 @@
                     return;
                 }
                 this.disabled = true;
-                const origHtml = this.innerHTML;
+                const origHtml = this.dataset.origHtml = this.innerHTML;
+                buttonOrigMap['confirmAssignSelectedBtn'] = origHtml;
                 this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
                 const modalInstance = bootstrap.Modal.getInstance(document.getElementById('confirmAssignSelectionModal'));
                 modalInstance.hide();
@@ -899,6 +922,57 @@
                 currentAssignInstructorNames = [];
                 this.disabled = false;
                 this.innerHTML = origHtml;
+            });
+        }
+        // Restore pending buttons if modals close without confirmation
+        const confirmAssignModalEl = document.getElementById('confirmAssignSelectionModal');
+        if (confirmAssignModalEl) {
+            confirmAssignModalEl.addEventListener('hidden.bs.modal', function () {
+                if (pendingFormSubmitButton) {
+                    const btn = findButtonElement(pendingFormSubmitButton, 'assignSelectedBtn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = btn.dataset.origHtml || buttonOrigMap[btn.id] || buttonOrigMap['pendingFormSubmitButton'] || buttonOrigMap['assignSelectedBtn'] || btn.innerHTML;
+                        if (btn.dataset.origHtml) delete btn.dataset.origHtml;
+                    }
+                    pendingFormSubmitButton = null;
+                }
+                // Also try to restore commonly used buttons
+                ['assignSelectedBtn', 'confirmAssignSelectedBtn', 'assignSingleBtn'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.disabled = false;
+                        el.innerHTML = el.dataset.origHtml || buttonOrigMap[id] || el.innerHTML;
+                        if (el.dataset.origHtml) delete el.dataset.origHtml;
+                    }
+                });
+                // remove pending stored HTMLs from map after restore
+                ['assignSelectedBtn','confirmAssignSelectedBtn','assignSingleBtn','pendingFormSubmitButton'].forEach(k => { if (buttonOrigMap[k]) delete buttonOrigMap[k]; });
+            });
+        }
+
+        const confirmUnassignModalEl = document.getElementById('confirmUnassignModal');
+        if (confirmUnassignModalEl) {
+            confirmUnassignModalEl.addEventListener('hidden.bs.modal', function () {
+                if (pendingFormSubmitButton) {
+                    const btn = findButtonElement(pendingFormSubmitButton, 'unassignSelectedBtn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = btn.dataset.origHtml || buttonOrigMap[btn.id] || buttonOrigMap['pendingFormSubmitButton'] || buttonOrigMap['unassignSelectedBtn'] || btn.innerHTML;
+                        if (btn.dataset.origHtml) delete btn.dataset.origHtml;
+                    }
+                    pendingFormSubmitButton = null;
+                }
+                // Also try to restore commonly used unassign buttons
+                ['unassignSelectedBtn', 'confirmUnassignBtn'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) {
+                        el.disabled = false;
+                        el.innerHTML = el.dataset.origHtml || buttonOrigMap[id] || el.innerHTML;
+                        if (el.dataset.origHtml) delete el.dataset.origHtml;
+                    }
+                });
+                ['unassignSelectedBtn','confirmUnassignBtn','pendingFormSubmitButton'].forEach(k => { if (buttonOrigMap[k]) delete buttonOrigMap[k]; });
             });
         }
     });
@@ -932,6 +1006,14 @@
                 
                 // Save the context so we can use the confirmation modal
                 pendingFormSubmitButton = submitButton;
+                // Save original text and give visual feedback
+                if (pendingFormSubmitButton) {
+                    pendingFormSubmitButton.dataset.origHtml = originalButtonText;
+                    if (pendingFormSubmitButton.id) buttonOrigMap[pendingFormSubmitButton.id] = originalButtonText;
+                    else buttonOrigMap['pendingFormSubmitButton'] = originalButtonText;
+                    pendingFormSubmitButton.disabled = true;
+                    pendingFormSubmitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Assigning...';
+                }
                 // Open confirmation modal to confirm assignment
                 const instructorId = formData.get('instructor_id');
                 const instructorName = document.querySelector('#instructor_select option:checked')?.text || '';
@@ -984,9 +1066,15 @@
     }
 
     function assignMultipleInstructors(subjectId, instructorIds, button) {
-        button.disabled = true;
-        const orig = button.innerHTML;
-        button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Assigning...';
+        // Use a helper to get the current DOM button for stable enable/disable
+        const btn = findButtonElement(button, 'assignSelectedBtn');
+        if (btn) {
+            btn.disabled = true;
+            btn.dataset.origHtml = btn.dataset.origHtml || btn.innerHTML;
+            if (btn.id) buttonOrigMap[btn.id] = btn.dataset.origHtml;
+            else buttonOrigMap['assignSelectedBtn'] = btn.dataset.origHtml;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Assigning...';
+        }
 
         Promise.all(instructorIds.map(id => {
             const formData = new FormData();
@@ -1022,9 +1110,85 @@
             showNotification('error', error.message || 'Failed to assign selected instructors');
         })
         .finally(() => {
-            button.disabled = false;
-            button.innerHTML = orig;
+            // Re-enable the freshest button element by id
+            const enableBtn = findButtonElement(button, 'assignSelectedBtn');
+            if (enableBtn) {
+                enableBtn.disabled = false;
+                enableBtn.innerHTML = enableBtn.dataset.origHtml || buttonOrigMap['assignSelectedBtn'] || enableBtn.innerHTML;
+                delete enableBtn.dataset.origHtml;
+            }
+            // Also re-enable the confirm assign button if present
+            const confirmAssignBtnEl = document.getElementById('confirmAssignSelectedBtn');
+            if (confirmAssignBtnEl) {
+                confirmAssignBtnEl.disabled = false;
+                confirmAssignBtnEl.innerHTML = confirmAssignBtnEl.dataset.origHtml || buttonOrigMap['confirmAssignSelectedBtn'] || confirmAssignBtnEl.innerHTML;
+                if (confirmAssignBtnEl.dataset.origHtml) delete confirmAssignBtnEl.dataset.origHtml;
+            }
+            // Try to restore several common buttons in case the modal re-rendered elements
+            ['assignSelectedBtn', 'confirmAssignSelectedBtn', 'assignSingleBtn', 'unassignSelectedBtn'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.disabled = false;
+                    el.innerHTML = el.dataset.origHtml || buttonOrigMap[id] || el.innerHTML;
+                    if (el.dataset.origHtml) delete el.dataset.origHtml;
+                }
+            });
         });
+    }
+
+    function findButtonElement(buttonOrElement, fallbackId) {
+        if (!buttonOrElement && fallbackId) {
+            return document.getElementById(fallbackId) || null;
+        }
+        try {
+            // If it's an ID string
+            if (typeof buttonOrElement === 'string') {
+                const el = document.getElementById(buttonOrElement);
+                if (el) return el;
+            }
+            // If it has an id property, find by id (fresh DOM)
+            if (buttonOrElement && buttonOrElement.id) {
+                const el = document.getElementById(buttonOrElement.id);
+                if (el) return el;
+            }
+            // If it's a DOM element and still in the document, return it
+            if (buttonOrElement && buttonOrElement instanceof Element && document.body.contains(buttonOrElement)) {
+                return buttonOrElement;
+            }
+            // Fallback to common ids
+            if (fallbackId && document.getElementById(fallbackId)) {
+                return document.getElementById(fallbackId);
+            }
+        } catch (e) {
+            console.error('findButtonElement error', e);
+        }
+        return null;
+    }
+
+    // Global helper to update the instructor count for a subject
+    function refreshSubjectInstructorCount(subjectId) {
+        if (!subjectId) return;
+        console.log('Refreshing instructor count for subject', subjectId);
+        fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
+            .then(resp => {
+                if (!resp.ok) return resp.json().then(err => { throw new Error(err.message || 'Failed to load instructors'); }).catch(() => { throw new Error('Failed to load instructors'); });
+                return resp.json();
+            })
+            .then(list => {
+                const count = Array.isArray(list) ? list.length : (list.length || 0);
+                document.querySelectorAll('button.subject-view-btn[data-subject-id="' + subjectId + '"] .view-count').forEach(el => {
+                    el.textContent = count;
+                });
+                // Highlight the row(s) to show a change
+                document.querySelectorAll(`tr[data-subject-id="${subjectId}"]`).forEach(row => {
+                    row.classList.add('subject-updated-highlight');
+                    setTimeout(() => row.classList.remove('subject-updated-highlight'), 1200);
+                });
+                console.log('Updated link view-count elements for subject', subjectId, 'to', count);
+            })
+            .catch(err => {
+                console.error('Error updating instructor count:', err);
+            });
     }
 
     // Render server-side flash messages as toasts (session)
@@ -1050,6 +1214,14 @@
     .btn-outline-success:hover, .btn-outline-danger:hover {
         transform: translateY(-1px);
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .subject-updated-highlight {
+        animation: subject-updated 1.2s ease-in-out;
+    }
+    @keyframes subject-updated {
+        0% { background-color: rgba(198, 255, 208, 0.8); }
+        50% { background-color: rgba(255, 255, 255, 0.9); }
+        100% { background-color: transparent; }
     }
 </style>
 @endpush
