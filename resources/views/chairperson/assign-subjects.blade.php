@@ -13,7 +13,7 @@
     <div class="d-flex justify-content-between align-items-center mb-6">
         <h1 class="text-2xl font-bold">
             <i class="bi bi-person-badge text-success me-2"></i>
-            Assign Subjects to Instructors
+            Assign Courses to Instructors
         </h1>
 
         <!-- View Mode Switcher -->

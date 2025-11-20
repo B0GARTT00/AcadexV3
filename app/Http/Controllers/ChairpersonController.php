@@ -327,21 +327,38 @@ class ChairpersonController extends Controller
         $departmentId = Auth::user()->department_id;
         $courseId = Auth::user()->course_id;
         
-        // Fetch instructors in department and course (role: 0 = instructor)
+        // Fetch instructors depending on the user role (role: 0 = instructor)
         $geDepartment = Department::where('department_code', 'GE')->first();
-        $instructors = User::where([
-            ['role', 0],
-            ['is_active', true],
-        ])
-        ->where('department_id', '!=', $geDepartment->id)
-        ->where(function($q) use ($departmentId, $courseId) {
-            $q->where('department_id', $departmentId)
-              ->where('course_id', $courseId)
-              ->orWhere('can_teach_ge', true);
-        })
-        ->orderBy('last_name')
-        ->get();
+        // When a Chairperson (role === 1) views this, only instructors in their
+        // department and course should be visible (exclude GE instructors).
+        // When a GE Coordinator (role === 4) views this, show GE department
+        // instructors and those flagged as can_teach_ge.
+        if (Auth::user()->role === 1) {
+            $instructors = User::where('role', 0)
+                ->where('is_active', true)
+                ->where('department_id', $departmentId)
+                ->where('course_id', $courseId)
+                ->where('department_id', '!=', $geDepartment->id)
+                ->orderBy('last_name')
+                ->get();
+        } else { // GE Coordinator or admin roles that are allowed
+            $instructors = User::where('role', 0)
+                ->where('is_active', true)
+                ->where(function($query) use ($geDepartment) {
+                    $query->where('department_id', $geDepartment->id)
+                          ->orWhere('can_teach_ge', true);
+                })
+                ->orderBy('last_name')
+                ->get();
+        }
     
+        // Ensure selected instructor is in the list of accessible instructors
+        if ($selectedInstructorId && !$instructors->pluck('id')->contains((int)$selectedInstructorId)) {
+            // Reset selection if user tries to view an instructor they're not allowed to see
+            $selectedInstructorId = null;
+            $selectedSubjectId = null;
+        }
+
         // Subjects are loaded only when an instructor is selected
         $subjects = [];
         if ($selectedInstructorId) {
