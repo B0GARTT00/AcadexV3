@@ -2,61 +2,6 @@
 
 @section('content')
 <div class="container-fluid px-3 py-4" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); min-height: 100vh;">
-  <!-- Page Header -->
-  <div class="row mb-3">
-    <div class="col">
-      <nav aria-label="breadcrumb" class="mb-3">
-        <ol class="breadcrumb bg-white rounded-pill px-3 py-2 shadow-sm mb-0">
-          <li class="breadcrumb-item">
-            <a href="{{ route('dashboard') }}" class="text-decoration-none" style="color: #198754; font-size: 0.9rem;">
-              <i class="bi bi-house-door me-1"></i>Home
-            </a>
-          </li>
-          <li class="breadcrumb-item">
-            <a href="{{ route('instructor.grades.index') }}" class="text-decoration-none" style="color: #198754; font-size: 0.9rem;">
-              <i class="bi bi-clipboard-data me-1"></i>Grades
-            </a>
-          </li>
-          <li class="breadcrumb-item active" aria-current="page" style="color: #6c757d; font-size: 0.9rem;">
-            Activities
-          </li>
-        </ol>
-      </nav>
-
-      <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-3">
-        <div class="d-flex align-items-center">
-          <div class="p-3 rounded-circle me-3" style="background: linear-gradient(135deg, #198754, #20c997);">
-            <i class="bi bi-list-check text-white" style="font-size: 1.5rem;"></i>
-          </div>
-          <div>
-            <h1 class="h3 fw-bold mb-1" style="color: #198754;">Assessment Activities</h1>
-            <p class="text-muted mb-0 small">Plan and align your assessments with grading formulas across all terms</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Alerts -->
-  @if (session('success'))
-    <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert" style="border-left: 4px solid #198754 !important;">
-      <div class="d-flex align-items-center">
-        <i class="bi bi-check-circle-fill me-3 fs-4" style="color: #198754;"></i>
-        <div class="flex-grow-1">{{ session('success') }}</div>
-      </div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  @endif
-
-  @if (session('info'))
-    <div class="alert alert-info alert-dismissible fade show shadow-sm border-0" role="alert" style="border-left: 4px solid #0dcaf0 !important;">
-      <div class="d-flex align-items-center">
-        <i class="bi bi-info-circle-fill me-3 fs-4" style="color: #0dcaf0;"></i>
-        <div class="flex-grow-1">{{ session('info') }}</div>
-      </div>
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-    </div>
-  @endif
 
   @if (session('error'))
     <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert" style="border-left: 4px solid #dc3545 !important;">
@@ -194,27 +139,56 @@
 
             @if ($structureDetails->isNotEmpty())
               <div>
-                <p class="text-uppercase fw-semibold small mb-2" style="color: #6c757d; letter-spacing: 0.5px;">
+                <p class="text-uppercase fw-semibold small mb-2 d-flex align-items-center gap-2" style="color: #6c757d; letter-spacing: 0.5px;">
                   Component Breakdown
+                  <i class="bi bi-info-circle text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="Relative = percent of parent; Overall = effective percent of the course. Decimal shown for backend storage" style="font-size: 0.9rem;"></i>
                 </p>
                 <div class="list-group list-group-flush">
-                  @foreach ($structureDetails as $detail)
-                    <div class="list-group-item px-0 d-flex justify-content-between align-items-center border-0">
-                      <div>
-                        <div class="fw-semibold small">{{ $detail['label'] }}</div>
-                        <div class="text-muted" style="font-size: 0.75rem;">
-                          {{ $detail['max_assessments'] ? 'Max '.$detail['max_assessments'] : 'Flexible' }}
+                  @php
+                    $grouped = collect($structureDetails ?? [])->groupBy(function($d) {
+                      $parts = explode('.', $d['activity_type']);
+                      return $parts[0] ?? $d['activity_type'];
+                    });
+                  @endphp
+                  @foreach ($grouped as $groupKey => $children)
+                    @php
+                      $mainLabel = \App\Support\Grades\FormulaStructure::formatLabel($groupKey);
+                      $mainOverall = $children->sum('weight_percent');
+                      // If the main itself is a leaf, it may appear as an item with activity_type == groupKey
+                      $mainLeaf = $structureDetails->firstWhere('activity_type', $groupKey);
+                    @endphp
+                    <div class="list-group-item px-0 border-0 bg-light-subtle py-2">
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                          <div class="fw-semibold small text-dark">{{ $mainLabel }}</div>
+                          <div class="text-muted" style="font-size: 0.75rem;">
+                            Overall contribution: {{ number_format($mainOverall, 1) }}% ({{ number_format($mainOverall / 100, 2) }})
+                          </div>
                         </div>
-                      </div>
-                      <div class="text-end">
-                        <div class="badge bg-success-subtle text-success fw-semibold">
-                          {{ number_format($detail['relative_weight_percent'] ?? $detail['weight_percent'], 1) }}%
-                        </div>
-                        <div class="text-muted" style="font-size: 0.7rem;">
-                          Overall {{ number_format($detail['weight_percent'], 1) }}% ({{ number_format(($detail['weight_percent'] ?? 0) / 100, 2) }})
-                        </div>
+                        <div class="text-end small text-muted">{{ $mainLeaf && $mainLeaf['max_assessments'] ? 'Max ' . $mainLeaf['max_assessments'] : '' }}</div>
                       </div>
                     </div>
+
+                    @foreach ($children as $detail)
+                      @if ($detail['activity_type'] !== $groupKey)
+                        <div class="list-group-item px-0 d-flex justify-content-between align-items-center border-0 ps-4">
+                          <div>
+                            <div class="fw-semibold small">{{ $detail['label'] }}</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                              {{ $detail['max_assessments'] ? 'Max '.$detail['max_assessments'] : 'Flexible' }}
+                            </div>
+                          </div>
+                          <div class="text-end">
+                            <div class="badge bg-success-subtle text-success fw-semibold">
+                              {{ number_format($detail['relative_weight_percent'] ?? $detail['weight_percent'], 1) }}%
+                            </div>
+                            <div class="text-muted" style="font-size: 0.7rem;">
+                              Overall {{ number_format($detail['weight_percent'], 1) }}% ({{ number_format(($detail['weight_percent'] ?? 0) / 100, 2) }})
+                            </div>
+                          </div>
+                        </div>
+                      @endif
+                    @endforeach
                   @endforeach
                 </div>
               </div>
@@ -273,7 +247,7 @@
                 <thead style="background-color: #f8f9fa;">
                   <tr>
                     <th class="px-3 py-3 fw-semibold" style="min-width: 220px; color: #198754;">Component</th>
-                    <th class="text-center px-3 py-3 fw-semibold" style="color: #198754;">Relative (Overall)</th>
+                    <th class="text-center px-3 py-3 fw-semibold" style="color: #198754;">Relative (Overall) <i class="bi bi-info-circle ms-1 text-muted" data-bs-toggle="tooltip" data-bs-placement="top" title="Relative = percent of parent; Overall (Decimal) shows effective percent in course. Use decimals for backend weight." style="font-size: 0.9rem;"></i></th>
                     <th class="text-center px-3 py-3 fw-semibold" style="color: #198754;">Max/Term</th>
                     @foreach ($termLabels as $key => $label)
                       <th class="text-center px-3 py-3 fw-semibold" style="color: #198754;">{{ $label }}</th>
@@ -281,58 +255,90 @@
                   </tr>
                 </thead>
                 <tbody>
-                  @foreach ($structureDetails as $detail)
-                    <tr class="border-bottom" style="transition: background-color 0.2s;">
+                  @php
+                    $grouped_table = collect($structureDetails ?? [])->groupBy(function($d) {
+                      $parts = explode('.', $d['activity_type']);
+                      return $parts[0] ?? $d['activity_type'];
+                    });
+                  @endphp
+                  @foreach ($grouped_table as $groupKey => $children)
+                    @php
+                      $mainLabel = \App\Support\Grades\FormulaStructure::formatLabel($groupKey);
+                      $mainOverall = $children->sum('weight_percent');
+                      $mainLeaf = $structureDetails->firstWhere('activity_type', $groupKey);
+                    @endphp
+                    <tr class="border-bottom bg-white">
                       <td class="px-3 py-3">
-                        <div class="fw-semibold" style="color: #212529;">{{ $detail['label'] }}</div>
-                        <div class="text-muted small">{{ $detail['activity_type'] }}</div>
+                        <div class="fw-semibold" style="color: #212529;">{{ $mainLabel }}</div>
+                        <div class="text-muted small">{{ $mainLeaf ? $mainLeaf['activity_type'] : '' }}</div>
                       </td>
                       <td class="text-center px-3 py-3">
-                        <div class="fw-semibold" style="color: #198754;">{{ number_format($detail['relative_weight_percent'] ?? $detail['weight_percent'], 1) }}%</div>
-                        <div class="text-muted small">Overall {{ number_format($detail['weight_percent'], 1) }}% ({{ number_format(($detail['weight_percent'] ?? 0) / 100, 2) }})</div>
+                        <div class="fw-semibold" style="color: #198754;">-</div>
+                        <div class="text-muted small">Overall {{ number_format($mainOverall, 1) }}% ({{ number_format($mainOverall / 100, 2) }})</div>
                       </td>
                       <td class="text-center px-3 py-3">
                         <span class="badge bg-light text-dark">
-                          {{ $detail['max_assessments'] ? $detail['max_assessments'] : '∞' }}
+                          {{ $mainLeaf && $mainLeaf['max_assessments'] ? $mainLeaf['max_assessments'] : '∞' }}
                         </span>
                       </td>
                       @foreach ($termLabels as $termKey => $termLabel)
-                        @php
-                          $termComponent = collect($componentStatuses[$termKey]['components'] ?? [])->firstWhere('type', $detail['activity_type']);
-                          $count = $termComponent['count'] ?? 0;
-                          $status = $termComponent['status'] ?? 'missing';
-                          $minRequired = $termComponent['min_required'] ?? 1;
-                          $maxAllowed = $termComponent['max_allowed'] ?? null;
-                          $badgeClass = match ($status) {
-                            'ok' => 'bg-success',
-                            'exceeds' => 'bg-danger',
-                            default => 'bg-warning text-dark',
-                          };
-                          $badgeIcon = match ($status) {
-                            'ok' => 'check-circle',
-                            'exceeds' => 'x-circle',
-                            default => 'exclamation-circle',
-                          };
-                          $tooltip = match ($status) {
-                            'ok' => 'Matches the active formula',
-                            'exceeds' => 'Exceeds the maximum of '.($maxAllowed ?? 'n/a').' assessments',
-                            default => 'Add at least '.$minRequired.' assessment'.($minRequired > 1 ? 's' : ''),
-                          };
-                        @endphp
-                        <td class="text-center px-3 py-3">
-                          <span 
-                            class="badge {{ $badgeClass }} px-3 py-2" 
-                            data-bs-toggle="tooltip" 
-                            data-bs-placement="top" 
-                            title="{{ $tooltip }}"
-                            style="font-size: 0.85rem; cursor: help;"
-                          >
-                            <i class="bi bi-{{ $badgeIcon }} me-1"></i>{{ $count }}
-                          </span>
-                        </td>
+                        <td class="text-center px-3 py-3">-</td>
                       @endforeach
                     </tr>
+                    @foreach ($children as $detail)
+                      <tr class="border-bottom">
+                        <td class="px-3 py-3 ps-4">
+                          <div class="fw-semibold" style="color: #212529;">{{ $detail['label'] }}</div>
+                          <div class="text-muted small">{{ $detail['activity_type'] }}</div>
+                        </td>
+                        <td class="text-center px-3 py-3">
+                          <div class="fw-semibold" style="color: #198754;">{{ number_format($detail['relative_weight_percent'] ?? $detail['weight_percent'], 1) }}%</div>
+                          <div class="text-muted small">Overall {{ number_format($detail['weight_percent'], 1) }}% ({{ number_format($detail['weight_percent'] / 100, 2) }})</div>
+                        </td>
+                        <td class="text-center px-3 py-3">
+                          <span class="badge bg-light text-dark">
+                            {{ $detail['max_assessments'] ? $detail['max_assessments'] : '∞' }}
+                          </span>
+                        </td>
+                        @foreach ($termLabels as $termKey => $termLabel)
+                          @php
+                            $termComponent = collect($componentStatuses[$termKey]['components'] ?? [])->firstWhere('type', $detail['activity_type']);
+                            $count = $termComponent['count'] ?? 0;
+                            $status = $termComponent['status'] ?? 'missing';
+                            $minRequired = $termComponent['min_required'] ?? 1;
+                            $maxAllowed = $termComponent['max_allowed'] ?? null;
+                            $badgeClass = match ($status) {
+                              'ok' => 'bg-success',
+                              'exceeds' => 'bg-danger',
+                              default => 'bg-warning text-dark',
+                            };
+                            $badgeIcon = match ($status) {
+                              'ok' => 'check-circle',
+                              'exceeds' => 'x-circle',
+                              default => 'exclamation-circle',
+                            };
+                            $tooltip = match ($status) {
+                              'ok' => 'Matches the active formula',
+                              'exceeds' => 'Exceeds the maximum of '.($maxAllowed ?? 'n/a').' assessments',
+                              default => 'Add at least '.$minRequired.' assessment'.($minRequired > 1 ? 's' : ''),
+                            };
+                          @endphp
+                          <td class="text-center px-3 py-3">
+                            <span 
+                              class="badge {{ $badgeClass }} px-3 py-2" 
+                              data-bs-toggle="tooltip" 
+                              data-bs-placement="top" 
+                              title="{{ $tooltip }}"
+                              style="font-size: 0.85rem; cursor: help;"
+                            >
+                              <i class="bi bi-{{ $badgeIcon }} me-1"></i>{{ $count }}
+                            </span>
+                          </td>
+                        @endforeach
+                      </tr>
+                    @endforeach
                   @endforeach
+                    
 
                   @foreach ($termLabels as $termKey => $termLabel)
                     @if (! empty($componentStatuses[$termKey]['extras']))
@@ -549,19 +555,27 @@
                 </label>
                 <select name="type" class="form-select shadow-sm" required style="border: 2px solid #e9ecef;">
                   <option value="">Select Component</option>
-                  @forelse ($structureDetails as $detail)
-                    <option value="{{ $detail['activity_type'] }}">
-                      {{-- Show relative weight as primary, with effective overall percent for clarity --}}
-                      {{ $detail['label'] }} · {{ number_format($detail['relative_weight_percent'] ?? $detail['weight_percent'], 1) }}% (Overall {{ number_format($detail['weight_percent'], 1) }}% / {{ number_format(($detail['weight_percent'] ?? 0) / 100, 2) }})
-                      @if ($detail['max_assessments'])
-                        (Max {{ $detail['max_assessments'] }})
-                      @endif
-                    </option>
-                  @empty
+                  @php
+                    $groupedSelect = collect($structureDetails ?? [])->groupBy(function($d) { $parts = explode('.', $d['activity_type']); return $parts[0] ?? $d['activity_type']; });
+                  @endphp
+                  @foreach ($groupedSelect as $groupKey => $children)
+                    <optgroup label="{{ \App\Support\Grades\FormulaStructure::formatLabel($groupKey) }}">
+                      @foreach ($children as $detail)
+                        <option value="{{ $detail['activity_type'] }}">
+                          {{-- Show relative weight as primary, with effective overall percent for clarity --}}
+                          {{ $detail['label'] }} · {{ number_format($detail['relative_weight_percent'] ?? $detail['weight_percent'], 1) }}% (Overall {{ number_format($detail['weight_percent'], 1) }}% / {{ number_format(($detail['weight_percent'] ?? 0) / 100, 2) }})
+                          @if ($detail['max_assessments'])
+                            (Max {{ $detail['max_assessments'] }})
+                          @endif
+                        </option>
+                      @endforeach
+                    </optgroup>
+                  @endforeach
+                  @if (empty($groupedSelect) || $groupedSelect->isEmpty())
                     @foreach ($activityTypes as $type)
                       <option value="{{ $type }}">{{ \App\Support\Grades\FormulaStructure::formatLabel($type) }}</option>
                     @endforeach
-                  @endforelse
+                  @endif
                 </select>
                 <div class="invalid-feedback">
                   <i class="bi bi-exclamation-circle me-1"></i>Select the activity component type.
