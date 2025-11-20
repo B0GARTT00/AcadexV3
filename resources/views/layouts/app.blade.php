@@ -392,6 +392,27 @@
             text-align: center;
         }
         .chairperson-reports-chevron.rotated { transform: rotate(180deg); }
+
+        /* Manage CO (GE Coordinator) submenu styles */
+        .manage-co-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            will-change: max-height;
+        }
+        .manage-co-submenu.show {
+            max-height: 300px;
+            transition: max-height 0.3s ease-in;
+        }
+
+        .manage-co-chevron {
+            transition: transform 0.2s ease;
+            font-size: 0.8rem;
+            display: inline-block;
+            width: 16px;
+            text-align: center;
+        }
+        .manage-co-chevron.rotated { transform: rotate(180deg); }
         
         /* Prevent sidebar from affecting header */
         .sidebar-wrapper {
@@ -772,12 +793,12 @@
             const submenu = document.getElementById('manageCOSubmenu');
             const chevron = document.querySelector('.manage-co-chevron');
             if (submenu && chevron) {
-                if (submenu.style.display === 'none' || !submenu.style.display) {
-                    submenu.style.display = 'block';
-                    chevron.classList.add('rotated');
-                } else {
-                    submenu.style.display = 'none';
+                if (submenu.classList.contains('show')) {
+                    submenu.classList.remove('show');
                     chevron.classList.remove('rotated');
+                } else {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
                 }
             }
         }
@@ -804,7 +825,7 @@
                 const submenu = document.getElementById('manageCOSubmenu');
                 const chevron = document.querySelector('.manage-co-chevron');
                 if (submenu && chevron) {
-                    submenu.style.display = 'block';
+                    submenu.classList.add('show');
                     chevron.classList.add('rotated');
                 }
             }

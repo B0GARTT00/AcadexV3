@@ -241,13 +241,6 @@
                         <div class="chairperson-reports-submenu {{ $isReportsActive ? 'show' : '' }}" id="chairpersonReportsSubmenu">
                             <ul class="nav nav-pills flex-column ms-3">
                                 <li class="nav-item">
-                                    <a href="{{ route('chairperson.course_outcomes.index') }}" 
-                                       class="nav-link {{ request()->routeIs('chairperson.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-book me-3"></i>
-                                        <span>Manage Course Outcome</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
                                     <a href="{{ route('chairperson.reports.co-program') }}" 
                                        class="nav-link {{ request()->routeIs('chairperson.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
                                         <i class="bi bi-diagram-3 me-3"></i>
@@ -467,7 +460,7 @@
                             <span style="flex: 1;">Manage Course Outcome</span>
                             <i class="bi bi-chevron-down ms-auto manage-co-chevron" style="flex-shrink: 0;"></i>
                         </a>
-                        <div class="manage-co-submenu ms-3 mt-2" id="manageCOSubmenu" style="display: none;">
+                        <div class="manage-co-submenu ms-3 mt-2" id="manageCOSubmenu">
                             <ul class="nav nav-pills flex-column">
                                 <li class="nav-item">
                                     <a href="{{ route('gecoordinator.reports.co-program') }}" 
