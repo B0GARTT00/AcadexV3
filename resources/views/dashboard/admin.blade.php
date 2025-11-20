@@ -7,11 +7,7 @@
             <h2 class="fw-bold text-dark mb-1">Admin Control Panel 🎛️</h2>
             <p class="text-muted mb-0">Monitor system activity and user management</p>
         </div>
-        <div class="d-flex align-items-center gap-3">
-            <form action="{{ route('dashboard') }}" method="GET" class="d-flex align-items-center gap-2">
-                <input type="date" name="date" class="form-control form-control-sm shadow-none border-success-subtle" value="{{ $selectedDate }}" onchange="this.form.submit()">
-            </form>
-        </div>
+        <div></div>
     </div>
 
     {{-- Summary Cards --}}
@@ -80,9 +76,7 @@
                         <h5 class="fw-semibold mb-0">
                             <i class="bi bi-graph-up me-2"></i>Login Activity
                         </h5>
-                        <div class="d-flex align-items-center">
-                            <span class="badge bg-success-subtle text-success rounded-pill px-3">{{ $selectedDate }}</span>
-                        </div>
+                        <div></div>
                     </div>
                     <div class="table-responsive flex-grow-1" style="height: 350px; overflow-y: auto;">
                         <table class="table table-hover align-middle mb-0">
