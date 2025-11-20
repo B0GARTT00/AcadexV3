@@ -8,9 +8,9 @@
             <p class="text-muted mb-0">Monitor Course performance and faculty management</p>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <a href="{{ route('chairperson.instructors') }}" class="btn btn-success rounded-pill px-3 shadow-sm">
+            <!-- <a href="{{ route('chairperson.instructors') }}" class="btn btn-success rounded-pill px-3 shadow-sm">
                 <i class="bi bi-person-plus"></i> Manage Instructors
-            </a>
+            </a> -->
         </div>
     </div>
 
