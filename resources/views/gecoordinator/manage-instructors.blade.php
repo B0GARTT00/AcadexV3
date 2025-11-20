@@ -226,7 +226,6 @@
                                         <tr>
                                             <th>Instructor Name</th>
                                             <th>Email Address</th>
-                                            <th class="text-center">Status</th>
                                             <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
@@ -236,11 +235,6 @@
                                                 <tr>
                                                     <td>{{ $instructor->last_name }}, {{ $instructor->first_name }} {{ $instructor->middle_name }}</td>
                                                     <td>{{ $instructor->email }}</td>
-                                                    <td class="text-center">
-                                                        <span class="badge border border-success text-success px-3 py-2 rounded-pill">
-                                                            Active
-                                                        </span>
-                                                    </td>
                                                     <td class="text-center">
                                                         <button type="button"
                                                             class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1"
@@ -392,7 +386,7 @@
                             <th>Requested By</th>
                             <th>Request Date</th>
                             <th class="text-center">Action</th>
-                        </tr>
+                                            <th class="text-center">Action</th>
                     </thead>
                     <tbody>
                         @foreach($geRequests as $request)
@@ -401,11 +395,6 @@
                                 <td>{{ $request->instructor->department->department_code ?? 'N/A' }}</td>
                                 <td>{{ $request->requestedBy->last_name }}, {{ $request->requestedBy->first_name }}</td>
                                 <td>{{ $request->created_at->format('M d, Y h:i A') }}</td>
-                                <td class="text-center">
-                                    <button type="button"
-                                        class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#approveGERequestModal"
                                         data-request-id="{{ $request->id }}"
                                         data-instructor-name="{{ $request->instructor->last_name }}, {{ $request->instructor->first_name }}">
                                         <i class="bi bi-check-circle-fill"></i> Approve
@@ -697,6 +686,8 @@
         });
     }
 
+    
+
     // Handling the reject GE request modal - prefer `show.bs.modal` but also attach a click handler for reliability
     if (rejectGERequestModal) {
         rejectGERequestModal.addEventListener('show.bs.modal', event => {
@@ -711,6 +702,8 @@
                 document.getElementById('rejectGERequestName').textContent = instructorName;
             }
         });
+
+        
 
         // Fallback: attach click listeners to all triggers that open the modal
         document.querySelectorAll('[data-bs-target="#rejectGERequestModal"]').forEach(btn => {
