@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-1">
-                <i class="bi bi-person-lines-fill text-success me-2"></i>Student CO Report
+                <i class="bi bi-person-lines-fill text-success me-2"></i>Student Outcomes Summary
             </h2>
             <p class="text-muted mb-0">Select a subject and student to view detailed Course Outcome performance</p>
         </div>
@@ -31,15 +31,15 @@
                             <i class="bi bi-journal-text text-primary fs-4"></i>
                         </div>
                         <div>
-                            <h5 class="fw-semibold mb-0">Step 1: Select Subject</h5>
-                            <small class="text-muted">Choose the subject to analyze</small>
+                            <h5 class="fw-semibold mb-0">Step 1: Select Course</h5>
+                            <small class="text-muted">Choose the course to analyze</small>
                         </div>
                     </div>
                     <form method="GET" action="{{ route('chairperson.reports.co-student') }}">
                         <div class="mb-3">
-                            <label for="subject_id" class="form-label">Subject</label>
+                            <label for="subject_id" class="form-label">Course</label>
                             <select name="subject_id" id="subject_id" class="form-select" onchange="this.form.submit()">
-                                <option value="">-- Select Subject --</option>
+                                <option value="">-- Select Course --</option>
                                 @foreach($subjects as $sub)
                                     <option value="{{ $sub->id }}" {{ $selectedSubjectId == $sub->id ? 'selected' : '' }}>
                                         {{ $sub->subject_code }} – {{ $sub->subject_description }}

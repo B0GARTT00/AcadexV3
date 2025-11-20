@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-1">
-                <i class="bi bi-diagram-3 text-success me-2"></i>Program CO Summary
+                <i class="bi bi-diagram-3 text-success me-2"></i>Program Outcomes Summary
             </h2>
             <p class="text-muted mb-0">Course Outcome compliance across all courses in {{ $department->department_description ?? 'your department' }}</p>
         </div>

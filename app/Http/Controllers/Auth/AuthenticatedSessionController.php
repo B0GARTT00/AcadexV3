@@ -133,11 +133,10 @@ class AuthenticatedSessionController extends Controller
     {
         // Calculate the expiration timestamp based on session lifetime
         $sessionLifetime = config('session.lifetime', 120); // in minutes
-        $expirationTimestamp = now()->subMinutes($sessionLifetime)->timestamp;
+        $expirationTimestamp = now()->subMinutes($sessionLifetime)->getTimestamp();
         
-        // First, clean up expired sessions for this user
+        // First, clean up ALL expired sessions (not just for this user)
         DB::table('sessions')
-            ->where('user_id', $userId)
             ->where('last_activity', '<', $expirationTimestamp)
             ->delete();
         
@@ -211,14 +210,18 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        // Get the session ID before destroying it
+        // Get the user ID and session ID before destroying
+        $userId = Auth::id();
         $sessionId = $request->session()->getId();
         
         // Log the user out
         Auth::guard('web')->logout();
 
-        // Delete the session from the database
-        if ($sessionId) {
+        // Delete ALL sessions for this user to ensure clean logout
+        if ($userId) {
+            DB::table('sessions')->where('user_id', $userId)->delete();
+        } elseif ($sessionId) {
+            // Fallback: delete just this session if user_id not available
             DB::table('sessions')->where('id', $sessionId)->delete();
         }
 

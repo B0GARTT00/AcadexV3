@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-1">
-                <i class="bi bi-diagram-3 text-success me-2"></i>Program CO Summary (GE Subjects)
+                <i class="bi bi-diagram-3 text-success me-2"></i>Program Outcomes Summary (GE Courses)
             </h2>
             <p class="text-muted mb-0">Course Outcome compliance for GE subjects across all programs</p>
         </div>
@@ -15,9 +15,6 @@
                     <i class="bi bi-calendar3 me-1"></i>{{ $academicYear }} – {{ $semester }}
                 </span>
             @endif
-            <a href="{{ route('gecoordinator.reports') }}" class="btn btn-outline-secondary rounded-pill">
-                <i class="bi bi-arrow-left me-1"></i>Back to Reports
-            </a>
         </div>
     </div>
 
