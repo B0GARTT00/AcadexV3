@@ -26,69 +26,14 @@
         {{-- Instructor --}}
         @if ($role === 0)
             <div class="sidebar-section">
-                <h6 class="px-3 mb-2">INSTRUCTOR PORTAL</h6>
+                <h6 class="px-3 mb-2">ACADEMIC RECORDS</h6>
                 <ul class="nav nav-pills flex-column">
-                    @php
-                        $isStudentsActive = request()->routeIs('instructor.students.*');
-                    @endphp
                     <li class="nav-item">
-                                <a class="nav-link d-flex align-items-center sidebar-link students-toggle {{ $isStudentsActive ? 'active' : '' }}" 
-                           onclick="toggleStudentsMenu()"
-                           style="cursor: pointer;">
-                            <i class="bi bi-people me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                            <span style="flex: 1;">Manage Students</span>
-                            <i class="bi bi-chevron-down ms-auto students-chevron {{ $isStudentsActive ? 'rotated' : '' }}" style="flex-shrink: 0;"></i>
+                        <a href="{{ route('instructor.students.index') }}" 
+                           class="nav-link {{ request()->routeIs('instructor.students.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-people me-3"></i>
+                            <span>Manage Students</span>
                         </a>
-                        <div class="students-submenu {{ $isStudentsActive ? 'show' : '' }}" id="studentsSubmenu">
-                            <ul class="nav nav-pills flex-column ms-3">
-                                <li class="nav-item">
-                                    <a href="{{ route('instructor.students.index') }}" 
-                                       class="nav-link {{ request()->routeIs('instructor.students.index') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-mortarboard me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Student Records</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('instructor.students.import') }}"
-                                       class="nav-link {{ request()->routeIs('instructor.students.import') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-file-earmark-arrow-up me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Import Students</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
-                    </li>
-                    
-                    {{-- Grades Collapsible Menu --}}
-                    @php
-                        $isGradesActive = request()->routeIs('instructor.grades.*') || request()->routeIs('instructor.final-grades.*');
-                    @endphp
-                    <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center sidebar-link grades-toggle {{ $isGradesActive ? 'active' : '' }}" 
-                           onclick="toggleGradesMenu()"
-                           style="cursor: pointer;">
-                            <i class="bi bi-card-checklist me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                            <span style="flex: 1;">Grades</span>
-                            <i class="bi bi-chevron-down ms-auto grades-chevron {{ $isGradesActive ? 'rotated' : '' }}" style="flex-shrink: 0;"></i>
-                        </a>
-                        <div class="grades-submenu {{ $isGradesActive ? 'show' : '' }}" id="gradesSubmenu">
-                            <ul class="nav nav-pills flex-column ms-3">
-                                <li class="nav-item">
-                                    <a href="{{ route('instructor.grades.index') }}" 
-                                       class="nav-link {{ request()->routeIs('instructor.grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-pencil-square me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Manage Grades</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('instructor.final-grades.index') }}" 
-                                       class="nav-link {{ request()->routeIs('instructor.final-grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-graph-up me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Final Grades</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
                     </li>
                     
                     <li class="nav-item">
@@ -99,41 +44,44 @@
                         </a>
                     </li>
                     
-                    {{-- Course Outcome Collapsible Menu --}}
-                    @php
-                        $isCourseOutcomeActive = request()->routeIs('instructor.course_outcomes.*') || request()->routeIs('instructor.course-outcome-attainments.*');
-                    @endphp
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center sidebar-link course-outcome-toggle" 
-                           onclick="toggleCourseOutcomeMenu()"
-                           style="cursor: pointer;">
-                            <i class="bi bi-mortarboard me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                            <span style="flex: 1;">Course Outcome</span>
-                            <i class="bi bi-chevron-down ms-auto course-outcome-chevron {{ $isCourseOutcomeActive ? 'rotated' : '' }}" style="flex-shrink: 0;"></i>
+                        <a href="{{ route('instructor.grades.index') }}" 
+                           class="nav-link {{ request()->routeIs('instructor.grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-pencil-square me-3"></i>
+                            <span>Manage Grades</span>
                         </a>
-                        <div class="course-outcome-submenu {{ $isCourseOutcomeActive ? 'show' : '' }}" id="courseOutcomeSubmenu">
-                            <ul class="nav nav-pills flex-column ms-3">
-                                <li class="nav-item">
-                                    <a href="{{ route('instructor.course_outcomes.index') }}" 
-                                       class="nav-link {{ request()->routeIs('instructor.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-book me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>View Course Outcome</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('instructor.course-outcome-attainments.index') }}"
-                                       class="nav-link {{ request()->routeIs('instructor.course-outcome-attainments.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-award me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Course Outcome Attainment</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a href="{{ route('instructor.final-grades.index') }}" 
+                           class="nav-link {{ request()->routeIs('instructor.final-grades.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-graph-up me-3"></i>
+                            <span>View Grades</span>
+                        </a>
                     </li>
                 </ul>
             </div>
-
-            {{-- Data Management section removed for Instructor (Import Students moved to Students submenu) --}}
+            
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">REPORTS</h6>
+                <ul class="nav nav-pills flex-column">
+                    <li class="nav-item">
+                        <a href="{{ route('instructor.course_outcomes.index') }}" 
+                           class="nav-link {{ request()->routeIs('instructor.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-book me-3"></i>
+                            <span>View Course Outcome</span>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item">
+                        <a href="{{ route('instructor.course-outcome-attainments.index') }}"
+                           class="nav-link {{ request()->routeIs('instructor.course-outcome-attainments.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-award me-3"></i>
+                            <span>Course Outcome Attainment</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
         @endif
 
         {{-- Chairperson --}}

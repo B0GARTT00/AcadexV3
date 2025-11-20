@@ -20,24 +20,7 @@ class StudentImportController extends Controller
      */
     public function showUploadForm()
     {
-        $academicPeriodId = session('active_academic_period_id');
-
-        $subjects = Subject::with('course')
-            ->where(function($q) { // include subjects where current user is primary instructor OR is attached via pivot table
-                $q->where('instructor_id', Auth::id())
-                  ->orWhereHas('instructors', function($q2) { $q2->where('instructor_id', Auth::id()); });
-            })
-            ->where('academic_period_id', $academicPeriodId) // ✅ Filter by active period
-            ->where('is_deleted', false)
-            ->get();
-
-        $reviewStudents = ReviewStudent::with('course', 'subject')
-            ->where('instructor_id', Auth::id())
-            ->orderByDesc('created_at')
-            ->orderBy('is_confirmed')  // Show unconfirmed first
-            ->get();
-
-        return view('instructor.excel.import-students', compact('subjects', 'reviewStudents'));
+        return redirect()->route('instructor.students.index', ['tab' => 'import']);
     }
 
 /**
@@ -59,7 +42,7 @@ public function upload(Request $request)
 
     if ($exists) {
         return redirect()
-            ->route('instructor.students.import')
+            ->route('instructor.students.index', ['tab' => 'import'])
             ->withErrors(['file' => "❌ A file with the name '{$listName}' already exists."]);
     }
 
@@ -69,7 +52,7 @@ public function upload(Request $request)
     );
 
     return redirect()
-        ->route('instructor.students.import')
+        ->route('instructor.students.index', ['tab' => 'import'])
         ->with('status', '📥 Student list uploaded for review.');
 }
 
@@ -157,7 +140,7 @@ public function upload(Request $request)
             ->whereIn('id', $selectedIds)
             ->update(['is_confirmed' => true]);
 
-        return redirect()->route('instructor.students.import')->with('status', '✅ Selected students successfully imported to the selected subject.');
+        return redirect()->route('instructor.students.index', ['tab' => 'import'])->with('status', '✅ Selected students successfully imported to the selected subject.');
     }
     
 

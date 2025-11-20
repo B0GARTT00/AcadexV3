@@ -11,41 +11,91 @@
 
 @section('content')
 
-<div class="container-fluid px-4 py-4">
-    <h1 class="h4 fw-bold mb-4">📈 Final Grades</h1>
+<div class="container-fluid px-0">
+    @if (!request('subject_id'))
+        {{-- Card-based Subject Selection --}}
+        <div class="px-4 pt-4 pb-2">
+            <h1 class="h4 fw-bold mb-0 d-flex align-items-center">
+                <i class="bi bi-graph-up text-success me-2" style="font-size: 1.5rem;"></i>
+                <span>Final Grades</span>
+            </h1>
+        </div>
+        @if(count($subjects) > 0)
+            <div class="row g-4 px-4 py-4" id="subject-selection">
+                @foreach($subjects as $subjectItem)
+                    <div class="col-md-4">
+                        <div
+                            class="subject-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden"
+                            onclick="window.location.href='{{ route('instructor.final-grades.index') }}?subject_id={{ $subjectItem->id }}'"
+                            style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;"
+                        >
+                            {{-- Top header --}}
+                            <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
+                                <div class="subject-circle position-absolute start-50 translate-middle"
+                                    style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                                    <h5 class="mb-0 text-white fw-bold">{{ $subjectItem->subject_code }}</h5>
+                                </div>
+                            </div>
 
-    {{-- Subject Selection + Print Button --}}
-    <div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
-        <form method="GET" action="{{ route('instructor.final-grades.index') }}" class="d-flex align-items-center gap-2 flex-wrap">
-            <label class="form-label fw-medium mb-0">Select Subject:</label>
-            <select name="subject_id" class="form-select w-auto" onchange="this.form.submit()">
-                <option value="">-- Choose Subject --</option>
-                @foreach($subjects as $subject)
-                    <option value="{{ $subject->id }}" {{ request('subject_id') == $subject->id ? 'selected' : '' }}>
-                        {{ $subject->subject_code }} - {{ $subject->subject_description }}
-                    </option>
+                            {{-- Card body --}}
+                            <div class="card-body pt-5 text-center">
+                                <h6 class="fw-semibold mt-4 text-dark text-truncate" title="{{ $subjectItem->subject_description }}">
+                                    {{ $subjectItem->subject_description }}
+                                </h6>
+                            </div>
+                        </div>
+                    </div>
                 @endforeach
-            </select>
-        </form>
-
-        @if(!empty($finalData) && count($finalData) > 0)
-            <button type="button" class="btn btn-success shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#printOptionsModal">
-                <i class="bi bi-printer-fill"></i>
-                <span>Print Options</span>
-            </button>
+            </div>
+        @else
+            <div class="alert alert-warning text-center mt-5 mx-4 rounded">
+                No subjects have been assigned to you yet.
+            </div>
         @endif
-    </div>
+    @else
+        {{-- Selected Subject View --}}
+        <div class="px-4 py-4">
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <h1 class="h4 fw-bold mb-0 d-flex align-items-center">
+                    <i class="bi bi-graph-up text-success me-2" style="font-size: 1.5rem;"></i>
+                    <span>Final Grades</span>
+                </h1>
 
-    {{-- Generate Final Grades --}}
-    @if(request('subject_id') && empty($finalData))
-        <form method="POST" action="{{ route('instructor.final-grades.generate') }}" class="mb-4">
-            @csrf
-            <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
-            <button type="submit" class="btn btn-success px-4 shadow-sm">
-                🔄 Generate Final Grades
-            </button>
-        </form>
-    @endif
+                @if(!empty($finalData) && count($finalData) > 0)
+                    <button type="button" class="btn btn-success shadow-sm d-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#printOptionsModal">
+                        <i class="bi bi-printer-fill"></i>
+                        <span>Print Options</span>
+                    </button>
+                @endif
+            </div>
+
+            {{-- Breadcrumb Navigation --}}
+            <nav aria-label="breadcrumb" class="mb-4">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="{{ route('instructor.final-grades.index') }}" class="text-success text-decoration-none border-bottom border-success">
+                            Final Grades
+                        </a>
+                    </li>
+                    <li class="breadcrumb-item active text-muted" aria-current="page">
+                        @php
+                            $selectedSubject = $subjects->firstWhere('id', request('subject_id'));
+                        @endphp
+                        {{ $selectedSubject ? $selectedSubject->subject_code : 'Subject' }}
+                    </li>
+                </ol>
+            </nav>
+
+            {{-- Generate Final Grades --}}
+            @if(empty($finalData))
+                <form method="POST" action="{{ route('instructor.final-grades.generate') }}" class="mb-4">
+                    @csrf
+                    <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
+                    <button type="submit" class="btn btn-success px-4 shadow-sm">
+                        <i class="bi bi-arrow-repeat me-1"></i> Generate Final Grades
+                    </button>
+                </form>
+            @endif
 
     {{-- Final Grades Table --}}
     @if(!empty($finalData) && count($finalData) > 0)
@@ -61,7 +111,6 @@
                             <th>Final</th>
                             <th class="text-primary">Final Average</th>
                             <th>Remarks</th>
-                            <th>Notes</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -90,32 +139,18 @@
                                         <span class="text-muted">–</span>
                                     @endif
                                 </td>
-                                <td class="text-center">
-                                    @if($data['has_notes'])
-                                        <button 
-                                            class="btn btn-sm btn-outline-info view-notes-btn"
-                                            data-student-name="{{ $data['student']->last_name }}, {{ $data['student']->first_name }}"
-                                            data-notes="{{ $data['notes'] }}"
-                                            title="View notes from chairperson/coordinator"
-                                        >
-                                            <i class="bi bi-eye"></i> View Notes
-                                        </button>
-                                    @else
-                                        <span class="text-muted fst-italic">No notes</span>
-                                    @endif
-                                </td>                                
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
             </div>
         </div>
-    @else
-        @if(request('subject_id'))
-            <div class="alert alert-warning text-center mt-5 rounded-3">
+        @else
+            <div class="alert alert-warning text-center mt-3 rounded-3">
                 No students or grades found for the selected subject.
             </div>
         @endif
+        </div>
     @endif
 </div>
 
@@ -238,6 +273,25 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+.subject-card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.subject-card:hover {
+    transform: scale(1.05);
+    box-shadow: 0 20px 30px rgba(0,0,0,0.1);
+}
+.subject-circle {
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+}
+.subject-card:hover .subject-circle {
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    transform: translate(-50%, -55%) scale(1.05);
+}
+</style>
+@endpush
 
 @push('scripts')
 <script>

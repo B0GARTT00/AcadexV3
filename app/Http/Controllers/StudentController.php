@@ -6,6 +6,7 @@ use App\Models\Course;
 use App\Models\Student;
 use App\Models\StudentSubject;
 use App\Models\Subject;
+use App\Models\ReviewStudent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -58,8 +59,14 @@ class StudentController extends Controller
                 ->get();
 
         }
+
+        $reviewStudents = ReviewStudent::with('course', 'subject')
+            ->where('instructor_id', Auth::id())
+            ->orderByDesc('created_at')
+            ->orderBy('is_confirmed')  // Show unconfirmed first
+            ->get();
     
-        return view('instructor.manage-students', compact('subjects', 'courses', 'students'));
+        return view('instructor.manage-students', compact('subjects', 'courses', 'students', 'reviewStudents'));
     }
     
 

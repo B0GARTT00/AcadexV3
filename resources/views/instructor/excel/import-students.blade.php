@@ -327,10 +327,6 @@
 
             <!-- Main Card Container -->
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
-                <h5 class="mb-0 d-flex align-items-center">
-                    <i class="bi bi-people-fill text-success me-2"></i>
-                    Student Import Manager
-                </h5>
                 
                 <form method="POST" 
                       action="{{ route('instructor.students.import.upload') }}" 
