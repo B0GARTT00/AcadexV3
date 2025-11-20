@@ -208,13 +208,11 @@
                       </div>
                       <div class="text-end">
                         <div class="badge bg-success-subtle text-success fw-semibold">
-                          {{ number_format($detail['weight_percent'], 1) }}%
+                          {{ number_format($detail['relative_weight_percent'] ?? $detail['weight_percent'], 1) }}%
                         </div>
-                        @if (abs($detail['overall_weight_percent'] - $detail['weight_percent']) > 0.05)
-                          <div class="text-muted" style="font-size: 0.7rem;">
-                            Overall {{ number_format($detail['overall_weight_percent'], 1) }}%
-                          </div>
-                        @endif
+                        <div class="text-muted" style="font-size: 0.7rem;">
+                          Overall {{ number_format($detail['weight_percent'], 1) }}% ({{ number_format(($detail['weight_percent'] ?? 0) / 100, 2) }})
+                        </div>
                       </div>
                     </div>
                   @endforeach
@@ -275,7 +273,7 @@
                 <thead style="background-color: #f8f9fa;">
                   <tr>
                     <th class="px-3 py-3 fw-semibold" style="min-width: 220px; color: #198754;">Component</th>
-                    <th class="text-center px-3 py-3 fw-semibold" style="color: #198754;">Weight</th>
+                    <th class="text-center px-3 py-3 fw-semibold" style="color: #198754;">Relative (Overall)</th>
                     <th class="text-center px-3 py-3 fw-semibold" style="color: #198754;">Max/Term</th>
                     @foreach ($termLabels as $key => $label)
                       <th class="text-center px-3 py-3 fw-semibold" style="color: #198754;">{{ $label }}</th>
@@ -290,10 +288,8 @@
                         <div class="text-muted small">{{ $detail['activity_type'] }}</div>
                       </td>
                       <td class="text-center px-3 py-3">
-                        <div class="fw-semibold" style="color: #198754;">{{ number_format($detail['weight_percent'], 1) }}%</div>
-                        @if (abs($detail['overall_weight_percent'] - $detail['weight_percent']) > 0.05)
-                          <div class="text-muted small">Overall {{ number_format($detail['overall_weight_percent'], 1) }}%</div>
-                        @endif
+                        <div class="fw-semibold" style="color: #198754;">{{ number_format($detail['relative_weight_percent'] ?? $detail['weight_percent'], 1) }}%</div>
+                        <div class="text-muted small">Overall {{ number_format($detail['weight_percent'], 1) }}% ({{ number_format(($detail['weight_percent'] ?? 0) / 100, 2) }})</div>
                       </td>
                       <td class="text-center px-3 py-3">
                         <span class="badge bg-light text-dark">
@@ -555,7 +551,8 @@
                   <option value="">Select Component</option>
                   @forelse ($structureDetails as $detail)
                     <option value="{{ $detail['activity_type'] }}">
-                      {{ $detail['label'] }} · {{ number_format($detail['weight_percent'], 1) }}%
+                      {{-- Show relative weight as primary, with effective overall percent for clarity --}}
+                      {{ $detail['label'] }} · {{ number_format($detail['relative_weight_percent'] ?? $detail['weight_percent'], 1) }}% (Overall {{ number_format($detail['weight_percent'], 1) }}% / {{ number_format(($detail['weight_percent'] ?? 0) / 100, 2) }})
                       @if ($detail['max_assessments'])
                         (Max {{ $detail['max_assessments'] }})
                       @endif
