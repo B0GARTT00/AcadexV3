@@ -363,12 +363,39 @@
     </div>
 </div>
 
+<!-- Confirm Assign Selection Modal -->
+<div class="modal fade" id="confirmAssignSelectionModal" tabindex="-1" aria-labelledby="confirmAssignSelectionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-success text-white border-0">
+                <h5 class="modal-title d-flex align-items-center" id="confirmAssignSelectionModalLabel">
+                    <i class="bi bi-check-circle-fill me-2"></i>
+                    Confirm Assign
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-3">Are you sure you want to assign the following instructor(s) to <strong id="assignModalSubjectName"></strong>?</p>
+                <ul id="assignList" class="mb-0 list-unstyled small text-muted" aria-live="polite"></ul>
+            </div>
+            <div class="modal-footer border-0">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmAssignSelectedBtn">
+                    <i class="bi bi-check-lg me-1"></i> Yes, assign
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
     let currentSubjectId = null;
     let currentModalMode = 'view'; // 'view', 'unassign', or 'edit'
     let currentUnassignInstructorIds = [];
     let currentUnassignInstructorNames = [];
+    let currentAssignInstructorIds = [];
+    let currentAssignInstructorNames = [];
 
     // Function to show Bootstrap toasts (top-right floating) for consistency
     function showNotification(type, message) {
@@ -663,9 +690,11 @@
                         });
                     });
                     assignSelectedBtn?.addEventListener('click', () => {
-                        const ids = Array.from(document.querySelectorAll('.available-checkbox:checked')).map(el => el.value);
+                        const checkedEls = Array.from(document.querySelectorAll('.available-checkbox:checked'));
+                        const ids = checkedEls.map(el => el.value);
+                        const names = checkedEls.map(el => el.nextElementSibling?.textContent?.trim() || '');
                         if (ids.length === 0) { showNotification('error', 'No instructors selected'); return; }
-                        assignMultipleInstructors(currentSubjectId, ids, assignSelectedBtn);
+                        confirmAssignInstructor(ids, names);
                     });
                     // focus the search field for keyboard users
                     const firstSearch = document.getElementById('availableSearchInput');
@@ -846,6 +875,32 @@
                 currentUnassignInstructorNames = [];
             });
         });
+
+        // Confirm Assign Selected button handler
+        const confirmAssignBtn = document.getElementById('confirmAssignSelectedBtn');
+        if (confirmAssignBtn) {
+            confirmAssignBtn.addEventListener('click', function() {
+                if (!currentAssignInstructorIds || currentAssignInstructorIds.length === 0 || !currentSubjectId) {
+                    showNotification('error', 'Missing instructor or subject information');
+                    return;
+                }
+                this.disabled = true;
+                const origHtml = this.innerHTML;
+                this.innerHTML = '<span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>Processing...';
+                const modalInstance = bootstrap.Modal.getInstance(document.getElementById('confirmAssignSelectionModal'));
+                modalInstance.hide();
+
+                // If triggered from form submission, use pendingFormSubmitButton as the target button for spinner; otherwise just use this button
+                const targetBtn = pendingFormSubmitButton || this;
+                assignMultipleInstructors(currentSubjectId, currentAssignInstructorIds, targetBtn);
+                // Reset pending state
+                pendingFormSubmitButton = null;
+                currentAssignInstructorIds = [];
+                currentAssignInstructorNames = [];
+                this.disabled = false;
+                this.innerHTML = origHtml;
+            });
+        }
     });
 
     function prepareAssignModal(subjectId, subjectName) {
@@ -875,60 +930,13 @@
                 // Get the form data
                 const formData = new FormData(form);
                 
-                // Send the request
-                fetch('{{ route("gecoordinator.assignInstructor") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: formData
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => { throw err; });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        // Close the modal using Bootstrap
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('confirmAssignModal'));
-                        if (modal) {
-                            modal.hide();
-                        }
-                        
-                        // Show success message using Bootstrap alert
-                        showNotification('success', data.message || 'Instructor assigned successfully!');
-                        
-                        // Refresh the modal and the table count after a short delay to update the instructor lists
-                        setTimeout(() => {
-                            const sid = document.getElementById('assign_subject_id').value || '';
-                            if (sid) {
-                                openInstructorListModal(sid, document.getElementById('instructorListSubjectName').textContent, 'edit');
-                                refreshSubjectInstructorCount(sid);
-                            } else {
-                                window.location.reload();
-                            }
-                        }, 800);
-                    } else {
-                        throw new Error(data.message || 'Failed to assign instructor');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    
-                    // Show error message using Bootstrap alert
-                    showNotification('error', error.message || 'Failed to assign instructor');
-                })
-                .finally(() => {
-                    // Restore button state
-                    if (submitButton) {
-                        submitButton.disabled = false;
-                        submitButton.innerHTML = originalButtonText;
-                    }
-                });
+                // Save the context so we can use the confirmation modal
+                pendingFormSubmitButton = submitButton;
+                // Open confirmation modal to confirm assignment
+                const instructorId = formData.get('instructor_id');
+                const instructorName = document.querySelector('#instructor_select option:checked')?.text || '';
+                confirmAssignInstructor(instructorId, instructorName);
+                return; // wait for confirmation
             });
         }
     });
@@ -945,6 +953,34 @@
             yearView.classList.remove('d-none');
             fullView.classList.add('d-none');
         }
+    }
+
+    let pendingFormSubmitButton = null; // used when confirm comes from the form submission
+
+    function confirmAssignInstructor(instructorIdOrArray, instructorNameOrArray = null) {
+        if (Array.isArray(instructorIdOrArray)) {
+            currentAssignInstructorIds = instructorIdOrArray;
+            currentAssignInstructorNames = Array.isArray(instructorNameOrArray) ? instructorNameOrArray : [];
+        } else {
+            currentAssignInstructorIds = [instructorIdOrArray];
+            currentAssignInstructorNames = [instructorNameOrArray || ''];
+        }
+
+        // Update modal title and list
+        document.getElementById('assignModalSubjectName').textContent = document.getElementById('instructorListSubjectName')?.textContent || '';
+        const list = document.getElementById('assignList');
+        if (list) {
+            list.innerHTML = '';
+            currentAssignInstructorNames.forEach(n => {
+                const li = document.createElement('li');
+                li.textContent = n;
+                list.appendChild(li);
+            });
+        }
+
+        // Show confirm assign modal
+        const modal = new bootstrap.Modal(document.getElementById('confirmAssignSelectionModal'), { backdrop: false });
+        modal.show();
     }
 
     function assignMultipleInstructors(subjectId, instructorIds, button) {
