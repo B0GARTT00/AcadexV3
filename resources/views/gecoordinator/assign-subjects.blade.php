@@ -92,8 +92,19 @@
             <h1 class="text-3xl font-bold mb-2 text-gray-800 flex items-center">
                 <i class="bi bi-journal-plus text-success me-3 fs-2"></i>
                 Manage Courses
+                <span class="badge bg-info ms-3" data-bs-toggle="tooltip" data-bs-placement="right" 
+                      title="Click 'Assign/Unassign' on any subject to manage instructors">
+                    <i class="bi bi-question-circle"></i>
+                </span>
             </h1>
+<<<<<<< HEAD
             <p class="text-muted mb-0 small">Assign subjects to instructors and manage course assignments</p>
+=======
+            <p class="text-muted mb-0 small">
+                <i class="bi bi-info-circle me-1"></i>
+                View and manage instructor assignments for each subject. Click the "Assign/Unassign" button to add or remove instructors.
+            </p>
+>>>>>>> parent of e1d79af (last touch of GE coords UI)
         </div>
 
         {{-- Flash messages (server-side) will be displayed as toasts on load via JS --}}
@@ -120,10 +131,20 @@
                 
                 <!-- View Mode Switcher -->
                 <div class="d-flex align-items-center">
+<<<<<<< HEAD
                     <label for="viewMode" class="me-2 fw-semibold">View Mode:</label>
                     <select id="viewMode" class="form-select form-select-sm w-auto" onchange="toggleViewMode()">
                         <option value="year" selected>Year View</option>
                         <option value="full">Full View</option>
+=======
+                    <label for="viewMode" class="me-2 fw-semibold">
+                        <i class="bi bi-eye me-1"></i>View Mode:
+                    </label>
+                    <select id="viewMode" class="form-select form-select-sm w-auto" onchange="toggleViewMode()"
+                            data-bs-toggle="tooltip" title="Year View: See subjects by year level. Full View: See all subjects at once.">
+                        <option value="year" selected>📚 Year View</option>
+                        <option value="full">📋 Full View</option>
+>>>>>>> parent of e1d79af (last touch of GE coords UI)
                     </select>
                 </div>
             </div>
