@@ -167,28 +167,19 @@
                                             <td>{{ $subject->subject_code }}</td>
                                             <td>{{ $subject->subject_description }}</td>
                                             <td class="text-center">
-                                                <button class="btn btn-sm btn-outline-primary" 
+                                                <button class="btn btn-sm btn-outline-success" 
                                                         onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'view')">
-                                                    <i class="bi bi-people-fill me-1"></i>
+                                                    <i class="bi bi-people-fill text-success me-1"></i>
                                                     <span>View ({{ $subject->instructors_count ?? $subject->instructors->count() }})</span>
                                                 </button>
                                             </td>
                                             <td class="text-nowrap">
                                                 <div class="d-flex">
-                                                    <button class="btn btn-sm btn-success me-2" 
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#confirmAssignModal"
-                                                            onclick="prepareAssignModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}')"
-                                                            title="Assign new instructor">
-                                                        <i class="bi bi-person-plus"></i> Assign
+                                                    <button class="btn btn-sm btn-success me-2"
+                                                            onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'edit')"
+                                                            title="Edit Instructors">
+                                                        <i class="bi bi-pencil-square"></i> Edit
                                                     </button>
-                                                    @if($subject->instructors->isNotEmpty())
-                                                        <button class="btn btn-sm btn-danger" 
-                                                                onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'unassign')"
-                                                                title="Unassign instructors">
-                                                            <i class="bi bi-person-dash"></i> Unassign
-                                                        </button>
-                                                    @endif
                                                 </div>
                                             </td>
                                         </tr>
@@ -243,30 +234,20 @@
                                                     <td class="fw-medium">{{ $subject->subject_code }}</td>
                                                     <td>{{ $subject->subject_description }}</td>
                                                     <td class="text-center">
-                                                        <button class="btn btn-sm btn-outline-primary" 
+                                                        <button class="btn btn-sm btn-outline-success" 
                                                                 onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'view')">
-                                                            <i class="bi bi-people-fill me-1"></i>
+                                                            <i class="bi bi-people-fill text-success me-1"></i>
                                                             <span>View ({{ $subject->instructors_count ?? $subject->instructors->count() }})</span>
                                                         </button>
                                                     </td>
                                                     <td class="text-center">
                                                         <div class="d-flex gap-2 justify-content-center">
                                                             <button
-                                                                data-bs-toggle="modal"
-                                                                data-bs-target="#confirmAssignModal"
-                                                                onclick="prepareAssignModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}')"
+                                                                onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}', 'edit')"
                                                                 class="btn btn-success btn-sm" 
-                                                                title="Assign Instructor">
-                                                                <i class="bi bi-person-plus me-1"></i> Assign
+                                                                title="Edit Instructors">
+                                                                <i class="bi bi-pencil-square me-1"></i> Edit
                                                             </button>
-                                                            @if($subject->instructors->count() > 0)
-                                                                <button
-                                                                    onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}', 'unassign')"
-                                                                    class="btn btn-danger btn-sm" 
-                                                                    title="Unassign Instructor">
-                                                                    <i class="bi bi-x-circle me-1"></i> Unassign
-                                                                </button>
-                                                            @endif
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -295,7 +276,7 @@
 <div class="modal fade" id="instructorListModal" tabindex="-1" aria-labelledby="instructorListModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-4 shadow">
-            <div class="modal-header bg-primary text-white">
+            <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="instructorListModalLabel">
                     <span id="instructorListModalTitle">Instructors</span>
                     <span id="instructorListSubjectName" class="text-light opacity-75 ms-2"></span>
@@ -386,7 +367,7 @@
 @push('scripts')
 <script>
     let currentSubjectId = null;
-    let currentModalMode = 'view'; // 'view' or 'unassign'
+    let currentModalMode = 'view'; // 'view', 'unassign', or 'edit'
     let currentUnassignInstructorId = null;
     let currentUnassignInstructorName = null;
 
@@ -429,10 +410,12 @@
         currentModalMode = mode; // Store the mode (view or unassign)
         document.getElementById('instructorListSubjectName').textContent = subjectName;
         
-        // Update modal title based on mode
+        // Update modal title and initial content based on mode
         const modalTitle = document.getElementById('instructorListModalTitle');
         if (mode === 'unassign') {
             modalTitle.innerHTML = '<i class="bi bi-person-dash me-2"></i> Unassign Instructor';
+        } else if (mode === 'edit') {
+            modalTitle.innerHTML = '<i class="bi bi-pencil-square me-2"></i> Edit Instructors';
         } else {
             modalTitle.innerHTML = '<i class="bi bi-people-fill me-2"></i> Assigned Instructors';
         }
@@ -441,7 +424,7 @@
         const instructorList = document.getElementById('instructorList');
         instructorList.innerHTML = `
             <div class="text-center py-4">
-                <div class="spinner-border text-primary" role="status">
+                <div class="spinner-border text-success" role="status">
                     <span class="visually-hidden">Loading...</span>
                 </div>
                 <p class="mt-2 mb-0">Loading instructors...</p>
@@ -454,6 +437,36 @@
         modal.show();
         
         // Fetch instructors for this subject
+        if (mode === 'edit') {
+            // In edit mode, fetch both assigned and available instructors
+            Promise.all([
+                fetch(`/gecoordinator/subjects/${subjectId}/instructors`),
+                fetch('/gecoordinator/available-instructors')
+            ])
+            .then(([assignedResp, availableResp]) => {
+                if (!assignedResp.ok) {
+                    return assignedResp.json().then(err => { throw new Error(err.message || 'Failed to load assigned instructors'); }).catch(() => { throw new Error('Failed to load assigned instructors'); });
+                }
+                if (!availableResp.ok) {
+                    return availableResp.json().then(err => { throw new Error(err.message || 'Failed to load available instructors'); }).catch(() => { throw new Error('Failed to load available instructors'); });
+                }
+                return Promise.all([assignedResp.json(), availableResp.json()]);
+            })
+            .then(([instructors, available]) => {
+                renderEditInstructorList(instructors, available);
+            })
+            .catch(error => {
+                console.error('Error loading instructors:', error);
+                const message = error.message || 'Failed to load instructors. Please try again.';
+                instructorList.innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        ${message}
+                    </div>`;
+            });
+            return;
+        }
+
         fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
             .then(response => {
                 if (!response.ok) {
@@ -486,7 +499,7 @@
                     
                     const instructorInfo = `
                         <div class="d-flex align-items-center">
-                            <i class="bi bi-person-fill text-primary me-2"></i>
+                            <i class="bi bi-person-fill text-success me-2"></i>
                             <span>${instructor.name}</span>
                         </div>`;
                     
@@ -517,6 +530,132 @@
                     </div>`;
             });
     }
+
+        function renderEditInstructorList(assignedInstructors, availableInstructors) {
+            const instructorList = document.getElementById('instructorList');
+            instructorList.innerHTML = '';
+
+            // Assigned list with unassign buttons
+            if (assignedInstructors.length === 0) {
+                instructorList.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        No instructors assigned to this subject.
+                    </div>`;
+            } else {
+                const listGroup = document.createElement('div');
+                listGroup.className = 'list-group mb-3';
+                assignedInstructors.forEach(instructor => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item d-flex justify-content-between align-items-center';
+                    const instructorInfo = `
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-person-fill text-success me-2"></i>
+                            <span>${instructor.name}</span>
+                        </div>`;
+                    item.innerHTML = instructorInfo + `
+                        <button class="btn btn-outline-danger btn-sm" 
+                                onclick="confirmUnassignInstructor(${instructor.id}, '${instructor.name.replace(/'/g, "\\'")}')">
+                            <i class="bi bi-x-lg"></i>
+                        </button>`;
+                    listGroup.appendChild(item);
+                });
+                instructorList.appendChild(listGroup);
+            }
+
+            // Build assign form (only show instructors that are not already assigned)
+            const assignedIds = assignedInstructors.map(i => i.id);
+            const filteredAvailable = availableInstructors.filter(i => !assignedIds.includes(i.id));
+
+            const assignCard = document.createElement('div');
+            assignCard.className = 'card border-0';
+            const assignBody = document.createElement('div');
+            assignBody.className = 'card-body p-0';
+
+            if (filteredAvailable.length > 0) {
+                const formDiv = document.createElement('div');
+                formDiv.className = 'd-flex gap-2 align-items-center';
+
+                const select = document.createElement('select');
+                select.className = 'form-select form-select-sm w-100';
+                select.id = 'modal_assign_select';
+                const defaultOption = new Option('-- Choose Instructor --', '');
+                select.appendChild(defaultOption);
+                filteredAvailable.forEach(instr => {
+                    const opt = new Option(instr.name, instr.id);
+                    select.appendChild(opt);
+                });
+
+                const assignBtn = document.createElement('button');
+                assignBtn.className = 'btn btn-success btn-sm';
+                assignBtn.type = 'button';
+                assignBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i> Assign';
+                assignBtn.onclick = function() {
+                    const instructorId = select.value;
+                    if (!instructorId) {
+                        showNotification('error', 'Please select an instructor to assign.');
+                        return;
+                    }
+                    assignInstructorInline(currentSubjectId, instructorId, assignBtn);
+                };
+
+                formDiv.appendChild(select);
+                formDiv.appendChild(assignBtn);
+                assignBody.appendChild(formDiv);
+                assignCard.appendChild(assignBody);
+                instructorList.appendChild(assignCard);
+            } else {
+                // No available instructors
+                const noAvailableAlert = document.createElement('div');
+                noAvailableAlert.className = 'alert alert-secondary';
+                noAvailableAlert.innerHTML = '<i class="bi bi-info-circle me-2"></i> No available instructors to assign.';
+                assignCard.appendChild(assignBody);
+                assignBody.appendChild(noAvailableAlert);
+                instructorList.appendChild(assignCard);
+            }
+        }
+
+        function assignInstructorInline(subjectId, instructorId, button) {
+            button.disabled = true;
+            const orig = button.innerHTML;
+            button.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span>Assigning...';
+
+            const formData = new FormData();
+            formData.append('subject_id', subjectId);
+            formData.append('instructor_id', instructorId);
+            fetch('{{ route("gecoordinator.assignInstructor") }}', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => { throw err; });
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    showNotification('success', data.message || 'Instructor assigned successfully!');
+                    // Refresh the modal content
+                    openInstructorListModal(subjectId, document.getElementById('instructorListSubjectName').textContent, 'edit');
+                } else {
+                    throw new Error(data.message || 'Failed to assign instructor');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showNotification('error', error.message || 'Failed to assign instructor');
+            })
+            .finally(() => {
+                button.disabled = false;
+                button.innerHTML = orig;
+            });
+        }
     
     function closeInstructorListModal() {
         const modal = bootstrap.Modal.getInstance(document.getElementById('instructorListModal'));
@@ -584,9 +723,10 @@
                     throw new Error(data.message || 'Failed to unassign instructor');
                 }
                 showNotification('success', 'Instructor has been unassigned successfully.');
+                // Refresh the modal content instead of reloading the page
                 setTimeout(() => {
-                    window.location.reload();
-                }, 1500);
+                    openInstructorListModal(currentSubjectId, document.getElementById('instructorListSubjectName').textContent, 'edit');
+                }, 800);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -605,80 +745,8 @@
     });
 
     function prepareAssignModal(subjectId, subjectName) {
-        console.log('prepareAssignModal called with:', subjectId, subjectName);
-        currentSubjectId = subjectId;
-        document.getElementById('assignSubjectName').textContent = subjectName;
-        document.getElementById('assign_subject_id').value = subjectId;
-        
-        // Reset the select first
-        const select = document.getElementById('instructor_select');
-        console.log('Select element found:', select);
-        const defaultOption = select.options[0];
-        select.innerHTML = '';
-        select.appendChild(defaultOption);
-        
-        // Show loading state
-        const submitBtn = document.querySelector('#assignInstructorForm button[type="submit"]');
-        console.log('Submit button found:', submitBtn);
-        if (submitBtn) {
-            submitBtn.disabled = true;
-        }
-        select.disabled = true;
-        
-        console.log('Fetching instructors...');
-        // Fetch all instructors
-        fetch('/gecoordinator/available-instructors')
-            .then(response => {
-                console.log('Available instructors response:', response.status);
-                if (!response.ok) {
-                    return response.json().then(err => { throw new Error(err.message || err.error || 'Failed to load available instructors'); }).catch(() => { throw new Error('Failed to load available instructors'); });
-                }
-                return response.json();
-            })
-            .then(instructors => {
-                console.log('Available instructors:', instructors);
-                // Fetch assigned instructors for this subject
-                    return fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
-                    .then(response => {
-                        console.log('Assigned instructors response:', response.status);
-                        if (!response.ok) {
-                            return response.json().then(err => { throw new Error(err.message || err.error || 'Failed to load assigned instructors'); }).catch(() => { throw new Error('Failed to load assigned instructors'); });
-                        }
-                        return response.json();
-                    })
-                    .then(assignedInstructors => {
-                        console.log('Assigned instructors:', assignedInstructors);
-                        const assignedIds = assignedInstructors.map(i => i.id);
-                        
-                        // Add available instructors to select
-                        instructors.forEach(instructor => {
-                            if (!assignedIds.includes(instructor.id)) {
-                                const option = new Option(instructor.name, instructor.id);
-                                select.add(option);
-                            }
-                        });
-                        
-                        console.log('Final select options count:', select.options.length);
-                        
-                        // Enable controls if there are available instructors
-                        if (select.options.length > 1) {
-                            select.disabled = false;
-                            if (submitBtn) {
-                                submitBtn.disabled = false;
-                            }
-                        } else {
-                            const option = new Option('No available instructors', '');
-                            option.disabled = true;
-                            option.selected = true;
-                            select.add(option);
-                        }
-                    });
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                showNotification('error', error.message || 'Error loading instructors. Please try again.');
-                // Bootstrap modal will handle closing automatically
-            });
+        // For backward compatibility, open the instructor list modal in 'edit' mode
+        openInstructorListModal(subjectId, subjectName, 'edit');
     }
     
     // Handle form submission for assigning instructors
