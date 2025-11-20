@@ -59,9 +59,11 @@ class GECoordinatorController extends Controller
             abort(403);
         }
         
-        // Ensure the subject is a GE subject
-        if ($subject->course_id != 1) {
-            return response()->json([], 403);
+        // Ensure the subject is a GE subject.
+        // Allow subjects that are explicitly marked as general education (course_id == 1)
+        // or are marked as universal (is_universal flag), which the GE Coordinator manages.
+        if (!($subject->course_id == 1 || ($subject->is_universal ?? false))) {
+            return response()->json(['error' => 'Subject is not managed by GE Coordinator'], 403);
         }
         
         $instructors = $subject->instructors->map(function($instructor) {
@@ -383,12 +385,16 @@ class GECoordinatorController extends Controller
             'instructor_id' => 'required|exists:users,id',
         ]);
 
+        // Only allow toggling assignments on GE subjects (course_id == 1) or universal subjects.
         $subject = Subject::where('id', $request->subject_id)
-            ->where('course_id', 2) // Only General Education subjects for GE Coordinator
+            ->where(function ($query) {
+                $query->where('course_id', 1)
+                      ->orWhere('is_universal', true);
+            })
             ->firstOrFail();
         
-        // Ensure the subject is managed by GE Coordinator (course_id = 2)
-        if ($subject->course_id != 2) {
+        // Ensure the subject is managed by GE Coordinator (course_id = 1 OR is_universal)
+        if (!($subject->course_id == 1 || ($subject->is_universal ?? false))) {
             return response()->json(['error' => 'Only General Education subjects can be managed by GE Coordinator.'], 403);
         }
 

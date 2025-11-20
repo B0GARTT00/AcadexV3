@@ -21,6 +21,12 @@ class EnsureAcademicPeriodSet
             !$request->is('select-academic-period') &&
             !$request->is('set-academic-period')
         ) {
+            // Return JSON for AJAX requests to avoid returning HTML content that causes
+            // fetch().json() to throw parse errors in the frontend.
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Academic period not selected'], 403);
+            }
+
             return redirect()->route('select.academicPeriod');
         }
 

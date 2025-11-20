@@ -456,7 +456,15 @@
         // Fetch instructors for this subject
         fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
             .then(response => {
-                if (!response.ok) throw new Error('Failed to load instructors');
+                if (!response.ok) {
+                    // Try to parse JSON error if available
+                    return response.json().then(err => {
+                        const msg = err.message || err.error || 'Failed to load instructors';
+                        throw new Error(msg);
+                    }).catch(() => {
+                        throw new Error('Failed to load instructors');
+                    });
+                }
                 return response.json();
             })
             .then(instructors => {
@@ -501,10 +509,11 @@
             })
             .catch(error => {
                 console.error('Error loading instructors:', error);
+                const message = error.message || 'Failed to load instructors. Please try again.';
                 instructorList.innerHTML = `
                     <div class="alert alert-danger">
                         <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                        Failed to load instructors. Please try again.
+                        ${message}
                     </div>`;
             });
     }
@@ -621,14 +630,20 @@
         fetch('/gecoordinator/available-instructors')
             .then(response => {
                 console.log('Available instructors response:', response.status);
+                if (!response.ok) {
+                    return response.json().then(err => { throw new Error(err.message || err.error || 'Failed to load available instructors'); }).catch(() => { throw new Error('Failed to load available instructors'); });
+                }
                 return response.json();
             })
             .then(instructors => {
                 console.log('Available instructors:', instructors);
                 // Fetch assigned instructors for this subject
-                return fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
+                    return fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
                     .then(response => {
                         console.log('Assigned instructors response:', response.status);
+                        if (!response.ok) {
+                            return response.json().then(err => { throw new Error(err.message || err.error || 'Failed to load assigned instructors'); }).catch(() => { throw new Error('Failed to load assigned instructors'); });
+                        }
                         return response.json();
                     })
                     .then(assignedInstructors => {
@@ -661,7 +676,7 @@
             })
             .catch(error => {
                 console.error('Error:', error);
-                showNotification('error', 'Error loading instructors. Please try again.');
+                showNotification('error', error.message || 'Error loading instructors. Please try again.');
                 // Bootstrap modal will handle closing automatically
             });
     }
