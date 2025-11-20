@@ -138,49 +138,72 @@
 
         {{-- Chairperson --}}
         @if ($role === 1)
+            @php
+                $myTemplateRequests = \App\Models\StructureTemplateRequest::where('chairperson_id', Auth::id())->count();
+                $myPendingRequests = \App\Models\StructureTemplateRequest::where('chairperson_id', Auth::id())->pending()->count();
+                $isAcademicActive = request()->routeIs('chairperson.instructors') || request()->routeIs('chairperson.assign-subjects') || request()->routeIs('curriculum.selectSubjects') || request()->routeIs('chairperson.studentsByYear') || request()->routeIs('chairperson.viewGrades');
+                $isReportsActive = request()->routeIs('chairperson.reports.*') || request()->routeIs('chairperson.course_outcomes.*');
+            @endphp
+
             <div class="sidebar-section">
                 <h6 class="px-3 mb-2">DEPARTMENT MANAGEMENT</h6>
                 <ul class="nav nav-pills flex-column">
+                    {{-- Academic Records dropdown --}}
                     <li class="nav-item">
-                        <a href="{{ route('chairperson.instructors') }}" 
-                           class="nav-link {{ request()->routeIs('chairperson.instructors') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-people me-3"></i>
-                            <span>Manage Instructors</span>
+                        <a class="nav-link d-flex align-items-center sidebar-link academic-records-toggle {{ $isAcademicActive ? 'active' : '' }}" 
+                           onclick="toggleAcademicRecordsMenu()"
+                           style="cursor: pointer;">
+                            <i class="bi bi-journal-bookmark me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                            <span style="flex: 1;">Academic Records</span>
+                            <i class="bi bi-chevron-down ms-auto academic-records-chevron {{ $isAcademicActive ? 'rotated' : '' }}" style="flex-shrink: 0;"></i>
                         </a>
+                        <div class="academic-records-submenu {{ $isAcademicActive ? 'show' : '' }}" id="academicRecordsSubmenu">
+                            <ul class="nav nav-pills flex-column ms-3">
+                                <li class="nav-item">
+                                    <a href="{{ route('chairperson.instructors') }}" 
+                                       class="nav-link {{ request()->routeIs('chairperson.instructors') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-people me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                                        <span>Manage Instructors</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('chairperson.assign-subjects') }}" 
+                                       class="nav-link {{ request()->routeIs('chairperson.assign-subjects') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-journal-plus me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                                        <span>Manage Courses</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('curriculum.selectSubjects') }}"
+                                       class="nav-link {{ request()->routeIs('curriculum.selectSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-file-earmark-arrow-up me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                                        <span>Import Courses</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('chairperson.studentsByYear') }}" 
+                                       class="nav-link {{ request()->routeIs('chairperson.studentsByYear') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-person-lines-fill me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                                        <span>Manage Students</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('chairperson.viewGrades') }}"     
+                                       class="nav-link {{ request()->routeIs('chairperson.viewGrades') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-clipboard-data me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                                        <span>View Grades</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
+                </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h6 class="px-3 mb-2">DATA MANAGEMENT</h6>
+                <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
-                        <a href="{{ route('chairperson.assign-subjects') }}" 
-                           class="nav-link {{ request()->routeIs('chairperson.assign-subjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-journal-plus me-3"></i>
-                            <span>Assign Subjects</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('chairperson.studentsByYear') }}" 
-                           class="nav-link {{ request()->routeIs('chairperson.studentsByYear') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-person-lines-fill me-3"></i>
-                            <span>Students List</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('chairperson.viewGrades') }}"     
-                           class="nav-link {{ request()->routeIs('chairperson.viewGrades') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-clipboard-data me-3"></i>
-                            <span>View Grades</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('chairperson.course_outcomes.index') }}" 
-                           class="nav-link {{ request()->routeIs('chairperson.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-book me-3"></i>
-                            <span>Manage Course Outcome</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        @php
-                            $myTemplateRequests = \App\Models\StructureTemplateRequest::where('chairperson_id', Auth::id())->count();
-                            $myPendingRequests = \App\Models\StructureTemplateRequest::where('chairperson_id', Auth::id())->pending()->count();
-                        @endphp
                         <a href="{{ route('chairperson.structureTemplates.index') }}" 
                            class="nav-link {{ request()->routeIs('chairperson.structureTemplates.*') ? 'active' : '' }} d-flex align-items-center justify-content-between sidebar-link">
                             <div class="d-flex align-items-center" style="flex: 1; min-width: 0;">
@@ -194,6 +217,13 @@
                             </div>
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.course_outcomes.index') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-book me-3"></i>
+                            <span>Manage Course Outcome</span>
+                        </a>
+                    </li>
                 </ul>
             </div>
 
@@ -201,38 +231,45 @@
                 <h6 class="px-3 mb-2">REPORTS</h6>
                 <ul class="nav nav-pills flex-column">
                     <li class="nav-item">
-                        <a href="{{ route('chairperson.reports.co-program') }}" 
-                           class="nav-link {{ request()->routeIs('chairperson.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-diagram-3 me-3"></i>
-                            <span>Program Outcomes Summary</span>
+                        <a class="nav-link d-flex align-items-center sidebar-link chairperson-reports-toggle {{ $isReportsActive ? 'active' : '' }}" 
+                           onclick="toggleChairpersonReportsMenu()"
+                           style="cursor: pointer;">
+                            <i class="bi bi-bar-chart-line me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                            <span style="flex: 1;">Reports</span>
+                            <i class="bi bi-chevron-down ms-auto chairperson-reports-chevron {{ $isReportsActive ? 'rotated' : '' }}" style="flex-shrink: 0;"></i>
                         </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('chairperson.reports.co-course') }}" 
-                           class="nav-link {{ request()->routeIs('chairperson.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-book me-3"></i>
-                            <span>Course Outcomes Summary</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a href="{{ route('chairperson.reports.co-student') }}" 
-                           class="nav-link {{ request()->routeIs('chairperson.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-person-lines-fill me-3"></i>
-                            <span>Student Outcomes Summary</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-            <div class="sidebar-section">
-                <h6 class="px-3 mb-2">DATA MANAGEMENT</h6>
-                <ul class="nav nav-pills flex-column">
-                    <li class="nav-item">
-                        <a href="{{ route('curriculum.selectSubjects') }}"
-                           class="nav-link {{ request()->routeIs('curriculum.selectSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-file-earmark-arrow-up me-3"></i>
-                            <span>Import GE Courses</span>
-                        </a>
+                        <div class="chairperson-reports-submenu {{ $isReportsActive ? 'show' : '' }}" id="chairpersonReportsSubmenu">
+                            <ul class="nav nav-pills flex-column ms-3">
+                                <li class="nav-item">
+                                    <a href="{{ route('chairperson.course_outcomes.index') }}" 
+                                       class="nav-link {{ request()->routeIs('chairperson.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-book me-3"></i>
+                                        <span>Manage Course Outcome</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('chairperson.reports.co-program') }}" 
+                                       class="nav-link {{ request()->routeIs('chairperson.reports.co-program') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-diagram-3 me-3"></i>
+                                        <span>Program Outcomes Summary</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('chairperson.reports.co-course') }}" 
+                                       class="nav-link {{ request()->routeIs('chairperson.reports.co-course') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-book me-3"></i>
+                                        <span>Course Outcomes Summary</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('chairperson.reports.co-student') }}" 
+                                       class="nav-link {{ request()->routeIs('chairperson.reports.co-student') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-person-lines-fill me-3"></i>
+                                        <span>Student Outcomes Summary</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
                 </ul>
             </div>

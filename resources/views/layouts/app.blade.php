@@ -372,6 +372,27 @@
         }
         .academic-records-chevron.rotated { transform: rotate(180deg); }
         
+        /* Chairperson Reports submenu styles */
+        .chairperson-reports-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            will-change: max-height;
+        }
+        .chairperson-reports-submenu.show {
+            max-height: 400px;
+            transition: max-height 0.3s ease-in;
+        }
+
+        .chairperson-reports-chevron {
+            transition: transform 0.2s ease;
+            font-size: 0.8rem;
+            display: inline-block;
+            width: 16px;
+            text-align: center;
+        }
+        .chairperson-reports-chevron.rotated { transform: rotate(180deg); }
+        
         /* Prevent sidebar from affecting header */
         .sidebar-wrapper {
             contain: layout style paint;
@@ -795,6 +816,33 @@
             if (isStudentsPage) {
                 const submenu = document.getElementById('studentsSubmenu');
                 const chevron = document.querySelector('.students-chevron');
+                if (submenu && chevron) {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
+                }
+            }
+        });
+        
+        // Chairperson Reports Submenu Handler
+        function toggleChairpersonReportsMenu() {
+            const submenu = document.getElementById('chairpersonReportsSubmenu');
+            const chevron = document.querySelector('.chairperson-reports-chevron');
+            if (submenu && chevron) {
+                if (submenu.classList.contains('show')) {
+                    submenu.classList.remove('show');
+                    chevron.classList.remove('rotated');
+                } else {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
+                }
+            }
+        }
+        // Auto-expand if on Chairperson Reports or Course Outcome pages
+        document.addEventListener('DOMContentLoaded', function() {
+            const isChairpersonReports = window.location.pathname.includes('/chairperson/reports') || window.location.pathname.includes('/chairperson/course_outcomes');
+            if (isChairpersonReports) {
+                const submenu = document.getElementById('chairpersonReportsSubmenu');
+                const chevron = document.querySelector('.chairperson-reports-chevron');
                 if (submenu && chevron) {
                     submenu.classList.add('show');
                     chevron.classList.add('rotated');
