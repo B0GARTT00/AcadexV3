@@ -53,4 +53,16 @@ class UserDisableEnableTest extends TestCase
             $this->assertEquals(9999, (new \Carbon\Carbon($user->disabled_until))->year);
         }
     }
+
+    public function test_admin_cannot_disable_self()
+    {
+        $admin = User::factory()->create(['role' => 3]);
+
+        $this->actingAs($admin)
+            ->postJson(route('admin.users.disable', ['user' => $admin->id]), ['duration' => '1_week'])
+            ->assertStatus(403)
+            ->assertJson(['success' => false]);
+
+        $this->assertDatabaseHas('users', ['id' => $admin->id, 'is_active' => true]);
+    }
 }

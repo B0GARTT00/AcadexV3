@@ -246,14 +246,25 @@
                                 </td>
                                 <td class="text-center">
                                     @if($user->is_active)
-                                        <button type="button" class="btn btn-sm btn-danger" onclick="openChooseDisableModal({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Disable Account">
-                                            <i class="bi bi-person-slash"></i> Disable
-                                        </button>
+                                        @if(auth()->id() !== $user->id)
+                                            <button type="button" class="btn btn-sm btn-danger" onclick="openChooseDisableModal({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Disable Account">
+                                                <i class="bi bi-person-slash"></i> Disable
+                                            </button>
+                                        @else
+                                            {{-- Current user cannot disable themselves; show disabled state with tooltip --}}
+                                            <button type="button" class="btn btn-sm btn-danger disabled" title="You cannot disable your own account" disabled>
+                                                <i class="bi bi-person-slash"></i> Disable
+                                            </button>
+                                        @endif
                                     @else
                                         <span class="badge bg-secondary px-3 py-2">Disabled</span>
-                                        <button type="button" class="btn btn-sm btn-success ms-2" onclick="enableUser({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Re-enable Account">
-                                            <i class="bi bi-person-plus"></i> Enable
-                                        </button>
+                                        @if(auth()->id() !== $user->id)
+                                            <button type="button" class="btn btn-sm btn-success ms-2" onclick="enableUser({{ $user->id }}, '{{ addslashes($user->name) }}')" title="Re-enable Account">
+                                                <i class="bi bi-person-plus"></i> Enable
+                                            </button>
+                                        @else
+                                            {{-- Self-enabled account: no action (user can't re-enable themself while logged out) --}}
+                                        @endif
                                     @endif
                                 </td>
                             </tr>

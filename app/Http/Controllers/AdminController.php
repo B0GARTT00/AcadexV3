@@ -3593,6 +3593,14 @@ class AdminController extends Controller
     {
         Gate::authorize('admin');
 
+        // Prevent an admin from disabling their own account
+        if (Auth::id() === $user->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot disable your own account.'
+            ], 403);
+        }
+
         $request->validate([
             'duration' => 'required|in:1_week,1_month,indefinite,custom',
             'custom_disable_datetime' => 'required_if:duration,custom|date|after:now',
