@@ -264,14 +264,10 @@
             <h1 class="text-3xl font-bold mb-2 text-gray-800 flex items-center">
                 <i class="bi bi-journal-plus text-success me-3 fs-2"></i>
                 Manage Courses
-                <span class="badge bg-info ms-3" data-bs-toggle="tooltip" data-bs-placement="right" 
-                      title="Click 'Assign/Unassign' on any subject to manage instructors">
-                    <i class="bi bi-question-circle"></i>
-                </span>
             </h1>
             <p class="text-muted mb-0 small">
                 <i class="bi bi-info-circle me-1"></i>
-                View and manage instructor assignments for each subject. Click the "Assign/Unassign" button to add or remove instructors.
+                View and manage instructor assignments for each course. Click the "Edit" button to add or remove instructors.
             </p>
         </div>
 
@@ -304,8 +300,8 @@
                     </label>
                     <select id="viewMode" class="form-select form-select-sm w-auto" onchange="toggleViewMode()"
                             data-bs-toggle="tooltip" title="Year View: See subjects by year level. Full View: See all subjects at once.">
-                        <option value="year" selected>📚 Year View</option>
-                        <option value="full">📋 Full View</option>
+                        <option value="year" selected>Year View</option>
+                        <option value="full">Full View</option>
                     </select>
                 </div>
             </div>
@@ -329,7 +325,7 @@
                                     <tr>
                                         <th>Course Code</th>
                                         <th>Description</th>
-                                        <th>Assigned Instructor</th>
+                                        <th class="text-center">Assigned Instructor</th>
                                         <th class="text-center">Action</th>
                                     </tr>
                                 </thead>
@@ -346,12 +342,12 @@
                                                     <span>View (<span class="view-count">{{ $subject->instructors_count ?? $subject->instructors->count() }}</span>)</span>
                                                 </button>
                                             </td>
-                                            <td class="text-nowrap">
-                                                <div class="d-flex">
-                                                        <button class="btn btn-sm btn-success me-2 subject-edit-btn"
-                                                            data-subject-id="{{ $subject->id }}"
-                                                            onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'edit')"
-                                                            title="Edit Instructors">
+                                            <td class="text-center">
+                                                <div class="d-flex justify-content-center">
+                                                    <button class="btn btn-sm btn-success subject-edit-btn"
+                                                        data-subject-id="{{ $subject->id }}"
+                                                        onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'edit')"
+                                                        title="Edit Instructors">
                                                         <i class="bi bi-pencil-square"></i> Edit
                                                     </button>
                                                 </div>
@@ -398,7 +394,7 @@
                                             <tr>
                                                 <th class="border-0 py-3">Course Code</th>
                                                 <th class="border-0 py-3">Description</th>
-                                                <th class="border-0 py-3">Assigned Instructors</th>
+                                                <th class="border-0 py-3 text-center">Assigned Instructors</th>
                                                 <th class="border-0 py-3 text-center">Actions</th>
                                             </tr>
                                         </thead>
@@ -416,7 +412,7 @@
                                                         </button>
                                                     </td>
                                                     <td class="text-center">
-                                                        <div class="d-flex gap-2 justify-content-center">
+                                                        <div class="d-flex justify-content-center">
                                                             <button
                                                                 class="btn btn-success btn-sm subject-edit-btn"
                                                                 data-subject-id="{{ $subject->id }}"
