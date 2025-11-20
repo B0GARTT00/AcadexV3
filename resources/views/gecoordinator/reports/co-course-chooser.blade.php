@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-1">
-                <i class="bi bi-book text-success me-2"></i>Course CO Summary (GE Subjects)
+                <i class="bi bi-book text-success me-2"></i>Course Outcomes Summary (GE Courses)
             </h2>
             <p class="text-muted mb-0">Select a program to view GE subject Course Outcome compliance</p>
         </div>
@@ -37,7 +37,7 @@
                         </h6>
                         <div class="mt-3">
                             <a class="btn btn-success" href="{{ route('gecoordinator.reports.co-course') }}?course_id={{ $c->id }}">
-                                <i class="bi bi-arrow-right-circle me-1"></i> View Subjects
+                                <i class="bi bi-arrow-right-circle me-1"></i> View Courses
                             </a>
                         </div>
                     </div>

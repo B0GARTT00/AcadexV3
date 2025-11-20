@@ -197,7 +197,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         <thead class="table-success">
                             <tr>
                                 <th></th>
-                                <th>Subject Code</th>
+                                <th>Course Code</th>
                                 <th>Description</th>
                                 <th>Year</th>
                                 <th>Semester</th>

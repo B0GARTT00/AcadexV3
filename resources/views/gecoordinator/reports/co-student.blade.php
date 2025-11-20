@@ -5,7 +5,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-1">
-                <i class="bi bi-person-lines-fill text-success me-2"></i>Student CO Report
+                <i class="bi bi-person-lines-fill text-success me-2"></i>Student Outcomes Summary
             </h2>
                 <p class="text-dark fw-bold fs-4 mb-0">{{ $student->last_name }}, {{ $student->first_name }} {{ $student->middle_name ?? '' }}</p>
         </div>

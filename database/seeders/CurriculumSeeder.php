@@ -227,32 +227,35 @@ class CurriculumSeeder extends Seeder
 
         // Create subjects for each curriculum
         foreach ($bsitSubjects as [$year, $sem, $code, $desc]) {
-            CurriculumSubject::create([
+            CurriculumSubject::firstOrCreate([
                 'curriculum_id' => $bsitCurriculum->id,
                 'subject_code' => $code,
-                'subject_description' => $desc,
                 'year_level' => $year,
                 'semester' => $sem,
+            ], [
+                'subject_description' => $desc,
             ]);
         }
 
         foreach ($bsbaSubjects as [$year, $sem, $code, $desc]) {
-            CurriculumSubject::create([
+            CurriculumSubject::firstOrCreate([
                 'curriculum_id' => $bsbaCurriculum->id,
                 'subject_code' => $code,
-                'subject_description' => $desc,
                 'year_level' => $year,
                 'semester' => $sem,
+            ], [
+                'subject_description' => $desc,
             ]);
         }
 
         foreach ($bspsySubjects as [$year, $sem, $code, $desc]) {
-            CurriculumSubject::create([
+            CurriculumSubject::firstOrCreate([
                 'curriculum_id' => $bspsyCurriculum->id,
                 'subject_code' => $code,
-                'subject_description' => $desc,
                 'year_level' => $year,
                 'semester' => $sem,
+            ], [
+                'subject_description' => $desc,
             ]);
         }
     }

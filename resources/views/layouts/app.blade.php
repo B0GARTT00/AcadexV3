@@ -351,6 +351,27 @@
         }
         .students-chevron.rotated { transform: rotate(180deg); }
         
+        /* Academic Records submenu styles */
+        .academic-records-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+            will-change: max-height;
+        }
+        .academic-records-submenu.show {
+            max-height: 300px;
+            transition: max-height 0.3s ease-in;
+        }
+
+        .academic-records-chevron {
+            transition: transform 0.2s ease;
+            font-size: 0.8rem;
+            display: inline-block;
+            width: 16px;
+            text-align: center;
+        }
+        .academic-records-chevron.rotated { transform: rotate(180deg); }
+        
         /* Prevent sidebar from affecting header */
         .sidebar-wrapper {
             contain: layout style paint;
@@ -724,6 +745,49 @@
                 }
             }
         }
+        
+        // Manage Course Outcome Submenu Handler
+        function toggleManageCOMenu() {
+            const submenu = document.getElementById('manageCOSubmenu');
+            const chevron = document.querySelector('.manage-co-chevron');
+            if (submenu && chevron) {
+                if (submenu.style.display === 'none' || !submenu.style.display) {
+                    submenu.style.display = 'block';
+                    chevron.classList.add('rotated');
+                } else {
+                    submenu.style.display = 'none';
+                    chevron.classList.remove('rotated');
+                }
+            }
+        }
+        
+        // Manage Academic Records Submenu Handler
+        function toggleAcademicRecordsMenu() {
+            const submenu = document.getElementById('academicRecordsSubmenu');
+            const chevron = document.querySelector('.academic-records-chevron');
+            if (submenu && chevron) {
+                if (submenu.classList.contains('show')) {
+                    submenu.classList.remove('show');
+                    chevron.classList.remove('rotated');
+                } else {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
+                }
+            }
+        }
+        
+        // Auto-expand if on Course Outcome pages (GE Coordinator)
+        document.addEventListener('DOMContentLoaded', function() {
+            const isCOPage = window.location.pathname.includes('/gecoordinator/reports/co-');
+            if (isCOPage) {
+                const submenu = document.getElementById('manageCOSubmenu');
+                const chevron = document.querySelector('.manage-co-chevron');
+                if (submenu && chevron) {
+                    submenu.style.display = 'block';
+                    chevron.classList.add('rotated');
+                }
+            }
+        });
         
         // Auto-expand if on Students pages
         document.addEventListener('DOMContentLoaded', function() {

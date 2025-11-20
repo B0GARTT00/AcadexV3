@@ -9,70 +9,137 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-4 py-4">
-    <!-- Page Header -->
-    <div class="d-flex justify-content-between align-items-center mb-5">
-        <div>
-            <h1 class="h3 fw-semibold text-gray-800 mb-0">
-                <i class="bi bi-person-badge me-2"></i>
-                Assign Subjects to Instructors
-            </h1>
-            <nav aria-label="breadcrumb" class="mt-2">
-                <ol class="breadcrumb mb-0">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Assign GE Subjects</li>
-                </ol>
-            </nav>
-        </div>
-        <!-- View Mode Switcher -->
-        <div class="d-flex align-items-center">
-            <label for="viewMode" class="me-2 fw-semibold">View Mode:</label>
-            <select id="viewMode" class="form-select form-select-sm w-auto" onchange="toggleViewMode()">
-                <option value="year" selected>Year View</option>
-                <option value="full">Full View</option>
-            </select>
-        </div>
-    </div>
+<style>
+    /* Container wrapper for consistent styling */
+    .page-wrapper {
+        background-color: #EAF8E7;
+        min-height: 100vh;
+        padding: 0;
+        margin: 0;
+    }
 
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i>
-            <div>
+    .page-container {
+        max-width: 100%;
+        margin: 0;
+        padding: 1.5rem 1rem;
+    }
+
+    /* Page title styling */
+    .page-title {
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 2px solid rgba(77, 166, 116, 0.2);
+    }
+
+    /* Content wrapper */
+    .content-wrapper {
+        background-color: white;
+        border-radius: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        padding: 0.5rem 1.5rem 1.5rem 1.5rem;
+        margin-top: 1.5rem;
+    }
+
+    /* Alert improvements */
+    .alert {
+        border-radius: 0.5rem !important;
+        border: 0 !important;
+    }
+
+    .alert-success {
+        background-color: #d4edda !important;
+        color: #155724 !important;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da !important;
+        color: #721c24 !important;
+    }
+
+    /* Tab styling */
+    .nav-tabs {
+        border-bottom: 2px solid #d0d0d0 !important;
+        margin-bottom: 1.5rem;
+        margin-top: 0.5rem;
+    }
+
+    .nav-tabs .nav-link {
+        border: none !important;
+        border-radius: 0.5rem 0.5rem 0 0;
+        background-color: transparent;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        color: #666 !important;
+        padding: 0.75rem 1.5rem !important;
+    }
+
+    .nav-tabs .nav-link:hover {
+        background-color: rgba(77, 166, 116, 0.08) !important;
+        color: #4da674 !important;
+    }
+
+    .nav-tabs .nav-link.active {
+        background-color: transparent !important;
+        color: #4da674 !important;
+        border-bottom: 3px solid #4da674 !important;
+    }
+</style>
+
+<div class="page-wrapper">
+    <div class="page-container">
+        <!-- Page Title -->
+        <div class="page-title">
+            <h1 class="text-3xl font-bold mb-2 text-gray-800 flex items-center">
+                <i class="bi bi-journal-plus text-success me-3 fs-2"></i>
+                Manage Courses
+            </h1>
+            <p class="text-muted mb-0 small">Assign subjects to instructors and manage course assignments</p>
+        </div>
+
+        @if (session('success'))
+            <div class="alert alert-success shadow-sm rounded">
                 {{ session('success') }}
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
+        @endif
 
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
-            <i class="bi bi-exclamation-triangle-fill me-2"></i>
-            <div>
+        @if (session('error'))
+            <div class="alert alert-danger shadow-sm rounded">
                 {{ session('error') }}
             </div>
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    @endif
+        @endif
 
-    <!-- YEAR VIEW (Tabbed) -->
-    <div id="yearView">
-        <!-- Year Level Tabs -->
-        <ul class="nav nav-tabs" id="yearTabs" role="tablist">
-            @for ($level = 1; $level <= 4; $level++)
-                <li class="nav-item" role="presentation">
-                    <a class="nav-link {{ $level === 1 ? 'active' : '' }}"
-                       id="year-level-{{ $level }}"
-                       data-bs-toggle="tab"
-                       href="#level-{{ $level }}"
-                       role="tab"
-                       aria-controls="level-{{ $level }}"
-                       aria-selected="{{ $level === 1 ? 'true' : 'false' }}">
-                       {{ ordinalSuffix($level) }} Year
-                    </a>
-                </li>
-            @endfor
-        </ul>
+        <!-- Content Wrapper -->
+        <div class="content-wrapper">
+            <div class="d-flex justify-content-between align-items-center" style="margin-bottom: 0.5rem;">
+                <!-- Year Level Tabs -->
+                <ul class="nav nav-tabs mb-0" id="yearTabs" role="tablist" style="border-bottom: none !important;">
+                    @for ($level = 1; $level <= 4; $level++)
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link {{ $level === 1 ? 'active' : '' }}"
+                               id="year-level-{{ $level }}"
+                               data-bs-toggle="tab"
+                               href="#level-{{ $level }}"
+                               role="tab"
+                               aria-controls="level-{{ $level }}"
+                               aria-selected="{{ $level === 1 ? 'true' : 'false' }}">
+                               {{ ordinalSuffix($level) }} Year
+                            </a>
+                        </li>
+                    @endfor
+                </ul>
+                
+                <!-- View Mode Switcher -->
+                <div class="d-flex align-items-center">
+                    <label for="viewMode" class="me-2 fw-semibold">View Mode:</label>
+                    <select id="viewMode" class="form-select form-select-sm w-auto" onchange="toggleViewMode()">
+                        <option value="year" selected>Year View</option>
+                        <option value="full">Full View</option>
+                    </select>
+                </div>
+            </div>
 
+            <!-- YEAR VIEW (Tabbed) -->
+            <div id="yearView">
         <div class="tab-content" id="yearTabsContent">
             @for ($level = 1; $level <= 4; $level++)
                 @php
@@ -83,14 +150,12 @@
                      id="level-{{ $level }}"
                      role="tabpanel"
                      aria-labelledby="year-level-{{ $level }}">
-                    <div class="card border-0 shadow-sm rounded-4 mt-3">
-                        <div class="card-body p-0">
                         @if ($subjectsByYear->isNotEmpty())
-                            <div class="table-responsive">
+                            <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
                                 <table class="table table-bordered align-middle mb-0">
-                                <thead class="table-success">
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Subject Code</th>
+                                        <th>Course Code</th>
                                         <th>Description</th>
                                         <th>Assigned Instructor</th>
                                         <th class="text-center">Action</th>
@@ -132,12 +197,10 @@
                             </table>
                             </div>
                         @else
-                            <div class="alert alert-warning m-3">
+                            <div class="alert alert-warning shadow-sm rounded">
                                 No subjects available for {{ ordinalSuffix($level) }} Year.
                             </div>
                         @endif
-                        </div>
-                    </div>
                 </div>
             @endfor
         </div>
@@ -168,7 +231,7 @@
                                     <table class="table table-hover align-middle mb-0">
                                         <thead class="table-success">
                                             <tr>
-                                                <th class="border-0 py-3">Subject Code</th>
+                                                <th class="border-0 py-3">Course Code</th>
                                                 <th class="border-0 py-3">Description</th>
                                                 <th class="border-0 py-3">Assigned Instructors</th>
                                                 <th class="border-0 py-3 text-center">Actions</th>
@@ -223,6 +286,7 @@
                     </div>
                 </div>
             @endfor
+        </div>
         </div>
     </div>
 </div>
@@ -315,6 +379,7 @@
                 </button>
             </div>
         </div>
+    </div>
     </div>
 </div>
 

@@ -1,10 +1,9 @@
 <section>
     <header class="mb-4 bg-transparent">
-        <h2 class="h5 fw-semibold text-dark mb-2">
+        <h2 class="h4 fw-semibold text-dark mb-2">
             {{ __('Profile Information') }}
         </h2>
-
-        <p class="small text-muted">
+        <p class="text-muted" style="font-size: 1rem;">
             {{ __("Update your account's profile information.") }}
         </p>
     </header>
@@ -17,7 +16,7 @@
         @csrf
         @method('patch')
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-6">
             <div>
                 <x-input-label for="first_name" :value="__('First Name')" />
                 <x-text-input id="first_name" name="first_name" type="text" class="mt-1 block w-full" :value="old('first_name', $user->first_name)" required autofocus autocomplete="given-name" />
@@ -38,25 +37,27 @@
 
             <div>
                 <x-input-label for="role" :value="__('Role')" />
-                <x-text-input id="role" type="text" class="mt-1 block w-full bg-gray-100" :value="$user->role == 0 ? 'Instructor' : ($user->role == 1 ? 'Chairperson' : ($user->role == 2 ? 'Dean' : ($user->role == 3 ? 'Admin' : ($user->role == 4 ? 'GE Coordinator' : ($user->role == 5 ? 'VPAA' : 'Unknown')))))" readonly />
+                <x-text-input id="role" type="text" class="mt-1 block w-full bg-gray-100 border-0 text-gray-600 font-semibold" :value="$user->role == 0 ? 'Instructor' : ($user->role == 1 ? 'Chairperson' : ($user->role == 2 ? 'Dean' : ($user->role == 3 ? 'Admin' : ($user->role == 4 ? 'GE Coordinator' : ($user->role == 5 ? 'VPAA' : 'Unknown')))))" readonly />
             </div>
 
             @if(!$user->isAdmin())
                 <div>
                     <x-input-label for="department" :value="__('Department')" />
-                    <x-text-input id="department" type="text" class="mt-1 block w-full bg-gray-100" :value="$user->department?->department_description" readonly />
+                    <x-text-input id="department" type="text" class="mt-1 block w-full bg-gray-100 border-0 text-gray-600" :value="$user->department?->department_description" readonly />
                 </div>
 
+                @if($user->role != 4)
                 <div>
                     <x-input-label for="course" :value="__('Course')" />
-                    <x-text-input id="course" type="text" class="mt-1 block w-full bg-gray-100" :value="$user->course?->course_description" readonly />
+                    <x-text-input id="course" type="text" class="mt-1 block w-full bg-gray-100 border-0 text-gray-600" :value="$user->course?->course_description" readonly />
                 </div>
+                @endif
             @endif
         </div>
 
-        <div>
+        <div class="mb-6">
             <x-input-label for="email" :value="__('Email')" />
-            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full" :value="old('email', $user->email)" required autocomplete="username" readonly />
+            <x-text-input id="email" name="email" type="email" class="mt-1 block w-full bg-gray-100 border-0 text-gray-600" :value="old('email', $user->email)" required autocomplete="username" readonly />
             <x-input-error class="mt-2" :messages="$errors->get('email')" />
 
             @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && ! $user->hasVerifiedEmail())
@@ -78,18 +79,8 @@
             @endif
         </div>
 
-        <div class="flex items-center gap-4">
-            <x-primary-button>{{ __('Save') }}</x-primary-button>
-
-            @if (session('status') === 'profile-updated')
-                <p
-                    x-data="{ show: true }"
-                    x-show="show"
-                    x-transition
-                    x-init="setTimeout(() => show = false, 2000)"
-                    class="text-sm text-gray-600 dark:text-gray-400"
-                >{{ __('Saved.') }}</p>
-            @endif
+        <div class="flex items-center gap-4 mt-4">
+                {{-- Save button removed; confirmation only on second part (password update) --}}
         </div>
     </form>
 </section>

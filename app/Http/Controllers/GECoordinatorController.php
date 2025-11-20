@@ -60,7 +60,7 @@ class GECoordinatorController extends Controller
         }
         
         // Ensure the subject is a GE subject
-        if ($subject->course_id != 2) {
+        if ($subject->course_id != 1) {
             return response()->json([], 403);
         }
         
@@ -104,6 +104,7 @@ class GECoordinatorController extends Controller
             
         $pendingAccounts = UnverifiedUser::with('department', 'course')
             ->where('department_id', $geDepartment->id)
+            ->whereNotNull('email_verified_at')
             ->get();
         
         return view('gecoordinator.manage-instructors', compact('instructors', 'pendingAccounts'));
@@ -163,7 +164,7 @@ class GECoordinatorController extends Controller
         // Find the instructor (don't restrict to GE department since they might be from another department)
         $instructor = User::where('id', $id)
             ->where('role', 0)
-            ->where('can_teach_ge', true)
+            ->where('is_active', true)
             ->firstOrFail();
             
         // Remove GE teaching capability AND deactivate the account
@@ -278,11 +279,11 @@ class GECoordinatorController extends Controller
         ]);
 
         $subject = Subject::where('id', $request->subject_id)
-            ->where('course_id', 2) // Only General Education subjects for GE Coordinator
+            ->where('course_id', 1) // Only General Education subjects for GE Coordinator
             ->firstOrFail();
 
-        // Ensure the subject is managed by GE Coordinator (course_id = 2)
-        if ($subject->course_id != 2) {
+        // Ensure the subject is managed by GE Coordinator (course_id = 1)
+        if ($subject->course_id != 1) {
             return redirect()->back()->with('error', 'Only General Education subjects can be assigned by GE Coordinator.');
         }
 
@@ -303,7 +304,7 @@ class GECoordinatorController extends Controller
 
         // Get GE subjects for the current academic period
         $subjects = Subject::where('academic_period_id', $academicPeriodId)
-            ->where('course_id', 2) // Assuming 2 is GE course_id
+            ->where('course_id', 1) // GE course_id is 1
             ->with(['instructors', 'students'])
             ->orderBy('subject_code')
             ->get();
@@ -322,11 +323,11 @@ class GECoordinatorController extends Controller
 
         // Get GE subjects statistics
         $totalSubjects = Subject::where('academic_period_id', $academicPeriodId)
-            ->where('course_id', 2)
+            ->where('course_id', 1)
             ->count();
 
         $assignedSubjects = Subject::where('academic_period_id', $academicPeriodId)
-            ->where('course_id', 2)
+            ->where('course_id', 1)
             ->whereHas('instructors')
             ->count();
 
@@ -346,13 +347,13 @@ class GECoordinatorController extends Controller
         $totalEnrollments = \DB::table('student_subjects')
             ->join('subjects', 'student_subjects.subject_id', '=', 'subjects.id')
             ->where('subjects.academic_period_id', $academicPeriodId)
-            ->where('subjects.course_id', 2)
+            ->where('subjects.course_id', 1)
             ->where('student_subjects.is_deleted', false)
             ->count();
 
         // Get subjects by year level
         $subjectsByYear = Subject::where('academic_period_id', $academicPeriodId)
-            ->where('course_id', 2)
+            ->where('course_id', 1)
             ->select('year_level', \DB::raw('count(*) as count'))
             ->groupBy('year_level')
             ->get()
@@ -434,11 +435,16 @@ class GECoordinatorController extends Controller
             $academicPeriodId = 1;
         }
         
-        // Fetch all active instructors (regular instructors might teach GE subjects)
+        // Fetch all active instructors who have GE subjects assigned
         $instructors = User::where([
             ['role', 0],
             ['is_active', true],
         ])
+        ->whereHas('subjects', function($query) use ($academicPeriodId) {
+            $query->where('course_id', 1) // GE courses have course_id = 1
+                  ->where('academic_period_id', $academicPeriodId)
+                  ->where('is_deleted', false);
+        })
         ->orderBy('last_name')
         ->get();
     
@@ -446,11 +452,13 @@ class GECoordinatorController extends Controller
         $subjects = [];
         if ($selectedInstructorId) {
             $subjects = Subject::where([
-                ['instructor_id', $selectedInstructorId],
+                ['course_id', 1], // Only GE subjects
                 ['academic_period_id', $academicPeriodId],
                 ['is_deleted', false],
-                ['course_id', 1], // Only General Education subjects for GE Coordinator
             ])
+            ->whereHas('instructors', function($query) use ($selectedInstructorId) {
+                $query->where('users.id', $selectedInstructorId);
+            })
             ->orderBy('subject_code')
             ->get();
         }
@@ -458,10 +466,9 @@ class GECoordinatorController extends Controller
         // Students and grades are only loaded when a subject is selected
         $students = [];
         if ($selectedSubjectId) {
-            $subject = Subject::where([
-                ['id', $selectedSubjectId],
-                ['course_id', 1], // Only General Education subjects for GE Coordinator
-            ])->firstOrFail();
+            $subject = Subject::where('id', $selectedSubjectId)
+                ->where('is_deleted', false)
+                ->firstOrFail();
     
             $students = $subject->students()
                 ->with(['termGrades' => function ($q) use ($selectedSubjectId) {
@@ -489,21 +496,39 @@ class GECoordinatorController extends Controller
             abort(403);
         }
 
-        // GE Coordinator: students enrolled in GE, PE, RS, NSTP subjects
-        $students = Student::with(['course', 'department', 'subjects.instructors'])
-            ->whereHas('subjects', function($query) {
-                $query->where(function($subQuery) {
-                    $subQuery->where('subject_code', 'LIKE', 'GE%')
-                             ->orWhere('subject_code', 'LIKE', 'PE%')
-                             ->orWhere('subject_code', 'LIKE', 'RS%')
-                             ->orWhere('subject_code', 'LIKE', 'NSTP%');
-                });
+        $selectedSubjectId = request()->input('subject_id');
+
+        // Get all GE subjects that have instructors assigned
+        $subjects = Subject::with('instructors')
+            ->where(function($query) {
+                $query->where('subject_code', 'LIKE', 'GE%')
+                      ->orWhere('subject_code', 'LIKE', 'PE%')
+                      ->orWhere('subject_code', 'LIKE', 'RS%')
+                      ->orWhere('subject_code', 'LIKE', 'NSTP%');
             })
-            ->orderBy('last_name')
-            ->orderBy('first_name')
+            ->whereHas('instructors')
+            ->where('is_deleted', false)
+            ->orderBy('subject_code')
             ->get();
 
-        return view('gecoordinator.students-by-year', compact('students'));
+        // Get students enrolled in the selected subject
+        $students = collect();
+        if ($selectedSubjectId) {
+            $subject = Subject::find($selectedSubjectId);
+            if ($subject) {
+                $students = $subject->students()
+                    ->with(['course', 'department'])
+                    ->orderBy('last_name')
+                    ->orderBy('first_name')
+                    ->get();
+            }
+        }
+
+        return view('gecoordinator.students-by-year', [
+            'subjects' => $subjects,
+            'students' => $students,
+            'selectedSubjectId' => $selectedSubjectId
+        ]);
     }
 
     // ============================

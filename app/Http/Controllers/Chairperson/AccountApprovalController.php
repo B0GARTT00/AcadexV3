@@ -50,30 +50,42 @@ class AccountApprovalController extends Controller
         // Get GE department to exclude it
         $geDepartment = \App\Models\Department::where('department_code', 'GE')->first();
 
+        if (!$geDepartment) {
+            return back()->withErrors(['error' => 'GE Department not found.']);
+        }
+
         $pending = UnverifiedUser::where('id', $id)
             ->where('department_id', Auth::user()->department_id)
             ->where('course_id', Auth::user()->course_id)
             ->where('department_id', '!=', $geDepartment->id)
             ->whereNotNull('email_verified_at')
-            ->firstOrFail();
+            ->first();
 
-        // Transfer to the main users table
-        User::create([
-            'first_name'    => $pending->first_name,
-            'middle_name'   => $pending->middle_name,
-            'last_name'     => $pending->last_name,
-            'email'         => $pending->email,
-            'password'      => $pending->password, // Already hashed
-            'department_id' => $pending->department_id,
-            'course_id'     => $pending->course_id,
-            'role'          => 0, // Instructor role
-            'is_active'     => true,
-        ]);
+        if (!$pending) {
+            return back()->withErrors(['error' => 'Pending account not found or already processed.']);
+        }
 
-        // Remove from unverified list
-        $pending->delete();
+        try {
+            // Transfer to the main users table
+            User::create([
+                'first_name'    => $pending->first_name,
+                'middle_name'   => $pending->middle_name,
+                'last_name'     => $pending->last_name,
+                'email'         => $pending->email,
+                'password'      => $pending->password, // Already hashed
+                'department_id' => $pending->department_id,
+                'course_id'     => $pending->course_id,
+                'role'          => 0, // Instructor role
+                'is_active'     => true,
+            ]);
 
-        return back()->with('status', 'Instructor account has been approved successfully.');
+            // Remove from unverified list
+            $pending->delete();
+
+            return back()->with('success', 'Instructor account has been approved successfully.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Failed to approve account: ' . $e->getMessage()]);
+        }
     }
 
     /**
@@ -89,14 +101,22 @@ class AccountApprovalController extends Controller
         // Get GE department to exclude it
         $geDepartment = \App\Models\Department::where('department_code', 'GE')->first();
 
+        if (!$geDepartment) {
+            return back()->withErrors(['error' => 'GE Department not found.']);
+        }
+
         $pending = UnverifiedUser::where('id', $id)
             ->where('department_id', Auth::user()->department_id)
             ->where('course_id', Auth::user()->course_id)
             ->where('department_id', '!=', $geDepartment->id)
-            ->firstOrFail();
+            ->first();
+
+        if (!$pending) {
+            return back()->withErrors(['error' => 'Pending account not found or already processed.']);
+        }
             
         $pending->delete();
 
-        return back()->with('status', 'Instructor account request has been rejected and removed.');
+        return back()->with('success', 'Instructor account request has been rejected and removed.');
     }
 }
