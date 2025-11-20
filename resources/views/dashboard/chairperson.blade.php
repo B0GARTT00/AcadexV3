@@ -1,16 +1,14 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container-fluid px-4 py-5">
+<div class="container-fluid px-4 py-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="fw-bold text-dark mb-1">Course Chair Overview 👨‍💼</h2>
             <p class="text-muted mb-0">Monitor Course performance and faculty management</p>
         </div>
         <div class="d-flex align-items-center gap-3">
-            <!-- <a href="{{ route('chairperson.instructors') }}" class="btn btn-success rounded-pill px-3 shadow-sm">
-                <i class="bi bi-person-plus"></i> Manage Instructors
-            </a> -->
+
         </div>
     </div>
 
