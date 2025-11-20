@@ -96,17 +96,7 @@
             <p class="text-muted mb-0 small">Assign subjects to instructors and manage course assignments</p>
         </div>
 
-        @if (session('success'))
-            <div class="alert alert-success shadow-sm rounded">
-                {{ session('success') }}
-            </div>
-        @endif
-
-        @if (session('error'))
-            <div class="alert alert-danger shadow-sm rounded">
-                {{ session('error') }}
-            </div>
-        @endif
+        {{-- Flash messages (server-side) will be displayed as toasts on load via JS --}}
 
         <!-- Content Wrapper -->
         <div class="content-wrapper">
@@ -167,15 +157,17 @@
                                             <td>{{ $subject->subject_code }}</td>
                                             <td>{{ $subject->subject_description }}</td>
                                             <td class="text-center">
-                                                <button class="btn btn-sm btn-outline-success" 
-                                                        onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'view')">
+                                                <button class="btn btn-sm btn-outline-success subject-view-btn" 
+                                                    data-subject-id="{{ $subject->id }}"
+                                                    onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'view')">
                                                     <i class="bi bi-people-fill text-success me-1"></i>
-                                                    <span>View ({{ $subject->instructors_count ?? $subject->instructors->count() }})</span>
+                                                    <span>View (<span class="view-count">{{ $subject->instructors_count ?? $subject->instructors->count() }}</span>)</span>
                                                 </button>
                                             </td>
                                             <td class="text-nowrap">
                                                 <div class="d-flex">
-                                                    <button class="btn btn-sm btn-success me-2"
+                                                        <button class="btn btn-sm btn-success me-2 subject-edit-btn"
+                                                            data-subject-id="{{ $subject->id }}"
                                                             onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'edit')"
                                                             title="Edit Instructors">
                                                         <i class="bi bi-pencil-square"></i> Edit
@@ -234,17 +226,19 @@
                                                     <td class="fw-medium">{{ $subject->subject_code }}</td>
                                                     <td>{{ $subject->subject_description }}</td>
                                                     <td class="text-center">
-                                                        <button class="btn btn-sm btn-outline-success" 
-                                                                onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'view')">
+                                                        <button class="btn btn-sm btn-outline-success subject-view-btn" 
+                                                            data-subject-id="{{ $subject->id }}"
+                                                            onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code) }}', 'view')">
                                                             <i class="bi bi-people-fill text-success me-1"></i>
-                                                            <span>View ({{ $subject->instructors_count ?? $subject->instructors->count() }})</span>
+                                                            <span>View (<span class="view-count">{{ $subject->instructors_count ?? $subject->instructors->count() }}</span>)</span>
                                                         </button>
                                                     </td>
                                                     <td class="text-center">
                                                         <div class="d-flex gap-2 justify-content-center">
                                                             <button
+                                                                class="btn btn-success btn-sm subject-edit-btn"
+                                                                data-subject-id="{{ $subject->id }}"
                                                                 onclick="openInstructorListModal({{ $subject->id }}, '{{ addslashes($subject->subject_code . ' - ' . $subject->subject_description) }}', 'edit')"
-                                                                class="btn btn-success btn-sm" 
                                                                 title="Edit Instructors">
                                                                 <i class="bi bi-pencil-square me-1"></i> Edit
                                                             </button>
@@ -291,6 +285,10 @@
             <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
             </div>
+        </div>
+        <!-- Global Toast Container for top-right floating messages -->
+        <div id="globalToastContainer" class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1100;">
+            <!-- Toasts will be dynamically injected here -->
         </div>
     </div>
 </div>
@@ -371,38 +369,44 @@
     let currentUnassignInstructorId = null;
     let currentUnassignInstructorName = null;
 
-    // Function to show Bootstrap notifications
+    // Function to show Bootstrap toasts (top-right floating) for consistency
     function showNotification(type, message) {
-        const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-        const iconClass = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
-        
-        const alertHtml = `
-            <div class="alert ${alertClass} alert-dismissible fade show d-flex align-items-center mb-4" role="alert">
-                <i class="bi ${iconClass} me-2"></i>
-                <div>${message}</div>
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        const toastContainer = document.getElementById('globalToastContainer') || createGlobalToastContainer();
+        const toastId = `toast-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        const toastClass = type === 'success' ? 'text-bg-success' : 'text-bg-danger';
+
+        const toastEl = document.createElement('div');
+        toastEl.className = `toast align-items-center ${toastClass} border-0 shadow`;
+        toastEl.role = 'alert';
+        toastEl.ariaLive = 'assertive';
+        toastEl.ariaAtomic = 'true';
+        toastEl.id = toastId;
+
+        toastEl.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">${message}</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
             </div>
         `;
-        
-        // Insert the alert at the top of the page content
-        const container = document.querySelector('.container-fluid');
-        if (container) {
-            const pageHeader = container.querySelector('.d-flex.justify-content-between.align-items-center.mb-5');
-            if (pageHeader) {
-                pageHeader.insertAdjacentHTML('afterend', alertHtml);
-            } else {
-                container.insertAdjacentHTML('afterbegin', alertHtml);
-            }
-        }
-        
-        // Auto-dismiss the alert after 5 seconds
-        setTimeout(() => {
-            const alert = document.querySelector(`.alert.${alertClass}`);
-            if (alert) {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            }
-        }, 5000);
+
+        toastContainer.appendChild(toastEl);
+
+        const bsToast = new bootstrap.Toast(toastEl, { autohide: true, delay: 5000 });
+        bsToast.show();
+
+        // Remove toast from DOM when fully hidden
+        toastEl.addEventListener('hidden.bs.toast', function () {
+            toastEl.remove();
+        });
+    }
+
+    function createGlobalToastContainer() {
+        const container = document.createElement('div');
+        container.id = 'globalToastContainer';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = 1100;
+        document.body.appendChild(container);
+        return container;
     }
 
     function openInstructorListModal(subjectId, subjectName, mode = 'view') {
@@ -643,9 +647,29 @@
                     showNotification('success', data.message || 'Instructor assigned successfully!');
                     // Refresh the modal content
                     openInstructorListModal(subjectId, document.getElementById('instructorListSubjectName').textContent, 'edit');
+                    // Update the view count in the table
+                    refreshSubjectInstructorCount(subjectId);
                 } else {
                     throw new Error(data.message || 'Failed to assign instructor');
                 }
+
+                    function refreshSubjectInstructorCount(subjectId) {
+                        // Fetch current assigned instructors for the subject and update all matching view-count elements
+                        fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
+                            .then(resp => {
+                                if (!resp.ok) return resp.json().then(err => { throw new Error(err.message || 'Failed to load instructors'); }).catch(() => { throw new Error('Failed to load instructors'); });
+                                return resp.json();
+                            })
+                            .then(list => {
+                                const count = Array.isArray(list) ? list.length : (list.length || 0);
+                                document.querySelectorAll(`button.subject-view-btn[data-subject-id="${subjectId}"] .view-count`).forEach(el => {
+                                    el.textContent = count;
+                                });
+                            })
+                            .catch(err => {
+                                console.error('Error updating instructor count:', err);
+                            });
+                    }
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -723,10 +747,11 @@
                     throw new Error(data.message || 'Failed to unassign instructor');
                 }
                 showNotification('success', 'Instructor has been unassigned successfully.');
-                // Refresh the modal content instead of reloading the page
+                // Refresh the modal content and update the table count instead of reloading the page
                 setTimeout(() => {
                     openInstructorListModal(currentSubjectId, document.getElementById('instructorListSubjectName').textContent, 'edit');
-                }, 800);
+                    refreshSubjectInstructorCount(currentSubjectId);
+                }, 400);
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -798,10 +823,16 @@
                         // Show success message using Bootstrap alert
                         showNotification('success', data.message || 'Instructor assigned successfully!');
                         
-                        // Refresh the page after a short delay to update the instructor lists
+                        // Refresh the modal and the table count after a short delay to update the instructor lists
                         setTimeout(() => {
-                            window.location.reload();
-                        }, 1500);
+                            const sid = document.getElementById('assign_subject_id').value || '';
+                            if (sid) {
+                                openInstructorListModal(sid, document.getElementById('instructorListSubjectName').textContent, 'edit');
+                                refreshSubjectInstructorCount(sid);
+                            } else {
+                                window.location.reload();
+                            }
+                        }, 800);
                     } else {
                         throw new Error(data.message || 'Failed to assign instructor');
                     }
@@ -836,6 +867,16 @@
             fullView.classList.add('d-none');
         }
     }
+
+    // Render server-side flash messages as toasts (session)
+    document.addEventListener('DOMContentLoaded', function () {
+        @if (session('success'))
+            showNotification('success', @json(session('success')));
+        @endif
+        @if (session('error'))
+            showNotification('error', @json(session('error')));
+        @endif
+    });
 </script>
 @endpush
 
