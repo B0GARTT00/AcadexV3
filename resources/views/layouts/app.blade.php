@@ -742,11 +742,36 @@
 
     <!-- Course Outcome Submenu Handler -->
     <script>
+        // Helper to close all submenus (optionally exclude one)
+        function closeAllSubmenus(exceptId = null) {
+            const map = {
+                'courseOutcomeSubmenu': '.course-outcome-chevron',
+                'studentsSubmenu': '.students-chevron',
+                'gradesSubmenu': '.grades-chevron',
+                'academicRecordsSubmenu': '.academic-records-chevron',
+                'chairpersonReportsSubmenu': '.chairperson-reports-chevron',
+                'manageCOSubmenu': '.manage-co-chevron'
+            };
+            Object.keys(map).forEach(id => {
+                if (id === exceptId) return;
+                const submenu = document.getElementById(id);
+                const chevron = document.querySelector(map[id]);
+                if (submenu && submenu.classList.contains('show')) {
+                    submenu.classList.remove('show');
+                }
+                if (chevron && chevron.classList.contains('rotated')) {
+                    chevron.classList.remove('rotated');
+                }
+            });
+        }
+
         function toggleCourseOutcomeMenu() {
             const submenu = document.getElementById('courseOutcomeSubmenu');
             const chevron = document.querySelector('.course-outcome-chevron');
             
             if (submenu && chevron) {
+                // Close other submenus
+                closeAllSubmenus('courseOutcomeSubmenu');
                 if (submenu.classList.contains('show')) {
                     submenu.classList.remove('show');
                     chevron.classList.remove('rotated');
@@ -767,6 +792,7 @@
                 const chevron = document.querySelector('.course-outcome-chevron');
                 
                 if (submenu && chevron) {
+                    closeAllSubmenus('courseOutcomeSubmenu');
                     submenu.classList.add('show');
                     chevron.classList.add('rotated');
                 }
@@ -778,6 +804,8 @@
             const submenu = document.getElementById('studentsSubmenu');
             const chevron = document.querySelector('.students-chevron');
             if (submenu && chevron) {
+                // Close other submenus
+                closeAllSubmenus('studentsSubmenu');
                 if (submenu.classList.contains('show')) {
                     submenu.classList.remove('show');
                     chevron.classList.remove('rotated');
@@ -793,6 +821,8 @@
             const submenu = document.getElementById('manageCOSubmenu');
             const chevron = document.querySelector('.manage-co-chevron');
             if (submenu && chevron) {
+                // Close other submenus
+                closeAllSubmenus('manageCOSubmenu');
                 if (submenu.classList.contains('show')) {
                     submenu.classList.remove('show');
                     chevron.classList.remove('rotated');
@@ -808,6 +838,8 @@
             const submenu = document.getElementById('academicRecordsSubmenu');
             const chevron = document.querySelector('.academic-records-chevron');
             if (submenu && chevron) {
+                // Close other submenus
+                closeAllSubmenus('academicRecordsSubmenu');
                 if (submenu.classList.contains('show')) {
                     submenu.classList.remove('show');
                     chevron.classList.remove('rotated');
@@ -825,6 +857,7 @@
                 const submenu = document.getElementById('manageCOSubmenu');
                 const chevron = document.querySelector('.manage-co-chevron');
                 if (submenu && chevron) {
+                    closeAllSubmenus('manageCOSubmenu');
                     submenu.classList.add('show');
                     chevron.classList.add('rotated');
                 }
@@ -838,6 +871,7 @@
                 const submenu = document.getElementById('studentsSubmenu');
                 const chevron = document.querySelector('.students-chevron');
                 if (submenu && chevron) {
+                    closeAllSubmenus('studentsSubmenu');
                     submenu.classList.add('show');
                     chevron.classList.add('rotated');
                 }
@@ -849,6 +883,8 @@
             const submenu = document.getElementById('chairpersonReportsSubmenu');
             const chevron = document.querySelector('.chairperson-reports-chevron');
             if (submenu && chevron) {
+                // Close other submenus
+                closeAllSubmenus('chairpersonReportsSubmenu');
                 if (submenu.classList.contains('show')) {
                     submenu.classList.remove('show');
                     chevron.classList.remove('rotated');
@@ -865,6 +901,7 @@
                 const submenu = document.getElementById('chairpersonReportsSubmenu');
                 const chevron = document.querySelector('.chairperson-reports-chevron');
                 if (submenu && chevron) {
+                    closeAllSubmenus('chairpersonReportsSubmenu');
                     submenu.classList.add('show');
                     chevron.classList.add('rotated');
                 }
@@ -879,6 +916,8 @@
             const chevron = document.querySelector('.grades-chevron');
             
             if (submenu && chevron) {
+                // Close other submenus
+                closeAllSubmenus('gradesSubmenu');
                 if (submenu.classList.contains('show')) {
                     submenu.classList.remove('show');
                     chevron.classList.remove('rotated');
@@ -899,6 +938,7 @@
                 const chevron = document.querySelector('.grades-chevron');
                 
                 if (submenu && chevron) {
+                    closeAllSubmenus('gradesSubmenu');
                     submenu.classList.add('show');
                     chevron.classList.add('rotated');
                 }
