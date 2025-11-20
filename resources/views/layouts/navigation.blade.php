@@ -5,6 +5,12 @@
             <i class="bi bi-calendar-event me-2" style="font-size: 1.125rem; display: inline-block; width: 20px; height: 20px; text-align: center; flex-shrink: 0; line-height: 1;"></i>
             @php
                 $activePeriod = \App\Models\AcademicPeriod::find(session('active_academic_period_id'));
+                $user = Auth::user();
+                
+                // For VPAA and other roles without active period, get the latest/current period
+                if (!$activePeriod && in_array($user->role, [2, 3, 5])) { // Dean, Admin, VPAA
+                    $activePeriod = \App\Models\AcademicPeriod::orderBy('created_at', 'desc')->first();
+                }
             @endphp
             @if($activePeriod)
                 @php
@@ -39,7 +45,7 @@
                     @endif
                 </span>
             @else
-                <span class="badge bg-success bg-opacity-25 px-3 py-2 rounded-pill" style="white-space: nowrap; font-size: 0.8125rem; font-weight: 500; line-height: 1; height: 32px; display: inline-flex; align-items: center; min-width: 290px; justify-content: center; letter-spacing: -0.01em;">Dashboard</span>
+                <span class="badge bg-success bg-opacity-25 px-3 py-2 rounded-pill" style="white-space: nowrap; font-size: 0.8125rem; font-weight: 500; line-height: 1; height: 32px; display: inline-flex; align-items: center; min-width: 290px; justify-content: center; letter-spacing: -0.01em;">Academic Year</span>
             @endif
         </h1>    
     </div>
