@@ -3,6 +3,7 @@
     let hasUnsavedChanges = false;
     let checkForChanges; // Declare the function variable globally
     let form; // Declare form globally
+    let termChangeInProgress = false;
 
     function bindGradeInputEvents() {
         console.log("Binding grade input events...");
@@ -826,12 +827,90 @@
     document.addEventListener('DOMContentLoaded', function() {
         console.log("Grade script loaded");
         bindGradeInputEvents();
+        initializeTermStepperNavigation();
         
         // Also initialize course outcome dropdowns on initial load
         if (typeof initializeCourseOutcomeDropdowns === 'function') {
             initializeCourseOutcomeDropdowns();
         }
     });
+
+    // Refresh the grade section via AJAX so computed grades stay in sync after saving
+    window.refreshGradeSection = function() {
+        return new Promise((resolve) => {
+            const section = document.getElementById('grade-section');
+            const gradeForm = document.getElementById('gradeForm');
+            if (!section || !gradeForm) {
+                resolve();
+                return;
+            }
+
+            const subjectId = gradeForm.querySelector('input[name="subject_id"]')?.value;
+            const termValue = gradeForm.querySelector('input[name="term"]')?.value;
+            if (!subjectId || !termValue) {
+                resolve();
+                return;
+            }
+
+            const overlay = document.getElementById('fadeOverlay');
+            overlay?.classList.add('active');
+
+            const refreshUrl = new URL(window.location.href);
+            refreshUrl.searchParams.set('subject_id', subjectId);
+            refreshUrl.searchParams.set('term', termValue);
+
+            fetch(refreshUrl.toString(), {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'text/html'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to refresh grades');
+                }
+                return response.text();
+            })
+            .then(html => {
+                const tempWrapper = document.createElement('div');
+                tempWrapper.innerHTML = html.trim();
+                const newSection = tempWrapper.querySelector('#grade-section');
+                if (!newSection) {
+                    throw new Error('Grade section markup missing in response');
+                }
+
+                section.replaceWith(newSection);
+                form = document.getElementById('gradeForm');
+
+                if (typeof window.bindGradeInputEvents === 'function') {
+                    window.bindGradeInputEvents();
+                }
+                if (typeof window.initializeCourseOutcomeDropdowns === 'function') {
+                    window.initializeCourseOutcomeDropdowns();
+                }
+                if (typeof window.initializeStudentSearch === 'function') {
+                    window.initializeStudentSearch();
+                }
+                if (typeof window.initializeActivityComponentGuard === 'function') {
+                    window.initializeActivityComponentGuard();
+                }
+                if (typeof window.initializeTermStepperNavigation === 'function') {
+                    window.initializeTermStepperNavigation();
+                }
+
+                resolve();
+            })
+            .catch(error => {
+                console.error('Unable to refresh grade section:', error);
+                alert('Grades were saved, but we could not reload the table automatically. Please refresh the page.');
+                resolve();
+            })
+            .finally(() => {
+                overlay?.classList.remove('active');
+            });
+        });
+    };
     // Modify the beforeunload event handler
     window.addEventListener('beforeunload', function(e) {
         // Don't show warning if form is being submitted or no unsaved changes
@@ -1027,6 +1106,98 @@
 
     // Export for external use
     window.initializeCourseOutcomeDropdowns = initializeCourseOutcomeDropdowns;
+
+    function initializeTermStepperNavigation() {
+        const termButtons = document.querySelectorAll('.term-step[data-term]');
+        if (!termButtons.length) {
+            return;
+        }
+
+        termButtons.forEach(button => {
+            if (!button || button.dataset.termBound === 'true') {
+                return;
+            }
+
+            button.dataset.termBound = 'true';
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                const targetTerm = button.dataset.term;
+                handleTermSelection(targetTerm);
+            });
+        });
+    }
+
+    function handleTermSelection(targetTerm) {
+        if (!targetTerm || termChangeInProgress) {
+            return;
+        }
+
+        const currentActive = document.querySelector('.term-step.active');
+        const currentTerm = currentActive?.dataset.term || null;
+        if (currentTerm === targetTerm) {
+            return;
+        }
+
+        const proceedWithSwitch = () => {
+            const gradeForm = document.getElementById('gradeForm');
+            const subjectId = gradeForm?.querySelector('input[name="subject_id"]')?.value;
+            const termInput = gradeForm?.querySelector('input[name="term"]');
+
+            if (termInput) {
+                termInput.value = targetTerm;
+            }
+
+            const updatedUrl = new URL(window.location.href);
+            if (subjectId) {
+                updatedUrl.searchParams.set('subject_id', subjectId);
+            }
+            updatedUrl.searchParams.set('term', targetTerm);
+            window.history.replaceState({}, '', updatedUrl.toString());
+
+            if (!gradeForm || !subjectId) {
+                window.location.href = updatedUrl.toString();
+                return;
+            }
+
+            hasUnsavedChanges = false;
+
+            if (typeof window.refreshGradeSection === 'function') {
+                termChangeInProgress = true;
+                const refreshPromise = window.refreshGradeSection();
+                if (refreshPromise && typeof refreshPromise.finally === 'function') {
+                    refreshPromise.finally(() => {
+                        termChangeInProgress = false;
+                    });
+                } else {
+                    termChangeInProgress = false;
+                }
+            } else {
+                window.location.href = updatedUrl.toString();
+            }
+        };
+
+        const formSubmitting = form ? form.submitting : false;
+        if (typeof checkForChanges === 'function' && !formSubmitting) {
+            const { hasChanges } = checkForChanges();
+            if (hasChanges) {
+                const confirmSwitch = () => {
+                    hasUnsavedChanges = false;
+                    proceedWithSwitch();
+                };
+
+                if (typeof window.showUnsavedChangesModal === 'function') {
+                    window.showUnsavedChangesModal(confirmSwitch);
+                } else if (confirm('You have unsaved changes that will be lost. Continue?')) {
+                    confirmSwitch();
+                }
+                return;
+            }
+        }
+
+        proceedWithSwitch();
+    }
+
+    window.initializeTermStepperNavigation = initializeTermStepperNavigation;
 
         // Function to update course outcome dropdowns after term change
         window.updateCourseOutcomeDropdowns = function(subjectId, term) {

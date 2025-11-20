@@ -18,6 +18,7 @@ use App\Services\GradesFormulaService;
 use App\Support\Grades\FormulaStructure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
@@ -247,7 +248,7 @@ class AdminController extends Controller
         }
 
         $periodContext = $this->resolveFormulaPeriodContext();
-        $selectedSemester = $periodContext['semester'];
+            $selectedSemester = $periodContext['semester'] ?? null;
         $selectedAcademicPeriodId = $periodContext['academic_period_id'];
         $selectedAcademicYear = $periodContext['academic_year'];
         $academicPeriods = $periodContext['academic_periods'];
@@ -1339,6 +1340,21 @@ class AdminController extends Controller
         }
 
         $periodContext = $this->resolveFormulaPeriodContext();
+        $structureConfig = $template->structure_config ?? [];
+
+        if ($this->isNewTemplateFormat(is_array($structureConfig) ? $structureConfig : [])) {
+            $structureConfig = $this->convertNewFormatToOld($structureConfig);
+        }
+
+        try {
+            $structureConfig = FormulaStructure::normalize($structureConfig);
+        } catch (\Throwable $exception) {
+            throw ValidationException::withMessages([
+                'structure_config' => 'The stored template structure could not be rendered: ' . $exception->getMessage(),
+            ]);
+        }
+
+        $template->structure_config = $structureConfig;
 
         return view('admin.structure-template-edit', [
             'template' => $template,
@@ -3269,6 +3285,7 @@ class AdminController extends Controller
             $activityType = $entry['activity_type'] ?? 'component';
             $label = $entry['label'] ?? 'Component';
             $weight = isset($entry['weight']) ? (float) $entry['weight'] / 100.0 : 0.0;
+            $maxAssessments = $this->normalizeMaxAssessments($entry['max_items'] ?? null);
             
             $key = Str::slug($activityType, '_');
             
@@ -3280,6 +3297,7 @@ class AdminController extends Controller
                     'label' => $label,
                     'activity_type' => $activityType,
                     'weight' => $weight,
+                    'max_assessments' => $maxAssessments,
                 ];
             } else {
                 // Has sub-components, create a composite node
@@ -3290,6 +3308,7 @@ class AdminController extends Controller
                     $subLabel = $sub['label'] ?? 'Component';
                     $subWeight = isset($sub['weight']) ? (float) $sub['weight'] / 100.0 : 0.0;
                     $subKey = Str::slug($key . '.' . $subActivityType, '_');
+                    $subMaxAssessments = $this->normalizeMaxAssessments($sub['max_items'] ?? null);
                     
                     $subChildren[] = [
                         'key' => $subKey,
@@ -3297,6 +3316,7 @@ class AdminController extends Controller
                         'label' => $subLabel,
                         'activity_type' => $key . '.' . $subActivityType,
                         'weight' => $subWeight,
+                        'max_assessments' => $subMaxAssessments,
                     ];
                 }
                 
@@ -3316,6 +3336,25 @@ class AdminController extends Controller
             'label' => 'Period Grade',
             'children' => $children,
         ];
+    }
+
+    private function normalizeMaxAssessments($value): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (! is_numeric($value)) {
+            return null;
+        }
+
+        $intValue = (int) $value;
+
+        if ($intValue < 1) {
+            return null;
+        }
+
+        return min($intValue, 5);
     }
 
     private function normalizeTemplateIdentifier(?string $value, string $fallback): string
@@ -3399,7 +3438,37 @@ class AdminController extends Controller
         $departments = Department::all();
         $courses = Course::all();
 
-        return view('admin.users', compact('users', 'departments', 'courses'));
+        // Detect if the disabled_until column exists so the view can surface a migration notice
+        $hasDisabledUntilColumn = Schema::hasColumn('users', 'disabled_until');
+
+        return view('admin.users', compact('users', 'departments', 'courses', 'hasDisabledUntilColumn'));
+    }
+
+    /**
+     * Re-enable a disabled user account
+     */
+    public function enableUser(Request $request, User $user)
+    {
+        Gate::authorize('admin');
+
+        try {
+            $user->is_active = true;
+            if (Schema::hasColumn('users', 'disabled_until')) {
+                $user->disabled_until = null;
+            }
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Account for {$user->first_name} {$user->last_name} has been re-enabled."
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Enable user failed: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to enable user. Please try again.'
+            ], 500);
+        }
     }
 
     public function adminConfirmUserCreationWithPassword(Request $request)
@@ -3489,14 +3558,25 @@ class AdminController extends Controller
         Gate::authorize('admin');
 
         try {
-            // Delete all sessions for this user
-            DB::table('sessions')
-                ->where('user_id', $user->id)
-                ->delete();
+            // Only attempt to delete sessions if the application is using database sessions
+            $driver = config('session.driver');
+            $skippedDeletion = false;
+            if ($driver === 'database' && Schema::hasTable('sessions') && Schema::hasColumn('sessions', 'user_id')) {
+                DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->delete();
+            } else {
+                // Log a note for maintainers if this isn't possible
+                \Illuminate\Support\Facades\Log::warning("Skipping session deletion for user {$user->id}. Session driver: {$driver}");
+                $skippedDeletion = true;
+            }
 
             return response()->json([
                 'success' => true,
-                'message' => "Successfully logged out {$user->first_name} {$user->last_name} from all devices."
+                'skipped_session_deletion' => $skippedDeletion,
+                'message' => $skippedDeletion
+                    ? "Sessions not deleted because session driver is not 'database' or sessions table missing."
+                    : "Successfully logged out {$user->first_name} {$user->last_name} from all devices."
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -3525,42 +3605,77 @@ class AdminController extends Controller
             // Calculate disabled_until based on duration
             switch ($duration) {
                 case '1_week':
-                    $user->disabled_until = $now->copy()->addWeek();
+                    if (Schema::hasColumn('users', 'disabled_until')) {
+                        $user->disabled_until = $now->copy()->addWeek();
+                    }
                     break;
                 case '1_month':
-                    $user->disabled_until = $now->copy()->addMonth();
+                    if (Schema::hasColumn('users', 'disabled_until')) {
+                        $user->disabled_until = $now->copy()->addMonth();
+                    }
                     break;
                 case 'indefinite':
-                    $user->disabled_until = $now->copy()->addYears(100); // far future
+                    if (Schema::hasColumn('users', 'disabled_until')) {
+                        // Use a sentinel far-future date that reliably indicates 'indefinite' and fits DATETIME range
+                        $user->disabled_until = \Carbon\Carbon::createFromFormat('Y-m-d H:i:s', '9999-12-31 23:59:59');
+                    }
                     break;
                 case 'custom':
-                    $user->disabled_until = $request->custom_disable_datetime;
+                    if (Schema::hasColumn('users', 'disabled_until')) {
+                        $user->disabled_until = $request->custom_disable_datetime;
+                    }
                     break;
             }
 
             $user->is_active = false;
             $user->save();
 
-            // Force logout the user from all devices
-            DB::table('sessions')
-                ->where('user_id', $user->id)
-                ->delete();
+            // Force logout the user from all devices if database sessions are enabled
+            $driver = config('session.driver');
+            if ($driver === 'database' && Schema::hasTable('sessions') && Schema::hasColumn('sessions', 'user_id')) {
+                DB::table('sessions')
+                    ->where('user_id', $user->id)
+                    ->delete();
+            } else {
+                \Illuminate\Support\Facades\Log::warning("Skipping session deletion for user {$user->id} (session driver: {$driver}).");
+            }
 
             $userName = trim("{$user->first_name} {$user->last_name}");
             $message = "Account for {$userName} has been disabled";
 
-            if ($duration === 'indefinite') {
-                $message .= ' indefinitely.';
+            if (Schema::hasColumn('users', 'disabled_until') && $user->disabled_until) {
+                if ($duration === 'indefinite') {
+                    $message .= ' indefinitely.';
+                } else {
+                    $message .= " until " . (new \Carbon\Carbon($user->disabled_until))->format('M d, Y h:i A') . '.';
+                }
             } else {
-                $message .= " until " . (new \Carbon\Carbon($user->disabled_until))->format('M d, Y h:i A') . '.';
+                // If the column is missing or value isn't set, append a generic message
+                $message .= ' (no re-enable time recorded. Ensure migrations have been run.)';
+            }
+
+            $disabledAt = null;
+            if (Schema::hasColumn('users', 'disabled_until') && $user->disabled_until) {
+                $carbonUntil = new \Carbon\Carbon($user->disabled_until);
+                // Return a special string for sentinel indefinite values
+                $disabledAt = $carbonUntil->year >= 9999 ? 'indefinite' : $carbonUntil->toISOString();
             }
 
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                'disabled_until' => (new \Carbon\Carbon($user->disabled_until))->toISOString(),
+                'disabled_until' => $disabledAt,
             ]);
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Disable user failed: ' . $e->getMessage(), ['exception' => $e]);
+            // If disabled_until column is missing, provide actionable advice
+            if (!Schema::hasColumn('users', 'disabled_until')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The disabled_until column is missing in the users table. Please run the latest migrations.'
+                ], 500);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to disable user. Please try again.'
@@ -3661,6 +3776,20 @@ class AdminController extends Controller
                 $counter++;
             }
 
+            $structureConfig = $templateRequest->structure_config ?? [];
+
+            if ($this->isNewTemplateFormat(is_array($structureConfig) ? $structureConfig : [])) {
+                $structureConfig = $this->convertNewFormatToOld($structureConfig);
+            }
+
+            try {
+                $structureConfig = FormulaStructure::normalize($structureConfig);
+            } catch (\Throwable $exception) {
+                throw ValidationException::withMessages([
+                    'structure_config' => 'The submitted template structure could not be normalized: ' . $exception->getMessage(),
+                ]);
+            }
+
             // Create the structure template
             StructureTemplate::create([
                 'template_key' => $templateKey,
@@ -3728,9 +3857,15 @@ class AdminController extends Controller
     {
         Gate::authorize('admin');
 
-        $sessionCount = DB::table('sessions')
-            ->where('user_id', $user->id)
-            ->count();
+        $driver = config('session.driver');
+        $sessionCount = 0;
+        if ($driver === 'database' && Schema::hasTable('sessions') && Schema::hasColumn('sessions', 'user_id')) {
+            $sessionCount = DB::table('sessions')
+                ->where('user_id', $user->id)
+                ->count();
+        } else {
+            \Illuminate\Support\Facades\Log::debug("getUserSessionCount: skipped DB query; session driver={$driver}");
+        }
 
         return response()->json([
             'success' => true,

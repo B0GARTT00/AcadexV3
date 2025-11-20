@@ -57,22 +57,24 @@
                                     @endif
                                 </td>
                                 <td class="text-end">
-                                    <button type="button"
+                                        <button type="button"
                                             class="btn btn-success btn-sm"
                                             data-bs-toggle="modal"
                                             data-bs-target="#manageStudentModal"
                                             data-student-id="{{ $student->id }}"
+                                            data-update-url="{{ route('instructor.students.update', $student->id) }}"
                                             data-student-first-name="{{ $student->first_name }}"
                                             data-student-last-name="{{ $student->last_name }}"
                                             data-student-year-level="{{ $student->year_level }}"
                                             data-student-status="{{ $student->pivot->is_deleted ? 'dropped' : 'enrolled' }}">
                                         <i class="bi bi-pencil-square"></i> Manage
                                     </button>
-                                    <button type="button"
+                                        <button type="button"
                                             class="btn btn-danger btn-sm"
                                             data-bs-toggle="modal"
                                             data-bs-target="#confirmDropModal"
                                             data-student-id="{{ $student->id }}"
+                                            data-drop-url="{{ route('instructor.students.drop', $student->id) }}"
                                             data-student-name="{{ $student->first_name }} {{ $student->last_name }}">
                                         Drop
                                     </button>
@@ -147,7 +149,7 @@
 {{-- Manage Student Modal --}}
 <div class="modal fade" id="manageStudentModal" tabindex="-1" aria-labelledby="manageStudentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
-        <form method="POST" id="manageStudentForm">
+        <form method="POST" id="manageStudentForm" action="#" onsubmit="return ensureManageFormActionSet(this)">
             @csrf
             @method('PUT')
             <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
@@ -193,7 +195,7 @@
 {{-- Drop Confirmation Modal --}}
 <div class="modal fade" id="confirmDropModal" tabindex="-1" aria-labelledby="confirmDropModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form method="POST" id="dropStudentForm">
+        <form method="POST" id="dropStudentForm" action="" onsubmit="return ensureDropFormActionSet(this)">
             @csrf
             @method('DELETE')
             <input type="hidden" name="subject_id" value="{{ request('subject_id') }}">
@@ -249,16 +251,37 @@ document.addEventListener('DOMContentLoaded', function () {
     const dropConfirmation = document.getElementById('dropConfirmation');
     const confirmDropBtn = document.getElementById('confirmDropBtn');
 
+    // Also make sure clicking Drop buttons sets the action immediately (robust fallback)
+    document.querySelectorAll('button[data-bs-target="#confirmDropModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function (e) {
+            const dropUrl = btn.getAttribute('data-drop-url');
+            const studentId = btn.getAttribute('data-student-id');
+            const form = document.getElementById('dropStudentForm');
+            if (dropUrl) {
+                form.action = dropUrl;
+            } else if (studentId) {
+                form.action = `/instructor/students/${studentId}/drop`;
+            }
+        });
+    });
+
     dropModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        const studentId = button.getAttribute('data-student-id');
-        const studentName = button.getAttribute('data-student-name');
+        const button = event.relatedTarget || {};
+        const studentId = button.getAttribute ? button.getAttribute('data-student-id') : null;
+        const dropUrl = button.getAttribute ? button.getAttribute('data-drop-url') : null;
+        const studentName = button.getAttribute ? button.getAttribute('data-student-name') : '';
         const form = dropModal.querySelector('#dropStudentForm');
         const placeholder = dropModal.querySelector('#studentNamePlaceholder');
 
-        form.action = `/instructor/students/${studentId}/drop`;
+        // Set the form action server-side if possible
+        if (dropUrl) {
+            form.setAttribute('action', dropUrl);
+        } else if (studentId) {
+            form.setAttribute('action', `/instructor/students/${studentId}/drop`);
+        } else {
+            form.setAttribute('action', '');
+        }
         placeholder.textContent = studentName;
-        
         dropConfirmation.value = '';
         confirmDropBtn.disabled = true;
     });
@@ -269,19 +292,66 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const manageModal = document.getElementById('manageStudentModal');
     manageModal.addEventListener('show.bs.modal', function (event) {
-        const button = event.relatedTarget;
-        const studentId = button.getAttribute('data-student-id');
+    const button = event.relatedTarget || {};
+    const studentId = button.getAttribute ? button.getAttribute('data-student-id') : null;
+    const updateUrl = button.getAttribute ? button.getAttribute('data-update-url') : null;
         const firstName = button.getAttribute('data-student-first-name');
         const lastName = button.getAttribute('data-student-last-name');
         const yearLevel = button.getAttribute('data-student-year-level');
         
         const form = manageModal.querySelector('#manageStudentForm');
-        form.action = `/instructor/students/${studentId}/update`;
+        if (updateUrl) {
+            form.action = updateUrl;
+        } else if (studentId) {
+            form.action = `/instructor/students/${studentId}/update`;
+        }
         
         document.getElementById('manage_first_name').value = firstName;
         document.getElementById('manage_last_name').value = lastName;
         document.getElementById('manage_year_level').value = yearLevel;
     });
+
+    // Also make sure clicking Manage buttons sets the action immediately (robust fallback)
+    document.querySelectorAll('button[data-bs-target="#manageStudentModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function (e) {
+            const updateUrl = btn.getAttribute('data-update-url');
+            const studentId = btn.getAttribute('data-student-id');
+            const form = document.getElementById('manageStudentForm');
+            if (updateUrl) {
+                form.action = updateUrl;
+            } else if (studentId) {
+                form.action = `/instructor/students/${studentId}/update`;
+            }
+        });
+    });
 });
+</script>
+<script>
+function ensureDropFormActionSet(form) {
+    // Ensure the form action points to the expected drop endpoint
+    const action = form.getAttribute('action') || '';
+    // Expect a URL like /instructor/students/{id}/drop
+    const match = action.match(/\/instructor\/students\/([^\/]+)\/drop$/);
+    if (!match) {
+        console.warn('drop form action invalid on submit:', action);
+        alert('Unable to determine the student to drop. Please re-open the Drop dialog and try again.');
+        return false;
+    }
+    return true;
+}
+</script>
+<script>
+function ensureManageFormActionSet(form) {
+    // Ensure the form action points to the expected update endpoint
+    const action = form.getAttribute('action') || '';
+    // Expect a URL like /instructor/students/{id}/update
+    const match = action.match(/\/instructor\/students\/([^\/]+)\/update$/);
+    if (!match) {
+        console.warn('manage form action invalid on submit:', action);
+        alert('Unable to determine the student to update. Please re-open the Manage dialog and try again.');
+        return false;
+    }
+    return true;
+}
 </script>
 @endpush

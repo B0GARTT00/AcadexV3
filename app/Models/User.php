@@ -44,6 +44,7 @@ class User extends Authenticatable
         'department_id',
         'course_id',
         'is_universal',
+        'disabled_until',
     ];
 
     /**
@@ -63,6 +64,7 @@ class User extends Authenticatable
         'role' => 'integer',
         'is_active' => 'boolean',
         'is_universal' => 'boolean',
+        'disabled_until' => 'datetime',
     ];
 
     /**

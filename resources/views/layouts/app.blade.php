@@ -330,6 +330,27 @@
             transform: rotate(180deg);
         }
         
+        /* Students submenu styles (same behavior as Course Outcome submenu) */
+        .students-submenu {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.2s ease-out;
+            will-change: max-height;
+        }
+        .students-submenu.show {
+            max-height: 200px;
+            transition: max-height 0.2s ease-in;
+        }
+
+        .students-chevron {
+            transition: transform 0.2s ease;
+            font-size: 0.8rem;
+            display: inline-block;
+            width: 16px;
+            text-align: center;
+        }
+        .students-chevron.rotated { transform: rotate(180deg); }
+        
         /* Prevent sidebar from affecting header */
         .sidebar-wrapper {
             contain: layout style paint;
@@ -682,6 +703,34 @@
                 const submenu = document.getElementById('courseOutcomeSubmenu');
                 const chevron = document.querySelector('.course-outcome-chevron');
                 
+                if (submenu && chevron) {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
+                }
+            }
+        });
+        
+        // Students Submenu Handler
+        function toggleStudentsMenu() {
+            const submenu = document.getElementById('studentsSubmenu');
+            const chevron = document.querySelector('.students-chevron');
+            if (submenu && chevron) {
+                if (submenu.classList.contains('show')) {
+                    submenu.classList.remove('show');
+                    chevron.classList.remove('rotated');
+                } else {
+                    submenu.classList.add('show');
+                    chevron.classList.add('rotated');
+                }
+            }
+        }
+        
+        // Auto-expand if on Students pages
+        document.addEventListener('DOMContentLoaded', function() {
+            const isStudentsPage = window.location.pathname.includes('/instructor/students');
+            if (isStudentsPage) {
+                const submenu = document.getElementById('studentsSubmenu');
+                const chevron = document.querySelector('.students-chevron');
                 if (submenu && chevron) {
                     submenu.classList.add('show');
                     chevron.classList.add('rotated');

@@ -1,40 +1,51 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container py-4">
+<div class="container-fluid py-4">
     {{-- Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h4 text-dark fw-bold mb-0">🎓 Courses</h1>
-        <button class="btn btn-success" onclick="showModal()">+ Add Course</button>
+        <div>
+            <h1 class="h3 text-dark fw-bold mb-0">🎓 Programs</h1>
+            <p class="text-muted mb-0">Manage academic programs and courses</p>
+        </div>
+        <button class="btn btn-success" onclick="showModal()">
+            <i class="bi bi-plus-lg me-1"></i> Add Program
+        </button>
     </div>
 
     {{-- Courses Table --}}
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
-            <table class="table table-bordered mb-0">
-                <thead class="table-success">
-                    <tr>
-                        <th>Code</th>
-                        <th>Description</th>
-                        <th>Department</th>
-                        <th class="text-center">Created At</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($courses as $course)
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table id="coursesTable" class="table table-hover align-middle" style="width:100%">
+                    <thead class="table-light">
                         <tr>
-                            <td>{{ $course->course_code }}</td>
-                            <td>{{ $course->course_description }}</td>
-                            <td>{{ $course->department->department_description }}</td>
-                            <td class="text-center">{{ $course->created_at->format('Y-m-d') }}</td>
+                            <th>Code</th>
+                            <th>Description</th>
+                            <th>Department</th>
+                            <th class="text-center">Created At</th>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="4" class="text-center text-muted fst-italic py-3">No courses found.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse($courses as $course)
+                            <tr>
+                                <td class="fw-semibold">{{ $course->course_code }}</td>
+                                <td>{{ $course->course_description }}</td>
+                                <td>
+                                    <span class="badge bg-light text-dark border">
+                                        {{ $course->department->department_code ?? 'N/A' }}
+                                    </span>
+                                    <small class="text-muted d-block">{{ $course->department->department_description ?? '' }}</small>
+                                </td>
+                                <td class="text-center">{{ $course->created_at->format('Y-m-d') }}</td>
+                                {{-- Actions removed as requested --}}
+                            </tr>
+                        @empty
+                            {{-- DataTables will handle empty state --}}
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
@@ -44,22 +55,22 @@
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title" id="courseModalLabel">Add New Course</h5>
+                <h5 class="modal-title" id="courseModalLabel">Add New Program</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <form method="POST" action="{{ route('admin.storeCourse') }}">
                 @csrf
                 <div class="modal-body">
                     <div class="mb-3">
-                        <label class="form-label">Course Code</label>
-                        <input type="text" name="course_code" class="form-control" required>
+                        <label class="form-label fw-semibold">Program Code</label>
+                        <input type="text" name="course_code" class="form-control" placeholder="e.g. BSIT" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Course Description</label>
-                        <input type="text" name="course_description" class="form-control" required>
+                        <label class="form-label fw-semibold">Program Description</label>
+                        <input type="text" name="course_description" class="form-control" placeholder="e.g. Bachelor of Science in Information Technology" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Department</label>
+                        <label class="form-label fw-semibold">Department</label>
                         <select name="department_id" class="form-select" required>
                             <option value="">Select Department</option>
                             @foreach($departments as $department)
@@ -68,17 +79,31 @@
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Save Course</button>
+                    <button type="submit" class="btn btn-success">Save Program</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-{{-- JS --}}
+@push('scripts')
 <script>
+    $(document).ready(function() {
+        $('#coursesTable').DataTable({
+            order: [[2, 'asc'], [0, 'asc']], // Sort by Department then Code
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search programs...",
+                lengthMenu: "Show _MENU_ entries",
+                info: "Showing _START_ to _END_ of _TOTAL_ programs",
+                emptyTable: "No programs found"
+            },
+            // Keep default ordering behavior. No explicit columnDefs needed after removing Actions column.
+        });
+    });
+
     function showModal() {
         const modal = new bootstrap.Modal(document.getElementById('courseModal'), {
             backdrop: false
@@ -86,4 +111,5 @@
         modal.show();
     }
 </script>
+@endpush
 @endsection

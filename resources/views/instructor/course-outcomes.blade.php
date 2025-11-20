@@ -49,9 +49,11 @@
 
     {{-- Add Course Outcome Button --}}
     <div class="mb-3 text-end">
-        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
-            + Add Course Outcome
-        </button>
+        @if(Auth::user()->isChairperson())
+            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
+                + Add Course Outcome
+            </button>
+        @endif
     </div>
 
     {{-- Course Outcomes Table Section --}}
@@ -119,6 +121,7 @@
 </div>
 
 {{-- Add Course Outcome Modal --}}
+@if(Auth::user()->isChairperson())
 <div class="modal fade" id="addCourseOutcomeModal" tabindex="-1" aria-labelledby="addCourseOutcomeModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <form method="POST" action="{{ route($routePrefix . '.course_outcomes.store') }}">
@@ -151,6 +154,7 @@
         </form>
     </div>
 </div>
+@endif
 @endsection
 
 @push('scripts')

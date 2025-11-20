@@ -420,8 +420,21 @@
     if (approveModal) {
         approveModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('approveForm').action = `/gecoordinator/approvals/${button.getAttribute('data-id')}/approve`;
-            document.getElementById('approveName').textContent = button.getAttribute('data-name');
+            if (!button) return;
+            const id = button.getAttribute('data-id') || button.getAttribute('data-instructor-id');
+            const name = button.getAttribute('data-name') || button.getAttribute('data-instructor-name');
+            if (id) document.getElementById('approveForm').action = `/gecoordinator/approvals/${id}/approve`;
+            if (name) document.getElementById('approveName').textContent = name;
+        });
+
+        // Fallback click listeners for triggers
+        document.querySelectorAll('[data-bs-target="#confirmApproveModal"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id') || btn.getAttribute('data-instructor-id');
+                const name = btn.getAttribute('data-name') || btn.getAttribute('data-instructor-name');
+                if (id) document.getElementById('approveForm').action = `/gecoordinator/approvals/${id}/approve`;
+                if (name) document.getElementById('approveName').textContent = name;
+            });
         });
     }
 
@@ -429,8 +442,21 @@
     if (rejectModal) {
         rejectModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('rejectForm').action = `/gecoordinator/approvals/${button.getAttribute('data-id')}/reject`;
-            document.getElementById('rejectName').textContent = button.getAttribute('data-name');
+            if (!button) return;
+            const id = button.getAttribute('data-id') || button.getAttribute('data-instructor-id');
+            const name = button.getAttribute('data-name') || button.getAttribute('data-instructor-name');
+            if (id) document.getElementById('rejectForm').action = `/gecoordinator/approvals/${id}/reject`;
+            if (name) document.getElementById('rejectName').textContent = name;
+        });
+
+        // Fallback click listeners for triggers
+        document.querySelectorAll('[data-bs-target="#confirmRejectModal"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id') || btn.getAttribute('data-instructor-id');
+                const name = btn.getAttribute('data-name') || btn.getAttribute('data-instructor-name');
+                if (id) document.getElementById('rejectForm').action = `/gecoordinator/approvals/${id}/reject`;
+                if (name) document.getElementById('rejectName').textContent = name;
+            });
         });
     }
 
@@ -438,8 +464,21 @@
     if (deactivateModal) {
         deactivateModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('deactivateForm').action = `/gecoordinator/instructors/${button.getAttribute('data-instructor-id')}/deactivate`;
-            document.getElementById('instructorName').textContent = button.getAttribute('data-instructor-name');
+            if (!button) return;
+            const id = button.getAttribute('data-instructor-id') || button.getAttribute('data-id');
+            const name = button.getAttribute('data-instructor-name') || button.getAttribute('data-name');
+            if (id) document.getElementById('deactivateForm').action = `/gecoordinator/instructors/${id}/deactivate`;
+            if (name) document.getElementById('instructorName').textContent = name;
+        });
+
+        // Fallback click listeners for triggers
+        document.querySelectorAll('[data-bs-target="#confirmDeactivateModal"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-instructor-id') || btn.getAttribute('data-id');
+                const name = btn.getAttribute('data-instructor-name') || btn.getAttribute('data-name');
+                if (id) document.getElementById('deactivateForm').action = `/gecoordinator/instructors/${id}/deactivate`;
+                if (name) document.getElementById('instructorName').textContent = name;
+            });
         });
     }
 
@@ -447,26 +486,74 @@
     if (activateModal) {
         activateModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('activateForm').action = `/gecoordinator/instructors/${button.getAttribute('data-id')}/activate`;
-            document.getElementById('activateName').textContent = button.getAttribute('data-name');
+            if (!button) return;
+            const id = button.getAttribute('data-id') || button.getAttribute('data-instructor-id');
+            const name = button.getAttribute('data-name') || button.getAttribute('data-instructor-name');
+            if (id) document.getElementById('activateForm').action = `/gecoordinator/instructors/${id}/activate`;
+            if (name) document.getElementById('activateName').textContent = name;
+        });
+
+        // Fallback click listeners for triggers
+        document.querySelectorAll('[data-bs-target="#confirmActivateModal"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const id = btn.getAttribute('data-id') || btn.getAttribute('data-instructor-id');
+                const name = btn.getAttribute('data-name') || btn.getAttribute('data-instructor-name');
+                if (id) document.getElementById('activateForm').action = `/gecoordinator/instructors/${id}/activate`;
+                if (name) document.getElementById('activateName').textContent = name;
+            });
         });
     }
 
-    // Handling the approve GE request modal
+    // Handling the approve GE request modal - prefer `show.bs.modal` but also attach a click handler for reliability
     if (approveGERequestModal) {
+        // show.bs.modal handler (Bootstrap provides the relatedTarget)
         approveGERequestModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('approveGERequestForm').action = `/gecoordinator/ge-requests/${button.getAttribute('data-request-id')}/approve`;
-            document.getElementById('approveGERequestName').textContent = button.getAttribute('data-instructor-name');
+            if (!button) return;
+            const requestId = button.getAttribute('data-request-id') || button.dataset.requestId;
+            const instructorName = button.getAttribute('data-instructor-name') || button.dataset.instructorName;
+            if (requestId) {
+                document.getElementById('approveGERequestForm').action = `/gecoordinator/ge-requests/${requestId}/approve`;
+            }
+            if (instructorName) {
+                document.getElementById('approveGERequestName').textContent = instructorName;
+            }
+        });
+
+        // Fallback: attach click listeners to all triggers that open the modal
+        document.querySelectorAll('[data-bs-target="#approveGERequestModal"]').forEach(btn => {
+            btn.addEventListener('click', e => {
+                const requestId = btn.getAttribute('data-request-id') || btn.dataset.requestId;
+                const instructorName = btn.getAttribute('data-instructor-name') || btn.dataset.instructorName;
+                if (requestId) document.getElementById('approveGERequestForm').action = `/gecoordinator/ge-requests/${requestId}/approve`;
+                if (instructorName) document.getElementById('approveGERequestName').textContent = instructorName;
+            });
         });
     }
 
-    // Handling the reject GE request modal
+    // Handling the reject GE request modal - prefer `show.bs.modal` but also attach a click handler for reliability
     if (rejectGERequestModal) {
         rejectGERequestModal.addEventListener('show.bs.modal', event => {
             const button = event.relatedTarget;
-            document.getElementById('rejectGERequestForm').action = `/gecoordinator/ge-requests/${button.getAttribute('data-request-id')}/reject`;
-            document.getElementById('rejectGERequestName').textContent = button.getAttribute('data-instructor-name');
+            if (!button) return;
+            const requestId = button.getAttribute('data-request-id') || button.dataset.requestId;
+            const instructorName = button.getAttribute('data-instructor-name') || button.dataset.instructorName;
+            if (requestId) {
+                document.getElementById('rejectGERequestForm').action = `/gecoordinator/ge-requests/${requestId}/reject`;
+            }
+            if (instructorName) {
+                document.getElementById('rejectGERequestName').textContent = instructorName;
+            }
+        });
+
+        // Fallback: attach click listeners to all triggers that open the modal
+        document.querySelectorAll('[data-bs-target="#rejectGERequestModal"]').forEach(btn => {
+            btn.addEventListener('click', e => {
+                const requestId = btn.getAttribute('data-request-id') || btn.dataset.requestId;
+                const instructorName = btn.getAttribute('data-instructor-name') || btn.dataset.instructorName;
+                if (requestId) document.getElementById('rejectGERequestForm').action = `/gecoordinator/ge-requests/${requestId}/reject`;
+                if (instructorName) document.getElementById('rejectGERequestName').textContent = instructorName;
+            });
         });
     }
 </script>

@@ -601,6 +601,7 @@
                   required
                   style="border: 2px solid #e9ecef;"
                   placeholder="Enter total items"
+                  value="{{ old('number_of_items', 100) }}"
                 >
                 <div class="invalid-feedback">
                   <i class="bi bi-exclamation-circle me-1"></i>Enter the total number of items.

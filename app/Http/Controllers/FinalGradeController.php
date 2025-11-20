@@ -2,16 +2,22 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AcademicPeriod;
 use App\Models\FinalGrade;
+use App\Models\Score;
 use App\Models\Student;
 use App\Models\Subject;
 use App\Models\TermGrade;
+use App\Services\GradesFormulaService;
+use App\Traits\ActivityManagementTrait;
+use App\Traits\GradeCalculationTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 
 class FinalGradeController extends Controller
 {
+    use GradeCalculationTrait, ActivityManagementTrait;
     public function __construct()
     {
         $this->middleware('auth');
@@ -22,7 +28,10 @@ class FinalGradeController extends Controller
     {
         Gate::authorize('instructor');
 
-        $subjects = Subject::where('instructor_id', Auth::id())->get();
+                $subjects = Subject::where(function($q) {
+                        $q->where('instructor_id', Auth::id())
+                            ->orWhereHas('instructors', function($q2) { $q2->where('instructor_id', Auth::id()); });
+                })->get();
         $finalData = [];
 
         if ($request->filled('subject_id')) {
@@ -92,7 +101,12 @@ class FinalGradeController extends Controller
             'subject_id' => 'required|exists:subjects,id',
         ]);
 
-        $subject = Subject::findOrFail($request->subject_id);
+        $subject = Subject::where('id', $request->subject_id)
+            ->where(function($q) {
+                $q->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($qr) { $qr->where('instructor_id', Auth::id()); });
+            })
+            ->firstOrFail();
         $subjectId = $subject->id;
 
         $students = Student::whereHas('subjects', fn($q) => $q->where('subject_id', $subjectId))->get();
@@ -144,6 +158,93 @@ class FinalGradeController extends Controller
         return redirect()->route('instructor.final-grades.index', ['subject_id' => $subjectId])
         ->with('success', 'Final grades generated successfully.');
     
+    }
+
+    public function termReport(Request $request)
+    {
+        Gate::authorize('instructor');
+
+        $validated = $request->validate([
+            'subject_id' => 'required|exists:subjects,id',
+            'term' => 'required|in:prelim,midterm,prefinal,final',
+        ]);
+
+        $subject = Subject::with('course')
+            ->where('id', $validated['subject_id'])
+            ->where(function($q) {
+                $q->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($qr) { $qr->where('instructor_id', Auth::id()); });
+            })
+            ->firstOrFail();
+
+        $students = Student::whereHas('subjects', fn ($query) => $query->where('subject_id', $subject->id))
+            ->where('is_deleted', false)
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get();
+
+        $activities = $this->getOrCreateDefaultActivities($subject->id, $validated['term']);
+
+        $studentIds = $students->pluck('id');
+        $activityIds = $activities->pluck('id');
+
+        $scores = Score::whereIn('student_id', $studentIds)
+            ->whereIn('activity_id', $activityIds)
+            ->get()
+            ->groupBy('student_id');
+
+        $formulaSettings = GradesFormulaService::getSettings(
+            $subject->id,
+            $subject->course_id,
+            $subject->department_id,
+            null,
+            session('active_academic_period_id')
+        );
+
+        $rows = $students->map(function ($student) use ($scores, $activities, $subject, $formulaSettings) {
+            $studentScores = [];
+            $studentScoreGroup = $scores->get($student->id, collect());
+
+            foreach ($activities as $activity) {
+                $studentScores[$activity->id] = optional(
+                    $studentScoreGroup->firstWhere('activity_id', $activity->id)
+                )?->score;
+            }
+
+            $termComputation = $activities->isNotEmpty()
+                ? $this->calculateActivityScores($activities, $student->id, $subject, $formulaSettings)
+                : ['grade' => null, 'allScored' => false];
+
+            $termGrade = $termComputation['allScored'] && $termComputation['grade'] !== null
+                ? round($termComputation['grade'], 2)
+                : null;
+
+            return [
+                'student' => $student,
+                'scores' => $studentScores,
+                'term_grade' => $termGrade,
+            ];
+        });
+
+        $academicPeriod = AcademicPeriod::find(session('active_academic_period_id'));
+        $semesterLabel = match ($academicPeriod?->semester) {
+            '1st' => 'First Semester',
+            '2nd' => 'Second Semester',
+            'Summer' => 'Summer Term',
+            default => $academicPeriod?->semester,
+        };
+
+        return response()->view('instructor.scores.partials.term-print', [
+            'subject' => $subject,
+            'term' => $validated['term'],
+            'termLabel' => ucfirst($validated['term']),
+            'activities' => $activities,
+            'rows' => $rows,
+            'formulaMeta' => $formulaSettings['meta'] ?? null,
+            'generatedAt' => now(),
+            'academicYear' => $academicPeriod?->academic_year,
+            'semesterLabel' => $semesterLabel,
+        ]);
     }
 
     // 🔍 Internal Helper

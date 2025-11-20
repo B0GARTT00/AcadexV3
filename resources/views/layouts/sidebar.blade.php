@@ -28,12 +28,35 @@
             <div class="sidebar-section">
                 <h6 class="px-3 mb-2">INSTRUCTOR PORTAL</h6>
                 <ul class="nav nav-pills flex-column">
+                    @php
+                        $isStudentsActive = request()->routeIs('instructor.students.*');
+                    @endphp
                     <li class="nav-item">
-                        <a href="{{ route('instructor.students.index') }}"
-                           class="nav-link {{ request()->routeIs('instructor.students.index') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-mortarboard me-3"></i> 
-                            <span>Manage Students</span>
+                                <a class="nav-link d-flex align-items-center sidebar-link students-toggle {{ $isStudentsActive ? 'active' : '' }}" 
+                           onclick="toggleStudentsMenu()"
+                           style="cursor: pointer;">
+                            <i class="bi bi-people me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                            <span style="flex: 1;">Manage Students</span>
+                            <i class="bi bi-chevron-down ms-auto students-chevron {{ $isStudentsActive ? 'rotated' : '' }}" style="flex-shrink: 0;"></i>
                         </a>
+                        <div class="students-submenu {{ $isStudentsActive ? 'show' : '' }}" id="studentsSubmenu">
+                            <ul class="nav nav-pills flex-column ms-3">
+                                <li class="nav-item">
+                                    <a href="{{ route('instructor.students.index') }}" 
+                                       class="nav-link {{ request()->routeIs('instructor.students.index') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-mortarboard me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                                        <span>Student Records</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="{{ route('instructor.students.import') }}"
+                                       class="nav-link {{ request()->routeIs('instructor.students.import') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
+                                        <i class="bi bi-file-earmark-arrow-up me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
+                                        <span>Import Students</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
                     </li>
                     
                     {{-- Grades Collapsible Menu --}}
@@ -94,7 +117,7 @@
                                     <a href="{{ route('instructor.course_outcomes.index') }}" 
                                        class="nav-link {{ request()->routeIs('instructor.course_outcomes.*') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
                                         <i class="bi bi-book me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Manage Course Outcome</span>
+                                        <span>View Course Outcome</span>
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -110,18 +133,7 @@
                 </ul>
             </div>
 
-            <div class="sidebar-section">
-                <h6 class="px-3 mb-2">DATA MANAGEMENT</h6>
-                <ul class="nav nav-pills flex-column">
-                    <li class="nav-item">
-                        <a href="{{ route('instructor.students.import') }}" 
-                           class="nav-link {{ request()->routeIs('instructor.students.import') ? 'active' : '' }} d-flex align-items-center sidebar-link">
-                            <i class="bi bi-file-earmark-arrow-up me-3"></i>
-                            <span>Import Students</span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
+            {{-- Data Management section removed for Instructor (Import Students moved to Students submenu) --}}
         @endif
 
         {{-- Chairperson --}}
@@ -306,14 +318,14 @@
                         <a href="{{ route('admin.courses') }}" 
                            class="nav-link {{ request()->routeIs('admin.courses') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-book me-3"></i>
-                            <span>Courses</span>
+                            <span>Programs</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="{{ route('admin.subjects') }}" 
                            class="nav-link {{ request()->routeIs('admin.subjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                             <i class="bi bi-journal-bookmark me-3"></i>
-                            <span>Subjects</span>
+                            <span>Courses</span>
                         </a>
                     </li>
                     <li class="nav-item">

@@ -10,6 +10,7 @@ use App\Models\
 use App\Models\AcademicPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 
 class CourseOutcomesController extends Controller
@@ -133,6 +134,8 @@ class CourseOutcomesController extends Controller
      */
     public function create()
     {
+        Gate::authorize('chairperson');
+
         $subjects = Subject::all();
         $periods = AcademicPeriod::all();
 
@@ -144,6 +147,8 @@ class CourseOutcomesController extends Controller
      */
     public function store(Request $request)
     {
+        Gate::authorize('chairperson');
+
         $validated = $request->validate([
             'subject_id' => 'required|exists:subjects,id',
             'co_code' => 'required|string|max:255',

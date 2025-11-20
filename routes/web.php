@@ -223,6 +223,7 @@ Route::prefix('instructor')
 
         // Final Grades
         Route::get('/final-grades', [FinalGradeController::class, 'index'])->name('final-grades.index');
+        Route::get('/final-grades/term-report', [FinalGradeController::class, 'termReport'])->name('final-grades.term-report');
         Route::post('/final-grades/generate', [FinalGradeController::class, 'generate'])->name('final-grades.generate');
 
         // Activities
@@ -317,6 +318,7 @@ Route::prefix('admin')->middleware('auth')->name('admin.')->group(function () {
     // Session Management - Force Logout and Disable
     Route::post('/users/{user}/force-logout', [AdminController::class, 'forceLogoutUser'])->name('users.forceLogout');
     Route::post('/users/{user}/disable', [AdminController::class, 'disableUser'])->name('users.disable');
+    Route::post('/users/{user}/enable', [AdminController::class, 'enableUser'])->name('users.enable');
     Route::get('/users/{user}/session-count', [AdminController::class, 'getUserSessionCount'])->name('users.sessionCount');
 
     // Session Management Routes

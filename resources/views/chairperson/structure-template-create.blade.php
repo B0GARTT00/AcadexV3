@@ -130,7 +130,7 @@
                 <div class="col-md-3">
                     <label class="form-label small">Max Components</label>
                     <input type="number" class="form-control form-control-sm component-max-items" min="1" max="5" step="1" placeholder="1-5">
-                    <small class="text-muted">Limit: 1-5</small>
+                    <small class="text-muted component-max-helper">Limit: 1-5</small>
                 </div>
             </div>
             <div class="mt-2 d-flex justify-content-between align-items-center">
@@ -192,6 +192,35 @@ document.addEventListener('DOMContentLoaded', () => {
     let componentIdCounter = 1;
     let subComponentIdCounter = 1;
 
+    function syncMainComponentMaxState(componentElement) {
+        if (!componentElement) {
+            return;
+        }
+
+        const maxInput = componentElement.querySelector('.component-max-items');
+        const helperText = componentElement.querySelector('.component-max-helper');
+        const hasSubComponents = componentElement.querySelectorAll('.subcomponent-item').length > 0;
+
+        if (!maxInput) {
+            return;
+        }
+
+        if (hasSubComponents) {
+            maxInput.value = '';
+            maxInput.disabled = true;
+            maxInput.classList.add('bg-light');
+            if (helperText) {
+                helperText.textContent = 'Disabled when sub-components exist';
+            }
+        } else {
+            maxInput.disabled = false;
+            maxInput.classList.remove('bg-light');
+            if (helperText) {
+                helperText.textContent = 'Limit: 1-5';
+            }
+        }
+    }
+
     // Auto-generate label from template name
     templateNameInput.addEventListener('input', () => {
         labelInput.value = templateNameInput.value;
@@ -249,6 +278,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         componentsContainer.appendChild(clone);
+        syncMainComponentMaxState(componentItem);
         updateWeightTotal();
     }
 
@@ -264,6 +294,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const removeBtn = clone.querySelector('.remove-subcomponent-btn');
         removeBtn.addEventListener('click', () => {
             subItem.remove();
+            syncMainComponentMaxState(parentElement);
             updateWeightTotal();
         });
         
@@ -296,6 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const subContainer = parentElement.querySelector('.subcomponents-container');
         subContainer.appendChild(clone);
+        syncMainComponentMaxState(parentElement);
         updateWeightTotal();
     }
 

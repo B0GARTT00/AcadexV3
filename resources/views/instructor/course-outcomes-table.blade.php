@@ -80,14 +80,16 @@
                             
                             {{-- Add Button --}}
                             <div>
-                                @if($isLimitReached)
-                                    <button class="btn btn-outline-secondary" disabled title="Maximum 6 course outcomes reached">
-                                        <i class="bi bi-exclamation-triangle me-2"></i>Limit Reached
-                                    </button>
-                                @else
-                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
-                                        <i class="bi bi-plus-circle me-2"></i>Add Course Outcome
-                                    </button>
+                                @if(Auth::user()->isChairperson())
+                                    @if($isLimitReached)
+                                        <button class="btn btn-outline-secondary" disabled title="Maximum 6 course outcomes reached">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>Limit Reached
+                                        </button>
+                                    @else
+                                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
+                                            <i class="bi bi-plus-circle me-2"></i>Add Course Outcome
+                                        </button>
+                                    @endif
                                 @endif
                             </div>
                         </div>
@@ -110,9 +112,11 @@
                         <p class="text-muted mb-4">
                             No course outcomes have been set for {{ $selectedSubject->subject_code ?? 'this subject' }} yet.
                         </p>
-                        <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
-                            <i class="bi bi-plus-circle me-2"></i>Create First Course Outcome
-                        </button>
+                        @if(Auth::user()->isChairperson())
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
+                                <i class="bi bi-plus-circle me-2"></i>Create First Course Outcome
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -260,9 +264,11 @@
                                 </div>
                                 <h5 class="text-muted mb-2">No Course Outcomes Found</h5>
                                 <p class="text-muted mb-4">Get started by creating your first course outcome for this subject.</p>
-                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
-                                    <i class="bi bi-plus-circle me-2"></i>Create First Course Outcome
-                                </button>
+                                @if(Auth::user()->isChairperson())
+                                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addCourseOutcomeModal">
+                                        <i class="bi bi-plus-circle me-2"></i>Create First Course Outcome
+                                    </button>
+                                @endif
                             </div>
                         @endif
                     </div>
@@ -327,6 +333,7 @@
 </div>
 
 {{-- Add Course Outcome Modal --}}
+@if(Auth::user()->isChairperson())
 <div class="modal fade" id="addCourseOutcomeModal" tabindex="-1" aria-labelledby="addCourseOutcomeModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <form method="POST" action="{{ route($routePrefix . '.course_outcomes.store') }}">
@@ -369,6 +376,7 @@
         </form>
     </div>
 </div>
+@endif
 
 {{-- Edit Course Outcome Modal --}}
 <div class="modal fade" id="editCourseOutcomeModal" tabindex="-1" aria-labelledby="editCourseOutcomeModalLabel" aria-hidden="true">

@@ -23,7 +23,10 @@ class StudentImportController extends Controller
         $academicPeriodId = session('active_academic_period_id');
 
         $subjects = Subject::with('course')
-            ->where('instructor_id', Auth::id())
+            ->where(function($q) { // include subjects where current user is primary instructor OR is attached via pivot table
+                $q->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($q2) { $q2->where('instructor_id', Auth::id()); });
+            })
             ->where('academic_period_id', $academicPeriodId) // ✅ Filter by active period
             ->where('is_deleted', false)
             ->get();
@@ -81,12 +84,14 @@ public function upload(Request $request)
         ]);
     
         $academicPeriodId = session('active_academic_period_id');
-        $subject = Subject::findOrFail($request->subject_id);
-    
-        // ✅ Check if selected subject belongs to current session period
-        if ($subject->academic_period_id != $academicPeriodId) {
-            return redirect()->back()->withErrors(['error' => '❌ Subject does not belong to the active academic period.']);
-        }
+        // Ensure the subject is accessible to this instructor and belongs to active academic period
+        $subject = Subject::where('id', $request->subject_id)
+            ->where('academic_period_id', $academicPeriodId)
+            ->where(function($q) {
+                $q->where('instructor_id', Auth::id())
+                  ->orWhereHas('instructors', function($qr) { $qr->where('instructor_id', Auth::id()); });
+            })
+            ->firstOrFail();
     
         $listName = $request->list_name;
         $selectedIds = explode(',', $request->input('selected_student_ids'));
@@ -164,8 +169,11 @@ public function upload(Request $request)
         $subject = Subject::with(['students' => function ($query) {
             $query->where('students.is_deleted', 0)->with('course');
         }])
-        ->where('instructor_id', Auth::id())
         ->where('id', $subjectId)
+        ->where(function($q) { // allow either primary instructor or pivot instructor
+            $q->where('instructor_id', Auth::id())
+              ->orWhereHas('instructors', function($q2) { $q2->where('instructor_id', Auth::id()); });
+        })
         ->firstOrFail();
 
         $students = $subject->students->map(function ($student) {

@@ -133,11 +133,11 @@
             <nav aria-label="breadcrumb" class="mb-2">
                 <ol class="breadcrumb bg-white rounded-pill px-3 py-1 shadow-sm mb-0">
                     <li class="breadcrumb-item">
-                        <a href="{{ route('dashboard') }}" class="text-decoration-none" style="color: #198754; font-size: 0.9rem;">
+                        <a href="{{ route('dashboard') }}" class="text-decoration-none" style="color: #198754;">
                             <i class="bi bi-house-door me-1"></i>Home
                         </a>
                     </li>
-                    <li class="breadcrumb-item active" aria-current="page" style="color: #6c757d; font-size: 0.9rem;">
+                    <li class="breadcrumb-item active" aria-current="page">
                         <i class="bi bi-sliders me-1"></i>Grades Formula
                     </li>
                 </ol>
@@ -247,7 +247,8 @@
                         $status = $summary['status'];
                     @endphp
                     <div class="col-12 col-sm-6 col-lg-4 col-xl-3">
-                        <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $status }}" data-url="{{ $buildRoute('admin.gradesFormula.department', ['department' => $department->id]) }}" style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;">
+                        <a href="{{ $buildRoute('admin.gradesFormula.department', ['department' => $department->id]) }}" class="text-decoration-none text-reset">
+                            <div class="wildcard-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" data-status="{{ $status }}" data-url="{{ $buildRoute('admin.gradesFormula.department', ['department' => $department->id]) }}" style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;">
                             {{-- Top header --}}
                             <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
                                 <div class="wildcard-circle position-absolute start-50 translate-middle"
@@ -284,7 +285,8 @@
                                     </span>
                                 </div>
                             </div>
-                        </div>
+                            </div>
+                        </a>
                     </div>
                 @endforeach
 
@@ -301,22 +303,6 @@
                         </div>
                     </div>
                 @endif
-            </div>
-
-            <div class="text-center py-5">
-                <div class="card border-0 shadow-sm mx-auto" style="max-width: 520px;">
-                    <div class="card-body p-5">
-                        <div class="mb-4">
-                            <div class="p-4 rounded-circle mx-auto d-inline-flex" style="background: linear-gradient(135deg, #198754, #20c997);">
-                                <i class="bi bi-hand-index-thumb text-white" style="font-size: 2rem;"></i>
-                            </div>
-                        </div>
-                        <h4 class="fw-bold mb-3" style="color: #198754;">Pick a wildcard to continue</h4>
-                        <p class="text-muted mb-0">
-                            Choose a department card above to view and edit its grading formula on a dedicated page.
-                        </p>
-                    </div>
-                </div>
             </div>
             </div>
         </div>
@@ -1639,13 +1625,46 @@
             }
         }
 
+        function syncMainComponentMaxState(mainComponentId) {
+            if (!mainComponentId) {
+                return;
+            }
+
+            const mainComponent = document.querySelector(`.component-item[data-component-id="${mainComponentId}"][data-is-main="true"]`);
+            if (!mainComponent) {
+                return;
+            }
+
+            const maxInput = mainComponent.querySelector('.component-max-items');
+            const helperText = mainComponent.querySelector('.component-max-helper');
+            const subContainer = mainComponent.querySelector(`.subcomponents-container[data-parent-id="${mainComponentId}"]`);
+            const hasSubComponents = subContainer ? subContainer.querySelectorAll('.component-item').length > 0 : false;
+
+            if (!maxInput) {
+                return;
+            }
+
+            maxInput.disabled = hasSubComponents;
+            maxInput.classList.toggle('bg-light', hasSubComponents);
+            maxInput.classList.toggle('text-muted', hasSubComponents);
+
+            if (hasSubComponents) {
+                maxInput.value = '';
+                if (helperText) {
+                    helperText.textContent = 'Disabled when sub-components exist';
+                }
+            } else if (helperText) {
+                helperText.textContent = 'Limit: 1-5';
+            }
+        }
+
         function addComponent(type = '', weight = '', label = '', isMain = true, parentId = null, maxItems = '') {
             componentCounter++;
             const currentId = componentCounter;
             const isSubComponent = !isMain;
 
             const componentHtml = `
-                <div class="component-item card mb-3 ${isSubComponent ? 'ms-4 border-start border-3 border-primary' : ''}" data-component-id="${currentId}" data-is-main="${isMain}">
+                <div class="component-item card mb-3 ${isSubComponent ? 'ms-4 border-start border-3 border-primary' : ''}" data-component-id="${currentId}" data-is-main="${isMain}" data-parent-component="${parentId || ''}">
                     <div class="card-body p-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="mb-0 fw-semibold ${isSubComponent ? 'text-secondary' : 'text-primary'}">
@@ -1676,7 +1695,7 @@
                             <div class="col-md-3">
                                 <label class="form-label small fw-semibold">Max Components</label>
                                 <input type="number" class="form-control form-control-sm component-max-items" name="components[${currentId}][max_items]" value="${maxItems}" min="1" max="5" step="1" placeholder="1-5">
-                                <small class="text-muted">Limit: 1-5</small>
+                                ${!isSubComponent ? '<small class="text-muted component-max-helper">Limit: 1-5</small>' : '<small class="text-muted">Limit: 1-5</small>'}
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small fw-semibold">Label</label>
@@ -1730,8 +1749,13 @@
                     const componentId = this.dataset.componentId;
                     const component = document.querySelector(`.component-item[data-component-id="${componentId}"]`);
                     if (component) {
+                        const parentComponentId = component.dataset.parentComponent || '';
+                        const isMainComponent = component.dataset.isMain === 'true';
                         component.remove();
                         updateWeightWarning();
+                        if (!isMainComponent && parentComponentId) {
+                            syncMainComponentMaxState(parentComponentId);
+                        }
                     }
                 });
             }
@@ -1744,6 +1768,12 @@
                         addComponent('', '', '', false, parentIdValue);
                     });
                 }
+            }
+
+            if (isSubComponent && parentId) {
+                syncMainComponentMaxState(parentId);
+            } else {
+                syncMainComponentMaxState(currentId);
             }
 
             return currentId;

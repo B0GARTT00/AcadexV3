@@ -594,10 +594,8 @@
                        class="btn btn-light btn-sm">
                         <i class="bi bi-arrow-counterclockwise me-1"></i> Reset
                     </a>
-                    <button type="button" 
+                        <button type="button" 
                             class="btn btn-success btn-sm d-flex align-items-center gap-2" 
-                            data-bs-toggle="modal" 
-                            data-bs-target="#confirmModal"
                             id="importBtn"
                             disabled>
                         <i class="bi bi-check-circle"></i>
@@ -632,14 +630,15 @@
             <div class="modal-body">
                 <div class="mb-0">
                     <label class="form-label">Target Subject</label>
-                    <select name="subject_id" class="form-select border-success" required>
-                        <option value="">Choose a subject...</option>
-                        @foreach ($subjects as $subject)
-                            <option value="{{ $subject->id }}">
-                                {{ $subject->subject_code }} - {{ $subject->subject_description }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <p class="form-control-plaintext fw-semibold" id="confirmSubjectLabel">-</p>
+                    <p class="small text-muted mt-1" id="confirmStudentCount">-</p>
+                    <input type="hidden" name="subject_id" id="confirmSubjectId" value="">
+                </div>
+                <div class="mt-3">
+                    <label class="form-label small">Selected Students</label>
+                    <div id="confirmSelectedList" class="list-group list-group-flush small" style="max-height: 180px; overflow:auto;">
+                        <div class="list-group-item px-0 text-muted">No students selected</div>
+                    </div>
                 </div>
             </div>
 
@@ -1006,12 +1005,34 @@ function updateCrossCheckButton() {
 document.getElementById('listFilter')?.addEventListener('change', updateCrossCheckButton);
 document.getElementById('compareSubjectSelect')?.addEventListener('change', updateCrossCheckButton);
 
+function updateImportButtonState() {
+    const compareSubject = document.getElementById('compareSubjectSelect');
+    const importBtn = document.getElementById('importBtn');
+    const selectedCount = document.querySelectorAll('.student-checkbox:not(:disabled):checked').length;
+    const enabled = selectedCount > 0 && compareSubject && compareSubject.value;
+    if (importBtn) {
+        importBtn.disabled = !enabled;
+        if (!enabled) {
+            importBtn.classList.remove('btn-success');
+            importBtn.classList.add('btn-secondary');
+        } else {
+            importBtn.classList.add('btn-success');
+            importBtn.classList.remove('btn-secondary');
+        }
+    }
+}
+
+// When subject changes, update import button state
+document.getElementById('compareSubjectSelect')?.addEventListener('change', updateImportButtonState);
+
 // Initial button state
 document.addEventListener('DOMContentLoaded', function() {
     updateCrossCheckButton();
+    updateImportButtonState();
 });
 
 // Form submission handling
+// Confirm form submit uses the hidden subject_id set when showing the modal
 document.getElementById('confirmForm')?.addEventListener('submit', function(e) {
     e.preventDefault();
     
@@ -1023,16 +1044,82 @@ document.getElementById('confirmForm')?.addEventListener('submit', function(e) {
         return;
     }
 
-    // Get the selected subject
-    const subjectSelect = this.querySelector('select[name="subject_id"]');
-    if (!subjectSelect.value) {
-        showAlert('Please select a target subject', 'warning');
+    // Ensure confirm subject ID is set (comes from Compare with Subject dropdown)
+    const confirmSubjectId = this.querySelector('input[name="subject_id"]');
+    if (!confirmSubjectId || !confirmSubjectId.value) {
+        showAlert('Please select a target subject via the "Compare with Subject" dropdown before importing.', 'warning');
         return;
     }
     
     // Set the selected student IDs and submit
     document.getElementById('selectedStudentIds').value = selected.join(',');
     this.submit();
+});
+
+    // Import button click handler: set selected IDs and confirm subject from Compare with Subject
+document.getElementById('importBtn')?.addEventListener('click', function (e) {
+    e.preventDefault();
+    const selected = [...document.querySelectorAll('.student-checkbox:not(:disabled):checked')].map(cb => cb.value);
+    if (selected.length === 0) {
+        showAlert('Please select at least one student to import', 'warning');
+        return;
+    }
+    const compareSubject = document.getElementById('compareSubjectSelect');
+    if (!compareSubject || !compareSubject.value) {
+        showAlert('Please select a target subject using the "Compare with Subject" dropdown before importing', 'warning');
+        compareSubject?.focus();
+        return;
+    }
+
+    // Populate hidden inputs in the confirm form
+    document.getElementById('selectedStudentIds').value = selected.join(',');
+    document.getElementById('confirmSubjectId').value = compareSubject.value;
+    // Show subject label in modal
+    const selectedOption = compareSubject.options[compareSubject.selectedIndex];
+    document.getElementById('confirmSubjectLabel').textContent = selectedOption ? selectedOption.text : '';
+    // Show selected count in modal
+    document.getElementById('confirmStudentCount').textContent = `${selected.length} student(s) will be imported`;
+
+    // Populate preview list (show first 10 names)
+    const preview = document.getElementById('confirmSelectedList');
+    preview.innerHTML = '';
+    const maxPreview = 10;
+    selected.slice(0, maxPreview).forEach(id => {
+        const cb = document.querySelector(`.student-checkbox[value="${id}"]`);
+        const tr = cb ? cb.closest('tr') : null;
+        const name = tr ? tr.querySelector('.student-name')?.textContent.trim() : id;
+        const li = document.createElement('div');
+        li.className = 'list-group-item px-0';
+        li.textContent = name || id;
+        preview.appendChild(li);
+    });
+    if (selected.length === 0) {
+        const li = document.createElement('div');
+        li.className = 'list-group-item px-0 text-muted';
+        li.textContent = 'No students selected';
+        preview.appendChild(li);
+    } else if (selected.length > maxPreview) {
+        const more = document.createElement('div');
+        more.className = 'list-group-item px-0 text-muted';
+        more.textContent = `+ ${selected.length - maxPreview} more...`;
+        preview.appendChild(more);
+    }
+
+    // Show the modal programmatically
+    const confirmModalEl = document.getElementById('confirmModal');
+    const bsModal = new bootstrap.Modal(confirmModalEl, { backdrop: 'static' });
+    bsModal.show();
+});
+
+// Clear preview list when modal hides
+document.getElementById('confirmModal')?.addEventListener('hidden.bs.modal', function () {
+    const preview = document.getElementById('confirmSelectedList');
+    if (preview) {
+        preview.innerHTML = '<div class="list-group-item px-0 text-muted">No students selected</div>';
+    }
+    document.getElementById('confirmStudentCount').textContent = '-';
+    document.getElementById('confirmSubjectLabel').textContent = '-';
+    document.getElementById('confirmSubjectId').value = '';
 });
 
 // Update selected count
@@ -1062,6 +1149,8 @@ function updateSelectedCount() {
             importBtn.classList.remove('btn-secondary');
         }
     }
+    // Update import button enabled state whenever selected count changes
+    updateImportButtonState();
 }
 
 // Add event listeners for checkboxes

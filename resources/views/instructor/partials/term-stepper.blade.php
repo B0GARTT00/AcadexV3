@@ -1,12 +1,29 @@
 @php
+    // NOTE: This term stepper renders progress for the *selected* term only.
+    // Prior implementation used the total number of activities across ALL terms
+    // when computing the completion percentage. That meant the visual progress
+    // shown in the active term would appear incorrect (over/under-stated)
+    // whenever activity counts differed across terms. To fix this we filter
+    // activities to the current term before calculating cell totals and
+    // completion percentages.
     $terms = ['prelim', 'midterm', 'prefinal', 'final'];
     $radius = 36;
     $circumference = 2 * pi() * $radius;
-    $totalCells = count($students) * count($activities);
+    // Ensure we have a selected term; default to the first term if not provided.
+    $term = $term ?? ($terms[0] ?? 'prelim');
+    // Ensure $students and $activities are countable and default to empty arrays if missing
+    $students = is_countable($students) ? $students : [];
+    $activities = is_countable($activities) ? $activities : [];
+
+    // For the stepper, calculate completion *for the active term only* - prior behavior counted
+    // across all terms, which made the displayed progress for a particular term appear wrong.
+    $activitiesForTerm = collect($activities)->filter(fn($activity) => ($activity->term ?? null) === ($term ?? null));
+
+    $totalCells = count($students) * $activitiesForTerm->count();
     $filledCells = 0;
 
     foreach ($students as $student) {
-        foreach ($activities as $activity) {
+        foreach ($activitiesForTerm as $activity) {
             if (isset($scores[$student->id][$activity->id]) && $scores[$student->id][$activity->id] !== null) {
                 $filledCells++;
             }
@@ -14,6 +31,7 @@
     }
 
     $completion = $totalCells > 0 ? round(($filledCells / $totalCells) * 100) : 0;
+    $completion = min(100, max(0, $completion));
     $offset = $circumference - ($completion / 100) * $circumference;
 @endphp
 

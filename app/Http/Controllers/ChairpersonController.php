@@ -35,21 +35,16 @@ class ChairpersonController extends Controller
         // Get GE department to exclude GE department instructors from chairperson management
         $geDepartment = Department::where('department_code', 'GE')->first();
         
+        // Base query for instructors
         $query = User::where('role', 0);
-        
+
+        // If the current user is a chairperson (role === 1), only list instructors within the
+        // same department and course so Chairpersons cannot see instructors from other departments
+        // (including those approved to teach GE). GE department instructors are excluded.
         if (Auth::user()->role === 1) {
-            $query->where(function($q) use ($geDepartment) {
-                // Include active instructors from the chairperson's department
-                // or inactive instructors from the chairperson's department
-                $q->where(function($q2) {
-                    $q2->where('department_id', Auth::user()->department_id)
-                       ->where('course_id', Auth::user()->course_id);
-                })->orWhere(function($q2) use ($geDepartment) {
-                    // Also include instructors from other departments who are approved to teach GE subjects
-                    $q2->where('can_teach_ge', true)
-                       ->where('department_id', '!=', $geDepartment->id);
-                });
-            });
+            $query->where('department_id', Auth::user()->department_id)
+                  ->where('course_id', Auth::user()->course_id)
+                  ->where('department_id', '!=', $geDepartment->id);
         }
         
         $instructors = $query->orderBy('is_active', 'desc') // Show active instructors first
