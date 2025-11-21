@@ -306,6 +306,7 @@
                                         data-bs-toggle="modal"
                                         data-bs-target="#confirmApproveModal"
                                         data-id="{{ $account->id }}"
+                                        data-approve-url="{{ route('chairperson.accounts.approve', $account->id) }}"
                                         data-name="{{ $account->last_name }}, {{ $account->first_name }}">
                                         <i class="bi bi-check-circle-fill"></i> Approve
                                     </button>
@@ -315,6 +316,7 @@
                                         data-bs-toggle="modal"
                                         data-bs-target="#confirmRejectModal"
                                         data-id="{{ $account->id }}"
+                                        data-reject-url="{{ route('chairperson.accounts.reject', $account->id) }}"
                                         data-name="{{ $account->last_name }}, {{ $account->first_name }}">
                                         <i class="bi bi-x-circle-fill"></i> Reject
                                     </button>
@@ -458,6 +460,18 @@
             document.getElementById('approveName').textContent = button.getAttribute('data-name');
         });
     }
+    // Also provide a click fallback that immediately sets the form action/name when the Approve button is clicked.
+    document.querySelectorAll('button[data-bs-target="#confirmApproveModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function (e) {
+            const form = document.getElementById('approveForm');
+            const url = btn.getAttribute('data-approve-url') || (`/chairperson/approvals/${btn.getAttribute('data-id')}/approve`);
+            if (form) {
+                form.action = url;
+                const nameEl = document.getElementById('approveName');
+                if (nameEl) nameEl.textContent = btn.getAttribute('data-name') || '';
+            }
+        });
+    });
 
     // Handling the reject modal
     if (rejectModal) {
@@ -467,6 +481,18 @@
             document.getElementById('rejectName').textContent = button.getAttribute('data-name');
         });
     }
+    // Click fallback for reject modal as well
+    document.querySelectorAll('button[data-bs-target="#confirmRejectModal"]').forEach(function(btn) {
+        btn.addEventListener('click', function (e) {
+            const form = document.getElementById('rejectForm');
+            const url = btn.getAttribute('data-reject-url') || (`/chairperson/approvals/${btn.getAttribute('data-id')}/reject`);
+            if (form) {
+                form.action = url;
+                const nameEl = document.getElementById('rejectName');
+                if (nameEl) nameEl.textContent = btn.getAttribute('data-name') || '';
+            }
+        });
+    });
 
     // Handling the deactivate modal
     if (deactivateModal) {
@@ -566,6 +592,33 @@
         });
     }
     // Click fallback to set request form action and name
+        // Guard approve form submit to ensure action is set
+        const approveFormEl = document.getElementById('approveForm');
+        if (approveFormEl) {
+            approveFormEl.addEventListener('submit', function(e) {
+                const action = this.getAttribute('action') || '';
+                if (!action || action.indexOf('/approve') === -1) {
+                    e.preventDefault();
+                    console.warn('Approve form action invalid:', action);
+                    alert('Unable to determine the account to approve. Please re-open the dialog and try again.');
+                    return false;
+                }
+            });
+        }
+
+        // Guard reject form submit to ensure action is set
+        const rejectFormEl = document.getElementById('rejectForm');
+        if (rejectFormEl) {
+            rejectFormEl.addEventListener('submit', function(e) {
+                const action = this.getAttribute('action') || '';
+                if (!action || action.indexOf('/reject') === -1) {
+                    e.preventDefault();
+                    console.warn('Reject form action invalid:', action);
+                    alert('Unable to determine the account to reject. Please re-open the dialog and try again.');
+                    return false;
+                }
+            });
+        }
     document.querySelectorAll('button[data-bs-target="#requestGEAssignmentModal"]').forEach(function(btn) {
         btn.addEventListener('click', function (e) {
             const form = document.getElementById('requestGEForm');

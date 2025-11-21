@@ -319,7 +319,7 @@
                                     <i class="bi bi-journal-plus text-success fs-5"></i>
                                 </div>
                                 <div>
-                                    <h6 class="mb-1">Assign Subjects</h6>
+                                    <h6 class="mb-1">Assign Courses</h6>
                                     <small class="text-muted d-block">Manage teaching loads</small>
                                 </div>
                                 <div class="ms-auto">
