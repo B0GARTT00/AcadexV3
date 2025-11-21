@@ -189,35 +189,49 @@
         @endif
 
         <div class="content-wrapper">
+            @php
+                // Precompute filtered lists and counts for nav badges and tab usage
+                $activeInstructors = $instructors->filter(fn($i) => $i->is_active);
+                $inactiveInstructors = $instructors->filter(fn($i) => !$i->is_active);
+                $pendingAccountsCount = $pendingAccounts->count();
+                $geRequestsCount = \App\Models\GESubjectRequest::where('status', 'pending')->count();
+            @endphp
             <div class="tabs-section">
                 {{-- Bootstrap Tabs --}}
                 <ul class="nav nav-tabs" id="instructorTabs" role="tablist">
                     <li class="nav-item" role="presentation">
                         <a class="nav-link active" id="active-instructors-tab" data-bs-toggle="tab" href="#active-instructors" role="tab" aria-controls="active-instructors" aria-selected="true">
                             Active Instructors
+                            <span class="badge bg-light text-muted ms-2">{{ $activeInstructors->count() }}</span>
                         </a>
                     </li>
                     <li class="nav-item" role="presentation">
                         <a class="nav-link" id="inactive-instructors-tab" data-bs-toggle="tab" href="#inactive-instructors" role="tab" aria-controls="inactive-instructors" aria-selected="false">
                             Inactive Instructors
+                            <span class="badge bg-light text-muted ms-2">{{ $inactiveInstructors->count() }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link" id="pending-approvals-tab" data-bs-toggle="tab" href="#pending-approvals" role="tab" aria-controls="pending-approvals" aria-selected="false">
+                            Pending Approvals
+                            <span class="badge bg-light text-muted ms-2">{{ $pendingAccountsCount }}</span>
                         </a>
                     </li>
                     <li class="nav-item" role="presentation">
                         <a class="nav-link" id="ge-requests-tab" data-bs-toggle="tab" href="#ge-requests" role="tab" aria-controls="ge-requests" aria-selected="false">
                             GE Courses Requests
+                            <span class="badge bg-light text-muted ms-2">{{ $geRequestsCount }}</span>
                         </a>
                     </li>
                 </ul>
 
                 <div class="tab-content mt-3" id="instructorTabsContent">
+                    {{-- Active/Inactive lists already computed above --}}
                     {{-- Active Instructors Tab --}}
                     <div class="tab-pane fade show active" id="active-instructors" role="tabpanel" aria-labelledby="active-instructors-tab">
-                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                            <i class="bi bi-people-fill text-primary me-2 fs-5"></i>
-                            Active Instructors
-                        </h2>
+                        <h2 class="visually-hidden">Active Instructors</h2>
 
-                        @if($instructors->isEmpty())
+                        @if($activeInstructors->isEmpty())
                             <div class="alert alert-warning shadow-sm rounded">No active instructors.</div>
                         @else
                             <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
@@ -226,21 +240,14 @@
                                         <tr>
                                             <th>Instructor Name</th>
                                             <th>Email Address</th>
-                                            <th class="text-center">Status</th>
                                             <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($instructors as $instructor)
-                                            @if($instructor->is_active)
+                                        @foreach($activeInstructors as $instructor)
                                                 <tr>
                                                     <td>{{ $instructor->last_name }}, {{ $instructor->first_name }} {{ $instructor->middle_name }}</td>
                                                     <td>{{ $instructor->email }}</td>
-                                                    <td class="text-center">
-                                                        <span class="badge border border-success text-success px-3 py-2 rounded-pill">
-                                                            Active
-                                                        </span>
-                                                    </td>
                                                     <td class="text-center">
                                                         <button type="button"
                                                             class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1"
@@ -252,79 +259,18 @@
                                                         </button>
                                                     </td>
                                                 </tr>
-                                            @endif
                                         @endforeach
                                     </tbody>
                                 </table>
                             </div>        
                         @endif
-
-                        {{-- Pending Account Approvals --}}
-                        <section>
-                            <h2 class="text-lg font-semibold mb-2 text-gray-700 flex items-center">
-                                <i class="bi bi-person-check-fill text-warning me-2 fs-6"></i>
-                                Pending For Approvals
-                            </h2>
-
-                            @if($pendingAccounts->isEmpty())
-                                <div class="alert alert-info shadow-sm rounded">No pending instructor applications.</div>
-                            @else
-                                <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
-                                    <table class="table table-bordered align-middle mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Applicant Name</th>
-                                                <th>Email Address</th>
-                                                <th>Department</th>
-                                                <th>Course</th>
-                                                <th class="text-center">Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($pendingAccounts as $account)
-                                                <tr>
-                                                    <td>{{ $account->last_name }}, {{ $account->first_name }} {{ $account->middle_name }}</td>
-                                                    <td>{{ $account->email }}</td>
-                                                    <td>{{ $account->department?->department_code ?? 'N/A' }}</td>
-                                                    <td>{{ $account->course?->course_code ?? 'N/A' }}</td>
-                                                    <td class="text-center">
-                                                        <button type="button"
-                                                            class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#confirmApproveModal"
-                                                            data-id="{{ $account->id }}"
-                                                            data-name="{{ $account->last_name }}, {{ $account->first_name }}">
-                                                            <i class="bi bi-check-circle-fill"></i> Approve
-                                                        </button>
-
-                                                        <button type="button"
-                                                            class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 ms-2"
-                                                            data-bs-toggle="modal"
-                                                            data-bs-target="#confirmRejectModal"
-                                                            data-id="{{ $account->id }}"
-                                                            data-name="{{ $account->last_name }}, {{ $account->first_name }}">
-                                                            <i class="bi bi-x-circle-fill"></i> Reject
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @endif
-                        </section>
                     </div>
 
                     {{-- Inactive Instructors Tab --}}
                     <div class="tab-pane fade" id="inactive-instructors" role="tabpanel" aria-labelledby="inactive-instructors-tab">
-                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                            <i class="bi bi-person-x-fill text-secondary me-2 fs-5"></i>
-                            Inactive Instructors
-                        </h2>
+                        <h2 class="visually-hidden">Inactive Instructors</h2>
 
-                        @php
-                            $inactiveInstructors = $instructors->filter(fn($i) => !$i->is_active);
-                        @endphp
+                        {{-- $inactiveInstructors already computed above --}}
 
                         @if($inactiveInstructors->isEmpty())
                             <div class="alert alert-warning shadow-sm rounded">No inactive instructors.</div>
@@ -368,12 +314,62 @@
                         @endif
                     </div>
 
+                    {{-- Pending Approvals Tab --}}
+                    <div class="tab-pane fade" id="pending-approvals" role="tabpanel" aria-labelledby="pending-approvals-tab">
+                        <h2 class="visually-hidden">Pending Approvals</h2>
+
+                        @if($pendingAccounts->isEmpty())
+                            <div class="alert alert-info shadow-sm rounded">No pending instructor applications.</div>
+                        @else
+                            <div class="table-responsive bg-white shadow-sm rounded-4 p-3">
+                                <table class="table table-bordered align-middle mb-0">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Applicant Name</th>
+                                            <th>Email Address</th>
+                                            <th>Department</th>
+                                            <th>Course</th>
+                                            <th class="text-center">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($pendingAccounts as $account)
+                                            <tr>
+                                                <td>{{ $account->last_name }}, {{ $account->first_name }} {{ $account->middle_name }}</td>
+                                                <td>{{ $account->email }}</td>
+                                                <td>{{ $account->department?->department_code ?? 'N/A' }}</td>
+                                                <td>{{ $account->course?->course_code ?? 'N/A' }}</td>
+                                                <td class="text-center">
+                                                    <button type="button"
+                                                        class="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#confirmApproveModal"
+                                                        data-id="{{ $account->id }}"
+                                                        data-name="{{ $account->last_name }}, {{ $account->first_name }}">
+                                                        <i class="bi bi-check-circle-fill"></i> Approve
+                                                    </button>
+
+                                                    <button type="button"
+                                                        class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1 ms-2"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#confirmRejectModal"
+                                                        data-id="{{ $account->id }}"
+                                                        data-name="{{ $account->last_name }}, {{ $account->first_name }}">
+                                                        <i class="bi bi-x-circle-fill"></i> Reject
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+
                     {{-- GE Courses Requests Tab --}}
                     <div class="tab-pane fade" id="ge-requests" role="tabpanel" aria-labelledby="ge-requests-tab">
-                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                            <i class="bi bi-journal-plus text-warning me-2 fs-5"></i>
-            GE Courses Requests
-        </h2>        @php
+                        <h2 class="visually-hidden">GE Courses Requests</h2>
+        @php
             $geRequests = \App\Models\GESubjectRequest::with(['instructor', 'requestedBy'])
                 ->where('status', 'pending')
                 ->orderBy('created_at', 'desc')
@@ -392,7 +388,6 @@
                             <th>Requested By</th>
                             <th>Request Date</th>
                             <th class="text-center">Action</th>
-                        </tr>
                     </thead>
                     <tbody>
                         @foreach($geRequests as $request)
@@ -697,6 +692,8 @@
         });
     }
 
+    
+
     // Handling the reject GE request modal - prefer `show.bs.modal` but also attach a click handler for reliability
     if (rejectGERequestModal) {
         rejectGERequestModal.addEventListener('show.bs.modal', event => {
@@ -711,6 +708,8 @@
                 document.getElementById('rejectGERequestName').textContent = instructorName;
             }
         });
+
+        
 
         // Fallback: attach click listeners to all triggers that open the modal
         document.querySelectorAll('[data-bs-target="#rejectGERequestModal"]').forEach(btn => {
