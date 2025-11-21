@@ -588,14 +588,10 @@
                                            placeholder="Search instructors..."
                                            data-bs-toggle="tooltip" title="Search by instructor name">
                                 </div>
-                                <div class="btn-group btn-group-sm" role="group" aria-label="Sort options">
-                                    <button type="button" class="btn btn-outline-secondary" id="sortAvailableAscTab" 
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Sort toggle">
+                                    <button type="button" class="btn btn-outline-secondary" id="sortAvailableToggleTab" data-sort="asc"
                                             data-bs-toggle="tooltip" title="Sort A to Z">
                                         <i class="bi bi-sort-alpha-down"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" id="sortAvailableDescTab"
-                                            data-bs-toggle="tooltip" title="Sort Z to A">
-                                        <i class="bi bi-sort-alpha-up"></i>
                                     </button>
                                 </div>
                                 <button class="btn btn-success ms-auto" id="assignSelectedBtnTab" disabled
@@ -636,14 +632,10 @@
                                            placeholder="Search instructors..."
                                            data-bs-toggle="tooltip" title="Search by instructor name">
                                 </div>
-                                <div class="btn-group btn-group-sm" role="group" aria-label="Sort options">
-                                    <button type="button" class="btn btn-outline-secondary" id="sortAssignedAscTab" 
+                                <div class="btn-group btn-group-sm" role="group" aria-label="Sort toggle">
+                                    <button type="button" class="btn btn-outline-secondary" id="sortAssignedToggleTab" data-sort="asc"
                                             data-bs-toggle="tooltip" title="Sort A to Z">
                                         <i class="bi bi-sort-alpha-down"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-outline-secondary" id="sortAssignedDescTab"
-                                            data-bs-toggle="tooltip" title="Sort Z to A">
-                                        <i class="bi bi-sort-alpha-up"></i>
                                     </button>
                                 </div>
                                 <button class="btn btn-outline-danger ms-auto" id="unassignSelectedBtnTab" disabled
@@ -908,6 +900,77 @@
         return container;
     }
 
+    // Broadcast helper so other tabs or components can refresh when a subject has changed
+    const instructorUpdatesChannel = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel('ac-instructor-updates') : null;
+    function notifySubjectUpdate(subjectId) {
+        try {
+            if (instructorUpdatesChannel) {
+                instructorUpdatesChannel.postMessage({ subjectId });
+            }
+            // Fallback: use localStorage event to notify other tabs
+            try {
+                localStorage.setItem('ac-instructors-updated', JSON.stringify({ subjectId, ts: Date.now() }));
+            } catch (e) {
+                // ignore if localStorage unavailable
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
+
+    // Listen for updates and refresh the visible UI accordingly
+    if (instructorUpdatesChannel) {
+        instructorUpdatesChannel.addEventListener('message', e => {
+            if (e && e.data && e.data.subjectId) {
+                refreshSubjectInstructorCount(e.data.subjectId);
+                // if this subject is open in the modal, refresh its lists too
+                if (currentSubjectId && e.data.subjectId === currentSubjectId) {
+                    openInstructorListModal(currentSubjectId, document.getElementById('instructorListSubjectName')?.textContent || '', currentModalMode);
+                }
+            }
+        });
+    }
+
+    window.addEventListener('storage', (ev) => {
+        if (ev.key === 'ac-instructors-updated' && ev.newValue) {
+            try {
+                const payload = JSON.parse(ev.newValue);
+                if (payload && payload.subjectId) {
+                    refreshSubjectInstructorCount(payload.subjectId);
+                    if (currentSubjectId && payload.subjectId === currentSubjectId) {
+                        openInstructorListModal(currentSubjectId, document.getElementById('instructorListSubjectName')?.textContent || '', currentModalMode);
+                    }
+                }
+            } catch (err) {
+                // ignore
+            }
+        }
+    });
+
+    // Global function to refresh assigned instructor counts for a subject across the page
+    function refreshSubjectInstructorCount(subjectId) {
+        if (!subjectId) return;
+        fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
+            .then(resp => {
+                if (!resp.ok) return resp.json().then(err => { throw new Error(err.message || 'Failed to load instructors'); }).catch(() => { throw new Error('Failed to load instructors'); });
+                return resp.json();
+            })
+            .then(list => {
+                const count = Array.isArray(list) ? list.length : (list.length || 0);
+                // Update all view-count nodes which rely on this subject's id
+                document.querySelectorAll(`button.subject-view-btn[data-subject-id="${subjectId}"] .view-count`).forEach(el => {
+                    el.textContent = count;
+                });
+                // Also update any other badges that may reference the subject (e.g., full view rows if implemented)
+                document.querySelectorAll(`.subject-view-badge[data-subject-id="${subjectId}"]`).forEach(el => {
+                    el.textContent = count;
+                });
+            })
+            .catch(err => {
+                console.error('Error updating instructor count:', err);
+            });
+    }
+
     // Open a simple read-only modal to view assigned instructors
     function openViewInstructorsModal(subjectId, subjectName) {
         const modal = new bootstrap.Modal(document.getElementById('viewInstructorsModal'));
@@ -1148,49 +1211,47 @@
             });
         });
         
-        // Sort assigned tab - replace with button handlers
-        const sortAssignedAscTab = document.getElementById('sortAssignedAscTab');
-        const sortAssignedDescTab = document.getElementById('sortAssignedDescTab');
-        const newSortAssignedAscTab = sortAssignedAscTab.cloneNode(true);
-        const newSortAssignedDescTab = sortAssignedDescTab.cloneNode(true);
-        sortAssignedAscTab.parentNode.replaceChild(newSortAssignedAscTab, sortAssignedAscTab);
-        sortAssignedDescTab.parentNode.replaceChild(newSortAssignedDescTab, sortAssignedDescTab);
-        
-        newSortAssignedAscTab.addEventListener('click', () => {
-            const sorted = [...assignedInstructorsData].sort((a, b) => a.name.localeCompare(b.name));
-            renderAssignedListTab(sorted);
-            newSortAssignedAscTab.classList.add('active');
-            newSortAssignedDescTab.classList.remove('active');
-        });
-        
-        newSortAssignedDescTab.addEventListener('click', () => {
-            const sorted = [...assignedInstructorsData].sort((a, b) => b.name.localeCompare(a.name));
-            renderAssignedListTab(sorted);
-            newSortAssignedDescTab.classList.add('active');
-            newSortAssignedAscTab.classList.remove('active');
-        });
-        
-        // Sort available tab - replace with button handlers
-        const sortAvailableAscTab = document.getElementById('sortAvailableAscTab');
-        const sortAvailableDescTab = document.getElementById('sortAvailableDescTab');
-        const newSortAvailableAscTab = sortAvailableAscTab.cloneNode(true);
-        const newSortAvailableDescTab = sortAvailableDescTab.cloneNode(true);
-        sortAvailableAscTab.parentNode.replaceChild(newSortAvailableAscTab, sortAvailableAscTab);
-        sortAvailableDescTab.parentNode.replaceChild(newSortAvailableDescTab, sortAvailableDescTab);
-        
-        newSortAvailableAscTab.addEventListener('click', () => {
-            const sorted = [...availableInstructorsData].sort((a, b) => a.name.localeCompare(b.name));
-            renderAvailableListTab(sorted);
-            newSortAvailableAscTab.classList.add('active');
-            newSortAvailableDescTab.classList.remove('active');
-        });
-        
-        newSortAvailableDescTab.addEventListener('click', () => {
-            const sorted = [...availableInstructorsData].sort((a, b) => b.name.localeCompare(a.name));
-            renderAvailableListTab(sorted);
-            newSortAvailableDescTab.classList.add('active');
-            newSortAvailableAscTab.classList.remove('active');
-        });
+        // Sort assigned tab - single toggle button implementation
+        (function() {
+            const el = document.getElementById('sortAssignedToggleTab');
+            if (!el) return;
+            const newEl = el.cloneNode(true);
+            try { if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) new bootstrap.Tooltip(newEl); } catch (e) {}
+            el.parentNode.replaceChild(newEl, el);
+            newEl.addEventListener('click', () => {
+                const current = newEl.dataset.sort || 'asc';
+                const next = current === 'asc' ? 'desc' : 'asc';
+                newEl.dataset.sort = next;
+                const icon = newEl.querySelector('i');
+                if (icon) icon.className = 'bi ' + (next === 'asc' ? 'bi-sort-alpha-down' : 'bi-sort-alpha-up');
+                newEl.title = next === 'asc' ? 'Sort A to Z' : 'Sort Z to A';
+                newEl.setAttribute('aria-pressed', next === 'desc');
+                try { if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) { const t = bootstrap.Tooltip.getInstance(newEl); if (t) t.dispose(); new bootstrap.Tooltip(newEl); } } catch (e) {}
+                const sorted = [...assignedInstructorsData].sort((a, b) => next === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+                renderAssignedListTab(sorted);
+            });
+        })();
+
+        // Sort available tab - single toggle button implementation
+        (function() {
+            const el = document.getElementById('sortAvailableToggleTab');
+            if (!el) return;
+            const newEl = el.cloneNode(true);
+            try { if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) new bootstrap.Tooltip(newEl); } catch (e) {}
+            el.parentNode.replaceChild(newEl, el);
+            newEl.addEventListener('click', () => {
+                const current = newEl.dataset.sort || 'asc';
+                const next = current === 'asc' ? 'desc' : 'asc';
+                newEl.dataset.sort = next;
+                const icon = newEl.querySelector('i');
+                if (icon) icon.className = 'bi ' + (next === 'asc' ? 'bi-sort-alpha-down' : 'bi-sort-alpha-up');
+                newEl.title = next === 'asc' ? 'Sort A to Z' : 'Sort Z to A';
+                newEl.setAttribute('aria-pressed', next === 'desc');
+                try { if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) { const t = bootstrap.Tooltip.getInstance(newEl); if (t) t.dispose(); new bootstrap.Tooltip(newEl); } } catch (e) {}
+                const sorted = [...availableInstructorsData].sort((a, b) => next === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name));
+                renderAvailableListTab(sorted);
+            });
+        })();
         
         // Bulk unassign button
         const unassignBtnTab = document.getElementById('unassignSelectedBtnTab');
@@ -1491,27 +1552,11 @@
                     openInstructorListModal(subjectId, document.getElementById('instructorListSubjectName').textContent, 'edit');
                     // Update the view count in the table
                     refreshSubjectInstructorCount(subjectId);
+                    // Notify other listeners (other tabs/components) that the subject has been updated
+                    notifySubjectUpdate(subjectId);
                 } else {
                     throw new Error(data.message || 'Failed to assign instructor');
                 }
-
-                    function refreshSubjectInstructorCount(subjectId) {
-                        // Fetch current assigned instructors for the subject and update all matching view-count elements
-                        fetch(`/gecoordinator/subjects/${subjectId}/instructors`)
-                            .then(resp => {
-                                if (!resp.ok) return resp.json().then(err => { throw new Error(err.message || 'Failed to load instructors'); }).catch(() => { throw new Error('Failed to load instructors'); });
-                                return resp.json();
-                            })
-                            .then(list => {
-                                const count = Array.isArray(list) ? list.length : (list.length || 0);
-                                document.querySelectorAll(`button.subject-view-btn[data-subject-id="${subjectId}"] .view-count`).forEach(el => {
-                                    el.textContent = count;
-                                });
-                            })
-                            .catch(err => {
-                                console.error('Error updating instructor count:', err);
-                            });
-                    }
             })
             .catch(error => {
                 console.error('Error:', error);
@@ -1648,6 +1693,7 @@
                 setTimeout(() => {
                     openInstructorListModal(currentSubjectId, document.getElementById('instructorListSubjectName').textContent, 'view');
                     refreshSubjectInstructorCount(currentSubjectId);
+                    notifySubjectUpdate(currentSubjectId);
                 }, 400);
             })
             .catch(error => {
@@ -1751,6 +1797,7 @@
                             if (sid) {
                                 openInstructorListModal(sid, document.getElementById('instructorListSubjectName').textContent, 'edit');
                                 refreshSubjectInstructorCount(sid);
+                                notifySubjectUpdate(sid);
                             } else {
                                 window.location.reload();
                             }
@@ -1868,6 +1915,7 @@
             setTimeout(() => {
                 openInstructorListModal(subjectId, document.getElementById('instructorListSubjectName').textContent, 'view');
                 refreshSubjectInstructorCount(subjectId);
+                notifySubjectUpdate(subjectId);
             }, 400);
         })
         .catch(error => {
