@@ -541,7 +541,7 @@
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div class="modal-content rounded-4 shadow">
             <div class="modal-header bg-success text-white d-flex align-items-start">
-                <div class="flex-grow-1">
+                <div class="flex-grow-1 d-flex align-items-center">
                     <h5 class="modal-title mb-1 d-flex align-items-center" id="instructorListModalLabel">
                         <i class="bi bi-people-fill me-2"></i>
                         <span id="instructorListModalTitle">Manage Instructors</span>
@@ -556,11 +556,13 @@
                     <li class="nav-item" role="presentation">
                         <button class="nav-link active" id="assign-tab" data-bs-toggle="tab" data-bs-target="#assignPanel" type="button" role="tab" aria-controls="assignPanel" aria-selected="true">
                             <i class="bi bi-person-plus-fill me-2"></i>Assign Instructors
+                            <span class="badge bg-primary ms-2" id="assignTabCount">0</span>
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
                         <button class="nav-link" id="unassign-tab" data-bs-toggle="tab" data-bs-target="#unassignPanel" type="button" role="tab" aria-controls="unassignPanel" aria-selected="false">
                             <i class="bi bi-person-dash-fill me-2"></i>Unassign Instructors
+                            <span class="badge bg-success ms-2" id="unassignTabCount">0</span>
                         </button>
                     </li>
                 </ul>
@@ -570,15 +572,6 @@
                     <!-- Assign Tab Panel -->
                     <div class="tab-pane fade show active" id="assignPanel" role="tabpanel" aria-labelledby="assign-tab">
                         <div class="p-3 bg-light border-bottom">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="mb-0 fw-semibold text-primary">
-                                    <i class="bi bi-person-plus-fill me-2"></i>Available Instructors
-                                    <span class="badge bg-primary ms-2" id="availableCountTab">0</span>
-                                </h6>
-                                <small class="text-muted" data-bs-toggle="tooltip" title="These instructors can be added to teach this subject">
-                                    <i class="bi bi-info-circle"></i>
-                                </small>
-                            </div>
                             <div class="d-flex gap-2 align-items-center mb-2">
                                 <div class="input-group input-group-sm" style="max-width: 250px;">
                                     <span class="input-group-text bg-white border-end-0">
@@ -604,9 +597,8 @@
                         <div class="p-4" style="max-height: 350px; overflow-y: auto;" id="availableInstructorsListTab">
                             <div class="text-center text-muted py-5">
                                 <div class="spinner-border spinner-border-sm" role="status">
-                                    <span class="visually-hidden">Loading...</span>
+                                    <span class="visually-hidden">Loading available instructors...</span>
                                 </div>
-                                <p class="small mt-2 mb-0">Loading available instructors...</p>
                             </div>
                         </div>
                     </div>
@@ -614,15 +606,6 @@
                     <!-- Unassign Tab Panel -->
                     <div class="tab-pane fade" id="unassignPanel" role="tabpanel" aria-labelledby="unassign-tab">
                         <div class="p-3 bg-light border-bottom">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h6 class="mb-0 fw-semibold text-success">
-                                    <i class="bi bi-person-check-fill me-2"></i>Assigned Instructors
-                                    <span class="badge bg-success ms-2" id="assignedCountTab">0</span>
-                                </h6>
-                                <small class="text-muted" data-bs-toggle="tooltip" title="These instructors are currently teaching this subject">
-                                    <i class="bi bi-info-circle"></i>
-                                </small>
-                            </div>
                             <div class="d-flex gap-2 align-items-center mb-2">
                                 <div class="input-group input-group-sm" style="max-width: 250px;">
                                     <span class="input-group-text bg-white border-end-0">
@@ -648,9 +631,8 @@
                         <div class="p-4" style="max-height: 350px; overflow-y: auto;" id="assignedInstructorsListTab">
                             <div class="text-center text-muted py-5">
                                 <div class="spinner-border spinner-border-sm" role="status">
-                                    <span class="visually-hidden">Loading...</span>
+                                    <span class="visually-hidden">Loading assigned instructors...</span>
                                 </div>
-                                <p class="small mt-2 mb-0">Loading assigned instructors...</p>
                             </div>
                         </div>
                     </div>
@@ -664,11 +646,8 @@
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="mb-0 fw-semibold text-success">
                                     <i class="bi bi-person-check-fill me-2"></i>Assigned Instructors
-                                    <span class="badge bg-success ms-2" id="assignedCount">0</span>
                                 </h6>
-                                <small class="text-muted" data-bs-toggle="tooltip" title="These instructors are currently teaching this subject">
-                                    <i class="bi bi-info-circle"></i>
-                                </small>
+                                <!-- Info moved to modal header; tooltip removed from per-panel header -->
                             </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-white border-end-0">
@@ -716,11 +695,8 @@
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <h6 class="mb-0 fw-semibold text-primary">
                                     <i class="bi bi-person-plus-fill me-2"></i>Available Instructors
-                                    <span class="badge bg-primary ms-2" id="availableCount">0</span>
                                 </h6>
-                                <small class="text-muted" data-bs-toggle="tooltip" title="These instructors can be added to teach this subject">
-                                    <i class="bi bi-info-circle"></i>
-                                </small>
+                                <!-- Info moved to modal header; tooltip removed from per-panel header -->
                             </div>
                             <div class="input-group input-group-sm mb-2">
                                 <span class="input-group-text bg-white border-end-0">
@@ -1090,9 +1066,11 @@
         assignedInstructorsData = assignedInstructors;
         availableInstructorsData = availableInstructors.filter(i => !assignedIds.includes(i.id));
         
-        // Update counts for tab version
-        document.getElementById('assignedCountTab').textContent = assignedInstructorsData.length;
-        document.getElementById('availableCountTab').textContent = availableInstructorsData.length;
+        // Update counts for tab version (badge on the tab itself)
+        const assignBadge = document.getElementById('assignTabCount');
+        const unassignBadge = document.getElementById('unassignTabCount');
+        if (assignBadge) assignBadge.textContent = availableInstructorsData.length;
+        if (unassignBadge) unassignBadge.textContent = assignedInstructorsData.length;
         
         // Render both tab lists
         renderAssignedListTab(assignedInstructorsData);
@@ -1152,7 +1130,7 @@
                 <div class="text-center text-muted py-5">
                     <i class="bi bi-check-circle fs-1 d-block mb-3 opacity-25 text-success"></i>
                     <p class="fw-semibold mb-1">All Instructors Assigned!</p>
-                    <p class="small mb-0">All available instructors are already assigned to this subject</p>
+                    <p class="small mb-0">All available instructors are assigned to this subject</p>
                 </div>`;
             document.getElementById('assignSelectedBtnTab').disabled = true;
             return;
@@ -1311,6 +1289,9 @@
 
     function renderAssignedList(instructors) {
         const container = document.getElementById('assignedInstructorsList');
+        // Keep the modal tab count updated
+        const unassignBadge = document.getElementById('unassignTabCount');
+        if (unassignBadge) unassignBadge.textContent = instructors.length;
         
         if (instructors.length === 0) {
             container.innerHTML = `
@@ -1354,6 +1335,9 @@
 
     function renderAvailableList(instructors) {
         const container = document.getElementById('availableInstructorsList');
+        // Keep the modal tab count updated
+        const assignBadge = document.getElementById('assignTabCount');
+        if (assignBadge) assignBadge.textContent = instructors.length;
         
         if (instructors.length === 0) {
             container.innerHTML = `
@@ -1361,7 +1345,7 @@
                     <i class="bi bi-check-circle fs-1 d-block mb-3 opacity-50 text-success"></i>
                     <p class="fw-semibold mb-1">All Instructors Assigned!</p>
                     <p class="small mb-0">
-                        All available instructors are already assigned to this subject
+                        All available instructors are assigned to this subject
                     </p>
                 </div>`;
             document.getElementById('assignSelectedBtn').disabled = true;
