@@ -24,7 +24,9 @@
     <div class="row g-4 px-4 py-2">
         @forelse($courses as $c)
             <div class="col-md-4">
-                <div class="course-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" style="cursor: pointer;">
+                <div class="course-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden" 
+                     data-url="{{ route('chairperson.reports.co-course') }}?course_id={{ $c->id }}"
+                     style="cursor: pointer;">
                     <div class="position-relative" style="height: 80px;">
                         <div class="course-circle position-absolute start-50 translate-middle"
                             style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -36,9 +38,9 @@
                             {{ $c->course_description }}
                         </h6>
                         <div class="mt-3">
-                            <a class="btn btn-success" href="{{ route('chairperson.reports.co-course') }}?course_id={{ $c->id }}">
+                            <span class="btn btn-success">
                                 <i class="bi bi-arrow-right-circle me-1"></i> View Courses
-                            </a>
+                            </span>
                         </div>
                     </div>
                 </div>
@@ -68,19 +70,12 @@
     overflow: hidden;
 }
 
-.course-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    transition: left 0.5s;
+.course-card * {
+    pointer-events: none;
 }
 
-.course-card:hover::before {
-    left: 100%;
+.course-card {
+    pointer-events: auto;
 }
 
 .course-card:hover {
@@ -130,26 +125,6 @@
     transform: scale(1.05);
 }
 
-.course-card::after {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(77, 166, 116, 0.5);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-}
-
-.course-card:active::after {
-    width: 300px;
-    height: 300px;
-    opacity: 0;
-    transition: 0s;
-}
-
 .course-circle h5 {
   font-size: 1.1rem;
   white-space: normal;
@@ -170,5 +145,34 @@
   }
 }
 </style>
+@endpush
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.course-card[data-url]').forEach(card => {
+        card.addEventListener('click', function(e) {
+            const url = this.dataset.url;
+            if (url) {
+                window.location.href = url;
+            }
+        });
+        
+        // Add keyboard support
+        card.setAttribute('tabindex', '0');
+        card.setAttribute('role', 'button');
+        
+        card.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                const url = this.dataset.url;
+                if (url) {
+                    window.location.href = url;
+                }
+            }
+        });
+    });
+});
+</script>
 @endpush
 @endsection
