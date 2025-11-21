@@ -5,14 +5,47 @@
 <style>
 .subject-card {
     cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
+
+.subject-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+    transition: left 0.5s ease;
+    z-index: 1;
+}
+
+.subject-card:hover::before {
+    left: 100%;
+}
+
 .subject-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    transform: translateY(-8px);
+    box-shadow: 0 12px 28px rgba(77, 166, 116, 0.3) !important;
 }
+
+.subject-card .position-relative {
+    transition: background-color 0.3s ease;
+}
+
+.subject-card:hover .position-relative {
+    background: linear-gradient(135deg, #4da674, #3d8a5e) !important;
+}
+
 .subject-circle {
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.subject-card:hover .subject-circle {
+    transform: translate(-50%, -50%) rotate(5deg) scale(1.05) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
 }
  </style>
 @endpush
@@ -36,8 +69,8 @@
                                 style="cursor: pointer;"
                             >
                                 <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
-                                    <div class="subject-circle position-absolute start-50 translate-middle"
-                                        style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                                    <div class="subject-circle position-absolute start-50"
+                                        style="top: 100%; width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transform: translate(-50%, -50%);">
                                         <h6 class="mb-0 text-white fw-bold">{{ $subjectItem->subject_code }}</h6>
                                     </div>
                                 </div>

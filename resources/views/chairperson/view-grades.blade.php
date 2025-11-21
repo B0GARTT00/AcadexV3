@@ -155,26 +155,6 @@
             opacity: 0;
         }
     }
-
-    .subject-card::after {
-        content: '';
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        border-radius: 50%;
-        background: rgba(77, 166, 116, 0.5);
-        transform: translate(-50%, -50%);
-        transition: width 0.6s, height 0.6s;
-    }
-
-    .subject-card:active::after {
-        width: 300px;
-        height: 300px;
-        opacity: 0;
-        transition: 0s;
-    }
 </style>
 
 <div class="import-courses-wrapper">
