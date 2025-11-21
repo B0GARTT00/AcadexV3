@@ -343,6 +343,7 @@
 <script>
     const termReportUrl = "{{ route('instructor.final-grades.term-report') }}";
     const bannerUrl = "{{ asset('images/banner-header.png') }}";
+    const currentSubjectId = "{{ request('subject_id') }}";
 
     // Close print modal helper
     function closePrintModal() {
@@ -379,8 +380,7 @@
 
     // Print specific table function (handles both summary and term sheets)
     function printSpecificTable(tableType) {
-        const subjectSelect = document.querySelector("select[name='subject_id']");
-        if (!subjectSelect || !subjectSelect.value) {
+        if (!currentSubjectId) {
             alert('Please select a subject first.');
             return;
         }
@@ -390,7 +390,7 @@
             printFinalSummary();
         } else {
             // Print individual term sheet — fetch HTML then print via iframe to avoid about:blank footers
-            const subjectId = subjectSelect.value;
+            const subjectId = currentSubjectId;
             const url = new URL(termReportUrl);
             url.searchParams.set('subject_id', subjectId);
             url.searchParams.set('term', tableType);
@@ -499,7 +499,14 @@
     // Print Final Summary Function
     function printFinalSummary() {
         const content = document.getElementById('print-area').innerHTML;
-        const subject = document.querySelector("select[name='subject_id']").selectedOptions[0].text;
+        @php
+            $currentSubject = $subjects->firstWhere('id', request('subject_id'));
+            $subjectCode = $currentSubject ? $currentSubject->subject_code : '';
+            $subjectDesc = $currentSubject ? $currentSubject->description : '';
+        @endphp
+        const subjectCode = @json($subjectCode);
+        const subjectDesc = @json($subjectDesc);
+        const subject = `${subjectCode} - ${subjectDesc}`;
         
         // Count passed and failed students from the data
         @php
@@ -913,19 +920,19 @@
                         <table class="header-table">
                             <tr>
                                 <td class="header-label">Course Code:</td>
-                                <td class="header-value">${subject.split(' - ')[0]}</td>
+                                <td class="header-value">${subjectCode}</td>
                                 <td class="header-label">Units:</td>
-                                <td class="header-value">{{ $subjects->first()->units ?? 'N/A' }}</td>
+                                <td class="header-value">{{ $currentSubject->units ?? 'N/A' }}</td>
                             </tr>
                             <tr>
                                 <td class="header-label">Description:</td>
-                                <td class="header-value">${subject.split(' - ')[1]}</td>
+                                <td class="header-value">${subjectDesc}</td>
                                 <td class="header-label">Semester:</td>
                                 <td class="header-value">${semester}</td>
                             </tr>
                             <tr>
                                 <td class="header-label">Course/Section:</td>
-                                <td class="header-value">{{ $subjects->first()->course->course_code ?? 'N/A' }}</td>
+                                <td class="header-value">{{ $currentSubject->course->course_code ?? 'N/A' }}</td>
                                 <td class="header-label">School Year:</td>
                                 <td class="header-value">${academicPeriod}</td>
                             </tr>
