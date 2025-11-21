@@ -229,10 +229,7 @@
                     {{-- Active/Inactive lists already computed above --}}
                     {{-- Active Instructors Tab --}}
                     <div class="tab-pane fade show active" id="active-instructors" role="tabpanel" aria-labelledby="active-instructors-tab">
-                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                            <i class="bi bi-people-fill text-primary me-2 fs-5"></i>
-                            Active Instructors
-                        </h2>
+                        <h2 class="visually-hidden">Active Instructors</h2>
 
                         @if($activeInstructors->isEmpty())
                             <div class="alert alert-warning shadow-sm rounded">No active instructors.</div>
@@ -271,10 +268,7 @@
 
                     {{-- Inactive Instructors Tab --}}
                     <div class="tab-pane fade" id="inactive-instructors" role="tabpanel" aria-labelledby="inactive-instructors-tab">
-                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                            <i class="bi bi-person-x-fill text-secondary me-2 fs-5"></i>
-                            Inactive Instructors
-                        </h2>
+                        <h2 class="visually-hidden">Inactive Instructors</h2>
 
                         {{-- $inactiveInstructors already computed above --}}
 
@@ -322,10 +316,7 @@
 
                     {{-- Pending Approvals Tab --}}
                     <div class="tab-pane fade" id="pending-approvals" role="tabpanel" aria-labelledby="pending-approvals-tab">
-                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                            <i class="bi bi-person-check-fill text-warning me-2 fs-5"></i>
-                            Pending Approvals
-                        </h2>
+                        <h2 class="visually-hidden">Pending Approvals</h2>
 
                         @if($pendingAccounts->isEmpty())
                             <div class="alert alert-info shadow-sm rounded">No pending instructor applications.</div>
@@ -377,10 +368,8 @@
 
                     {{-- GE Courses Requests Tab --}}
                     <div class="tab-pane fade" id="ge-requests" role="tabpanel" aria-labelledby="ge-requests-tab">
-                        <h2 class="text-xl font-semibold mb-3 text-gray-700 flex items-center">
-                            <i class="bi bi-journal-plus text-warning me-2 fs-5"></i>
-            GE Courses Requests
-        </h2>        @php
+                        <h2 class="visually-hidden">GE Courses Requests</h2>
+        @php
             $geRequests = \App\Models\GESubjectRequest::with(['instructor', 'requestedBy'])
                 ->where('status', 'pending')
                 ->orderBy('created_at', 'desc')
