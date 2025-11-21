@@ -96,54 +96,40 @@
             <div class="sidebar-section">
                 <h6 class="px-3 mb-2">DEPARTMENT MANAGEMENT</h6>
                 <ul class="nav nav-pills flex-column">
-                    {{-- Academic Records dropdown --}}
                     <li class="nav-item">
-                        <a class="nav-link d-flex align-items-center sidebar-link academic-records-toggle {{ $isAcademicActive ? 'active' : '' }}" 
-                           onclick="toggleAcademicRecordsMenu()"
-                           style="cursor: pointer;">
-                            <i class="bi bi-journal-bookmark me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                            <span style="flex: 1;">Academic Records</span>
-                            <i class="bi bi-chevron-down ms-auto academic-records-chevron {{ $isAcademicActive ? 'rotated' : '' }}" style="flex-shrink: 0;"></i>
+                        <a href="{{ route('chairperson.instructors') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.instructors') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-people me-3"></i>
+                            <span>Manage Instructors</span>
                         </a>
-                        <div class="academic-records-submenu {{ $isAcademicActive ? 'show' : '' }}" id="academicRecordsSubmenu">
-                            <ul class="nav nav-pills flex-column ms-3">
-                                <li class="nav-item">
-                                    <a href="{{ route('chairperson.instructors') }}" 
-                                       class="nav-link {{ request()->routeIs('chairperson.instructors') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-people me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Manage Instructors</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('chairperson.assign-subjects') }}" 
-                                       class="nav-link {{ request()->routeIs('chairperson.assign-subjects') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-journal-plus me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Manage Courses</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('curriculum.selectSubjects') }}"
-                                       class="nav-link {{ request()->routeIs('curriculum.selectSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-file-earmark-arrow-up me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Import Courses</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('chairperson.studentsByYear') }}" 
-                                       class="nav-link {{ request()->routeIs('chairperson.studentsByYear') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-person-lines-fill me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>Manage Students</span>
-                                    </a>
-                                </li>
-                                <li class="nav-item">
-                                    <a href="{{ route('chairperson.viewGrades') }}"     
-                                       class="nav-link {{ request()->routeIs('chairperson.viewGrades') ? 'active' : '' }} d-flex align-items-center sidebar-link submenu-link">
-                                        <i class="bi bi-clipboard-data me-3" style="width: 20px; text-align: center; display: inline-block; flex-shrink: 0;"></i>
-                                        <span>View Grades</span>
-                                    </a>
-                                </li>
-                            </ul>
-                        </div>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.assign-subjects') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.assign-subjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-journal-plus me-3"></i>
+                            <span>Manage Courses</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('curriculum.selectSubjects') }}"
+                           class="nav-link {{ request()->routeIs('curriculum.selectSubjects') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-file-earmark-arrow-up me-3"></i>
+                            <span>Import Courses</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.studentsByYear') }}" 
+                           class="nav-link {{ request()->routeIs('chairperson.studentsByYear') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-person-lines-fill me-3"></i>
+                            <span>Manage Students</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('chairperson.viewGrades') }}"     
+                           class="nav-link {{ request()->routeIs('chairperson.viewGrades') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                            <i class="bi bi-clipboard-data me-3"></i>
+                            <span>View Grades</span>
+                        </a>
                     </li>
                 </ul>
             </div>
