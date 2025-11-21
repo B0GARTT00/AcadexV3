@@ -12,11 +12,11 @@
                     $activePeriod = \App\Models\AcademicPeriod::orderBy('created_at', 'desc')->first();
                 }
             @endphp
-            @if($activePeriod)
+            @if($activePeriod && !in_array($user->role, [2, 3, 5])) <!-- Exclude Dean, Admin, VPAA -->
                 @php
                     $semesterLabel = '';
                     $academicYear = $activePeriod->academic_year;
-        
+
                     switch ($activePeriod->semester) {
                         case '1st':
                             $semesterLabel = 'First Semester';
@@ -31,7 +31,7 @@
                             $semesterLabel = 'Unknown Semester';
                             break;
                     }
-        
+
                     if ($activePeriod->semester != 'Summer') {
                         list($startYear, $endYear) = explode('-', $academicYear);
                     }
@@ -45,7 +45,7 @@
                     @endif
                 </span>
             @else
-                <span class="badge bg-success bg-opacity-25 px-3 py-2 rounded-pill" style="white-space: nowrap; font-size: 0.8125rem; font-weight: 500; line-height: 1; height: 32px; display: inline-flex; align-items: center; min-width: 290px; justify-content: center; letter-spacing: -0.01em;">Academic Year</span>
+                <span class="badge bg-success bg-opacity-25 px-3 py-2 rounded-pill" style="white-space: nowrap; font-size: 0.8125rem; font-weight: 500; line-height: 1; height: 32px; display: inline-flex; align-items: center; min-width: 290px; justify-content: center; letter-spacing: -0.01em;">Dashboard</span>
             @endif
         </h1>    
     </div>

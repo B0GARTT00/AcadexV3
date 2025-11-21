@@ -13,7 +13,7 @@
             <ul class="nav nav-pills flex-column">
                 <li class="nav-item">
                     <a href="{{ route('dashboard') }}" 
-                       class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }} d-flex align-items-center sidebar-link">
+                       class="nav-link {{ request()->routeIs('dashboard') || request()->routeIs('vpaa.dashboard') ? 'active' : '' }} d-flex align-items-center sidebar-link">
                         <i class="bi bi-house-door me-3"></i> 
                         <span>Dashboard</span>
                     </a>
