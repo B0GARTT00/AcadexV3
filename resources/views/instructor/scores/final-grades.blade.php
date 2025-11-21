@@ -27,12 +27,12 @@
                         <div
                             class="subject-card card h-100 border-0 shadow-lg rounded-4 overflow-hidden"
                             onclick="window.location.href='{{ route('instructor.final-grades.index') }}?subject_id={{ $subjectItem->id }}'"
-                            style="cursor: pointer; transition: transform 0.3s ease, box-shadow 0.3s ease;"
+                            style="cursor: pointer;"
                         >
                             {{-- Top header --}}
-                            <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
+                            <div class="position-relative" style="height: 80px;">
                                 <div class="subject-circle position-absolute start-50 translate-middle"
-                                    style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1); transition: all 0.3s ease;">
+                                    style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                                     <h5 class="mb-0 text-white fw-bold">{{ $subjectItem->subject_code }}</h5>
                                 </div>
                             </div>
@@ -276,19 +276,85 @@
 
 @push('styles')
 <style>
+/* Enhanced Card Styling - Matching Chairperson View Grades */
 .subject-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
 }
+
+.subject-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: left 0.5s;
+}
+
+.subject-card:hover::before {
+    left: 100%;
+}
+
 .subject-card:hover {
-    transform: scale(1.05);
-    box-shadow: 0 20px 30px rgba(0,0,0,0.1);
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 24px rgba(77, 166, 116, 0.3) !important;
 }
+
+.subject-card .position-relative {
+    background: linear-gradient(135deg, #4da674 0%, #3d8a5e 100%) !important;
+}
+
+.subject-card:hover .position-relative {
+    background: linear-gradient(135deg, #3d8a5e 0%, #2d6a4e 100%) !important;
+}
+
 .subject-circle {
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
+    transition: all 0.3s ease;
 }
+
 .subject-card:hover .subject-circle {
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
-    transform: translate(-50%, -55%) scale(1.05);
+    transform: translate(-50%, -50%) rotate(5deg) scale(1.1) !important;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2) !important;
+}
+
+.subject-card .card-body {
+    background: linear-gradient(to bottom, #ffffff 0%, #f8f9fa 100%);
+    transition: background 0.3s;
+}
+
+.subject-card:hover .card-body {
+    background: linear-gradient(to bottom, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.subject-card h6 {
+    transition: color 0.3s;
+}
+
+.subject-card:hover h6 {
+    color: #4da674 !important;
+}
+
+.subject-card::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(77, 166, 116, 0.5);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.subject-card:active::after {
+    width: 300px;
+    height: 300px;
+    opacity: 0;
+    transition: 0s;
 }
 </style>
 @endpush

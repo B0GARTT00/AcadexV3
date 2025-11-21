@@ -30,7 +30,7 @@
                         data-url="{{ route($routePrefix . '.course_outcomes.index', ['subject_id' => $subjectItem->id]) }}"
                         style="cursor: pointer;"
                     >
-                        <div class="position-relative" style="height: 80px; background-color: #4ecd85;">
+                        <div class="position-relative" style="height: 80px;">
                             <div class="subject-circle position-absolute start-50 translate-middle"
                                 style="top: 100%; transform: translate(-50%, -50%); width: 80px; height: 80px; background: linear-gradient(135deg, #4da674, #023336); border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
                                 <h5 class="mb-0 text-white fw-bold">{{ $subjectItem->subject_code }}</h5>
@@ -227,4 +227,96 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<style>
+/* Enhanced Card Animations */
+.enhanced-card {
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.enhanced-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow: 0 12px 24px rgba(77, 166, 116, 0.3) !important;
+}
+
+/* Shimmer Effect */
+.shimmer-overlay {
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    transition: left 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.enhanced-card:hover .shimmer-overlay {
+    left: 100%;
+}
+
+/* Card Header Enhancement */
+.card-header-enhanced {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.enhanced-card:hover .card-header-enhanced {
+    background: linear-gradient(135deg, #3db872, #2da05f) !important;
+}
+
+/* Icon Animation */
+.card-icon {
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.enhanced-card:hover .card-icon {
+    transform: translate(-50%, -50%) rotate(360deg) scale(1.1) !important;
+}
+
+/* Card Body Enhancement */
+.card-body-enhanced {
+    transition: background 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.enhanced-card:hover .card-body-enhanced {
+    background: linear-gradient(135deg, #ffffff, #f0fdf4);
+}
+
+/* Text Color Change */
+.card-title-enhanced {
+    transition: color 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.enhanced-card:hover .card-title-enhanced {
+    color: #4da674 !important;
+}
+
+/* Badge Enhancement */
+.badge-enhanced {
+    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.enhanced-card:hover .badge-enhanced {
+    transform: scale(1.05);
+}
+
+/* Ripple Effect */
+.enhanced-card::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(77, 166, 116, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.enhanced-card:active::after {
+    width: 300px;
+    height: 300px;
+}
+</style>
 @endpush
